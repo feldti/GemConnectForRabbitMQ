@@ -1,0 +1,17 @@
+expectvalue %ExecBlock
+run
+ | blk |   
+    "Create new SymbolListDictionaries and add to all SymbolLists"
+    blk := [:name :up| | symDict symList result |
+      symList := up symbolList.
+      (symList objectNamed: name) ifNil:[
+	symList createDictionaryNamed: name at: (symList size + 1) .
+	symDict := up objectNamed: name.
+        AllUsers do:[:u| (u resolveSymbol: name)
+               ifNil:[u insertDictionary: symDict at: (u symbolList size + 1)] ].
+	result := 'Created dictionary ', name.
+      ] ifNotNil:[ result := 'Dictionary ', name, ' already exists' ].
+      result
+    ].
+    UserGlobals at: #CreateDictBlock put: blk.
+%

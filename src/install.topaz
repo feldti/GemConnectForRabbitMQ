@@ -1,0 +1,68 @@
+output push GemConnectForRabbitMq.install.log
+display oops
+set inputpauseonerror on
+
+! Ensure GemStone version is recent enough
+expectvalue true
+run
+(System _gemVersionNum < 30604)
+  ifTrue:[ Object halt: 'GemStone version 3.6.4 or later is required'].
+true
+%
+
+! Ensure path to librabbitmq is set
+expectvalue true
+run
+| rabbitLib envVar |
+envVar := 'RABITTMQ_LIB'.
+"Check we have an env var pointing to the rabbitmq shared library"
+(rabbitLib := System gemEnvironmentVariable: envVar)
+  ifNil:[ Object halt: 'Env var ', envVar, ' must be set' ].
+(GsFile existsOnServer: rabbitLib) ifFalse:[
+  Object halt: ('Cannot find library ', rabbitLib)
+].
+true
+%
+
+errorcount
+input createSymbolList.topaz
+expectvalue %String
+run
+(UserGlobals at: #CreateDictBlock) value: 'GemConnectForRabbitMq'
+  value: System myUserProfile.
+%
+
+expectvalue true
+run
+UserGlobals removeKey: #CreateDictBlock.
+true
+%
+commit
+expectvalue true
+run
+"File in GemConnect for RabbitMq"
+GsFileIn fromServerPath: 'GemConnectForRabbitMq_classes.gs'.
+true
+%
+commit
+run
+GsFileIn fromServerPath: 'GemConnectForRabbitMq_methods.gs'.
+true
+%
+commit
+errorcount
+
+! Initialize the library code
+expectvalue true
+run
+| envVar rabbitLib |
+envVar := 'RABITTMQ_LIB'.
+"Check we have an env var pointing to the rabbitmq shared library"
+(rabbitLib := System gemEnvironmentVariable: envVar)
+  ifNil:[ Object halt: 'Env var ', envVar, ' must be set' ].
+GsLibRabbitMq libraryPath: rabbitLib.
+true
+%
+commit
+errorcount
+output pop

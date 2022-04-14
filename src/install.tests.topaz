@@ -1,0 +1,46 @@
+output push GemConnectForRabbitMqTests.install.log
+display oops
+set inputpauseonerror on
+
+! Ensure GemStone version is recent enough
+expectvalue true
+run
+(System _gemVersionNum < 30604)
+  ifTrue:[ Object halt: 'GemStone version 3.6.4 or later is required'].
+true
+%
+
+! Ensure GemConnect for RabbitMq is already installed
+expectvalue true
+run
+(System myUserProfile resolveSymbol: #GsAmqpConnection)
+  ifNil:[ Object halt: 'Install GemConnect for RabbitMq before installing unit tests' ].
+true
+%
+errorcount
+input createSymbolList.topaz
+expectvalue %String
+run
+(UserGlobals at: #CreateDictBlock) value: 'GemConnectForRabbitMqTests'
+  value: System myUserProfile.
+%
+expectvalue true
+run
+UserGlobals removeKey: #CreateDictBlock.
+true
+%
+commit
+expectvalue true
+run
+"File in unit tests for GemConnect for Postgres"
+GsFileIn fromServerPath: 'GemConnectForRabbitMqTests_classes.gs'.
+true
+%
+commit
+run
+GsFileIn fromServerPath: 'GemConnectForRabbitMqTests_methods.gs'.
+true
+%
+commit
+errorcount
+output pop
