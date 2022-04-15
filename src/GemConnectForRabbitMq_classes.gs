@@ -1,12 +1,11 @@
 fileformat utf8
 set compile_env: 0
-! ------------------- Class definition for GsAmqpConnection
+! ------------------- Class definition for GsAmqpEntity
 expectvalue /Class
 doit
-Object subclass: 'GsAmqpConnection'
-  instVarNames: #( library connection socket
-                    openChannels highestOpenChannel replyObject host
-                    port loggedIn connected)
+Object subclass: 'GsAmqpEntity'
+  instVarNames: #( connection channel name
+                    durable autoDelete)
   classVars: #()
   classInstVars: #()
   poolDictionaries: #()
@@ -28,12 +27,14 @@ CByteArray subclass: 'GsAmqpCStruct'
 
 %
 set compile_env: 0
-! ------------------- Class definition for GsAmqpExample
+! ------------------- Class definition for GsAmqpConnection
 expectvalue /Class
 doit
-Object subclass: 'GsAmqpExample'
-  instVarNames: #()
-  classVars: #( badMessages caCertPath certPath debugEnabled hostname loginTimeoutMs messages password port privateKey privateKeyPassphrase randomString tlsPort userId)
+Object subclass: 'GsAmqpConnection'
+  instVarNames: #( library connection socket
+                    openChannels highestOpenChannel replyObject host
+                    port loggedIn connected)
+  classVars: #()
   classInstVars: #()
   poolDictionaries: #()
   inDictionary: GemConnectForRabbitMq
@@ -41,12 +42,66 @@ Object subclass: 'GsAmqpExample'
 
 %
 set compile_env: 0
-! ------------------- Class definition for GsAmqpTlsConnection
+! ------------------- Class definition for GsAmqpBasicProperties
 expectvalue /Class
 doit
-GsAmqpConnection subclass: 'GsAmqpTlsConnection'
-  instVarNames: #( verifyPeer verifyHostname caCertPath
-                    certPath privateKey)
+GsAmqpCStruct subclass: 'GsAmqpBasicProperties'
+  instVarNames: #( flags contentType contentEncoding
+                    headers deliveryMode priority correlationId
+                    replyTo expiration messageId timestamp
+                    type amqpUserId appId clusterId)
+  classVars: #()
+  classInstVars: #()
+  poolDictionaries: #()
+  inDictionary: GemConnectForRabbitMq
+  options: #()
+
+%
+set compile_env: 0
+! ------------------- Class definition for GsAmqpTable
+expectvalue /Class
+doit
+GsAmqpCStruct subclass: 'GsAmqpTable'
+  instVarNames: #( numEntries entries)
+  classVars: #()
+  classInstVars: #()
+  poolDictionaries: #()
+  inDictionary: GemConnectForRabbitMq
+  options: #()
+
+%
+set compile_env: 0
+! ------------------- Class definition for GsAmqpExchange
+expectvalue /Class
+doit
+GsAmqpEntity subclass: 'GsAmqpExchange'
+  instVarNames: #( type)
+  classVars: #()
+  classInstVars: #()
+  poolDictionaries: #()
+  inDictionary: GemConnectForRabbitMq
+  options: #()
+
+%
+set compile_env: 0
+! ------------------- Class definition for GsAmqpTableEntryArray
+expectvalue /Class
+doit
+GsAmqpCStruct subclass: 'GsAmqpTableEntryArray'
+  instVarNames: #( elements)
+  classVars: #()
+  classInstVars: #()
+  poolDictionaries: #()
+  inDictionary: GemConnectForRabbitMq
+  options: #()
+
+%
+set compile_env: 0
+! ------------------- Class definition for GsAmqpFieldValue
+expectvalue /Class
+doit
+GsAmqpCStruct subclass: 'GsAmqpFieldValue'
+  instVarNames: #( kind value)
   classVars: #()
   classInstVars: #()
   poolDictionaries: #()
@@ -69,11 +124,12 @@ GsAmqpCStruct subclass: 'GsAmqpRpcReply'
 
 %
 set compile_env: 0
-! ------------------- Class definition for GsAmqpFieldValue
+! ------------------- Class definition for GsAmqpTlsConnection
 expectvalue /Class
 doit
-GsAmqpCStruct subclass: 'GsAmqpFieldValue'
-  instVarNames: #( kind value)
+GsAmqpConnection subclass: 'GsAmqpTlsConnection'
+  instVarNames: #( verifyPeer verifyHostname caCertPath
+                    certPath privateKey)
   classVars: #()
   classInstVars: #()
   poolDictionaries: #()
@@ -82,52 +138,12 @@ GsAmqpCStruct subclass: 'GsAmqpFieldValue'
 
 %
 set compile_env: 0
-! ------------------- Class definition for GsAmqpEntity
+! ------------------- Class definition for GsAmqpExample
 expectvalue /Class
 doit
-Object subclass: 'GsAmqpEntity'
-  instVarNames: #( connection channel name
-                    durable autoDelete)
-  classVars: #()
-  classInstVars: #()
-  poolDictionaries: #()
-  inDictionary: GemConnectForRabbitMq
-  options: #()
-
-%
-set compile_env: 0
-! ------------------- Class definition for GsAmqpTableEntryArray
-expectvalue /Class
-doit
-GsAmqpCStruct subclass: 'GsAmqpTableEntryArray'
-  instVarNames: #( elements)
-  classVars: #()
-  classInstVars: #()
-  poolDictionaries: #()
-  inDictionary: GemConnectForRabbitMq
-  options: #()
-
-%
-set compile_env: 0
-! ------------------- Class definition for GsAmqpExchange
-expectvalue /Class
-doit
-GsAmqpEntity subclass: 'GsAmqpExchange'
-  instVarNames: #( type)
-  classVars: #()
-  classInstVars: #()
-  poolDictionaries: #()
-  inDictionary: GemConnectForRabbitMq
-  options: #()
-
-%
-set compile_env: 0
-! ------------------- Class definition for GsAmqpTable
-expectvalue /Class
-doit
-GsAmqpCStruct subclass: 'GsAmqpTable'
-  instVarNames: #( numEntries entries)
-  classVars: #()
+Object subclass: 'GsAmqpExample'
+  instVarNames: #()
+  classVars: #( amqpUserId badMessages caCertPath certPath debugEnabled hostname loginTimeoutMs messages password port privateKey privateKeyPassphrase randomString tlsPort)
   classInstVars: #()
   poolDictionaries: #()
   inDictionary: GemConnectForRabbitMq
@@ -329,22 +345,6 @@ doit
 GsAmqpCStruct subclass: 'GsAmqpBasicDeliveryPayload'
   instVarNames: #( consumerTag deliveryTag redelivered
                     exchange routingKey)
-  classVars: #()
-  classInstVars: #()
-  poolDictionaries: #()
-  inDictionary: GemConnectForRabbitMq
-  options: #()
-
-%
-set compile_env: 0
-! ------------------- Class definition for GsAmqpBasicProperties
-expectvalue /Class
-doit
-GsAmqpCStruct subclass: 'GsAmqpBasicProperties'
-  instVarNames: #( flags contentType contentEncoding
-                    headers deliveryMode priority correlationId
-                    replyTo expiration messageId timestamp
-                    type userId appId clusterId)
   classVars: #()
   classInstVars: #()
   poolDictionaries: #()

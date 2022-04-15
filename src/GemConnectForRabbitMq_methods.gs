@@ -1,4 +1,281 @@
 fileformat utf8
+! ------------------- Remove existing behavior from GsAmqpEntity
+removeAllMethods GsAmqpEntity
+removeAllClassMethods GsAmqpEntity
+! ------------------- Class methods for GsAmqpEntity
+! ------------------- Instance methods for GsAmqpEntity
+category: 'Accessing'
+method: GsAmqpEntity
+autoDelete
+	^autoDelete
+%
+category: 'Updating'
+method: GsAmqpEntity
+autoDelete: newValue
+	autoDelete := newValue
+%
+category: 'Accessing'
+method: GsAmqpEntity
+channel
+	^channel
+%
+category: 'Updating'
+method: GsAmqpEntity
+channel: newValue
+	channel := newValue
+%
+category: 'Accessing'
+method: GsAmqpEntity
+connection
+	^connection
+%
+category: 'Updating'
+method: GsAmqpEntity
+connection: newValue
+	connection := newValue
+%
+category: 'Accessing'
+method: GsAmqpEntity
+durable
+	^durable
+%
+category: 'Updating'
+method: GsAmqpEntity
+durable: newValue
+	durable := newValue
+%
+category: 'Accessing'
+method: GsAmqpEntity
+name
+	^name
+%
+category: 'Updating'
+method: GsAmqpEntity
+name: newValue
+	name := newValue
+%
+! ------------------- Remove existing behavior from GsAmqpCStruct
+removeAllMethods GsAmqpCStruct
+removeAllClassMethods GsAmqpCStruct
+! ------------------- Class methods for GsAmqpCStruct
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromCPointer: aCPointer
+
+"NOT auto freed"
+^ self fromCPointer: aCPointer atOffset: 0 initializeFromC: true
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromCPointer: aCByteArray atOffset: offset
+
+"NOT auto freed"
+
+
+^ self fromCPointer: aCByteArray atOffset: offset initializeFromC: true
+
+
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromCPointer: aCByteArray atOffset: offset initializeFromC: doInitFromC
+
+"NOT auto freed"
+
+	| res |
+	res := self on: aCByteArray atOffset: offset .
+	doInitFromC ifTrue: [res initializeFromC].
+	^res
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromMemoryReferenceIn: aCByteArray atOffset: offset
+
+	^self
+		fromMemoryReferenceIn: aCByteArray
+		atOffset: offset
+		initializeFromC: true
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromMemoryReferenceIn: aCByteArray atOffset: offset initializeFromC: doInitFromC
+
+	^self
+		fromMemoryReferenceIn: aCByteArray
+		atOffset: offset
+		sizeInBytes: self sizeInC
+		initializeFromC: doInitFromC
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromMemoryReferenceIn: aCByteArray atOffset: offset sizeInBytes: bytes
+
+	^self
+		fromMemoryReferenceIn: aCByteArray
+		atOffset: offset
+		sizeInBytes: bytes
+		initializeFromC: true
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromMemoryReferenceIn: aCByteArray atOffset: offset sizeInBytes: bytes initializeFromC: doInitFromC
+
+
+"NOT auto freed"
+
+	| res cPointer |
+
+	cPointer := CPointer forAddress: (aCByteArray uint64At: offset).
+	res := self fromCPointer: cPointer numBytes: bytes.
+	doInitFromC ifTrue: [res initializeFromC].
+	^res
+%
+category: 'Constants'
+classmethod: GsAmqpCStruct
+lastZeroBasedOffset
+
+^self sizeInC - 1
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+new
+
+| result |
+result := self gcMalloc: self sizeInC.
+result initialize.
+^ result
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+new: aSize
+
+"Use new instead "
+^ self shouldNotImplement: #new:
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+on: aCByteArray
+
+	^self on: aCByteArray atOffset: 0
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+on: aCByteArray atOffset: offset
+
+	| res |
+	res := self
+				fromRegionOf: aCByteArray
+				offset: offset
+				numBytes: self sizeInC.
+	^ res initialize ;
+		derivedFrom: aCByteArray;
+	yourself
+%
+category: 'Subclass Methods'
+classmethod: GsAmqpCStruct
+sizeInC
+
+^self subclassResponsibility: #sizeInC
+%
+! ------------------- Instance methods for GsAmqpCStruct
+category: 'Accessing Strings'
+method: GsAmqpCStruct
+byteArrayFromAmqpBytesAtOffset: anOffset
+
+"Receiver contains a amqp_bytes_t struct at offset anOffset. Return a ByteArray containing the bytes that it holds."
+
+	| size |
+	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
+		ifNil: [nil]
+		ifNotNil: [self byteArrayFromCharStarAt: anOffset + 8 numBytes: size]
+%
+category: 'Accessing Strings'
+method: GsAmqpCStruct
+byteObjectFromAmqpBytesAtOffset: anOffset class: aByteClass
+	"Receiver contains a amqp_bytes_t struct at offset anOffset. Return the string that it holds."
+
+	^ (aByteClass isSubclassOf: String)
+		ifTrue: [self stringFromAmqpBytesAtOffset: anOffset]
+		ifFalse:
+			[(aByteClass isSubclassOf: ByteArray)
+				ifTrue: [self byteArrayFromAmqpBytesAtOffset: anOffset]
+				ifFalse: [self error: 'Unexpected byte class']]
+%
+category: 'Accessing Memory'
+method: GsAmqpCStruct
+cPointerForOffset: offset
+
+^CPointer _allocate _initFrom: self offset: offset
+%
+category: 'Subclass Methods'
+method: GsAmqpCStruct
+flushValuesToC
+
+^self subclassResponsibility: #flushValuesToC
+%
+category: 'Accessing Strings'
+method: GsAmqpCStruct
+getSizeOfAmqpBytesAtOffset: anOffset
+
+	| size |
+	size := self uint64At: anOffset.
+	^size == 0
+		ifTrue: [nil]
+		ifFalse:
+			[size > 16r20000
+				ifTrue:
+					[self
+						error: 'ByteArray larger than 128K detected. Possible bad memory reference']
+				ifFalse: [size]]
+%
+category: 'Initialization'
+method: GsAmqpCStruct
+initializeFromC
+
+"Subclasses may overload this method to initialize instance variables from C state at instance creation time."
+
+^ self
+%
+category: 'Accessing Strings'
+method: GsAmqpCStruct
+stringFromAmqpBytesAtOffset: anOffset
+	"Receiver contains a amqp_bytes_t struct at offset anOffset. Return the string that it holds."
+
+	| size |
+	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
+		ifNil: [nil]
+		ifNotNil: [self stringFromCharStarAt: anOffset + 8 numBytes: size]
+%
+category: 'Accessing Strings'
+method: GsAmqpCStruct
+utf16FromAmqpBytesAtOffset: anOffset
+
+"Receiver contains a amqp_bytes_t struct at offset anOffset. Return a Utf8 containing the bytes that it holds."
+
+	| size |
+	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
+		ifNil: [nil]
+		ifNotNil: [self utf16FromCharStarAt: anOffset + 8 numBytes: size]
+%
+category: 'Accessing Strings'
+method: GsAmqpCStruct
+utf8FromAmqpBytesAtOffset: anOffset
+
+"Receiver contains a amqp_bytes_t struct at offset anOffset. Return a Utf8 containing the bytes that it holds."
+
+	| size |
+	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
+		ifNil: [nil]
+		ifNotNil: [self utf8FromCharStarAt: anOffset + 8 numBytes: size]
+%
+category: 'Updating'
+method: GsAmqpCStruct
+zeroMemory
+
+	^self
+		memset: 0 from: 0 to: -1;
+		yourself
+%
 ! ------------------- Remove existing behavior from GsAmqpConnection
 removeAllMethods GsAmqpConnection
 removeAllClassMethods GsAmqpConnection
@@ -19,7 +296,7 @@ category: 'Instance Creation'
 classmethod: GsAmqpConnection
 newOnHost: hostOrIp
 
-^ self newOnHost: hostOrIp port: self defaultPort 
+^ self newOnHost: hostOrIp port: self defaultPort
 %
 category: 'Instance Creation'
 classmethod: GsAmqpConnection
@@ -119,7 +396,7 @@ beginConsumingQueueWithName: name channel: channelId consumerTag: consumerTag no
 				_: noLocal asBit
 				_: noAck asBit
 				_: exclusive asBit
-				_: GsAmqpTable emptyTable.	
+				_: GsAmqpTable emptyTable.
 	self getRpcReplyForOperation: 'amqp_basic_consume'.
 	^( GsAmqpBytes fromCPointer: result) convertToString
 %
@@ -177,12 +454,12 @@ category: 'Channels'
 method: GsAmqpConnection
 closeChannelWithId: anInt
 
-	(self hasOpenChannelWithId: anInt) 
+	(self hasOpenChannelWithId: anInt)
 		ifFalse: [^self].
 	self validateConnection.
 	[| reply |
 	reply := self replyObject clearForReuse.
-	self library amqp_channel_close_: reply _: self connection _: anInt _: self library class AMQP_REPLY_SUCCESS. 
+	self library amqp_channel_close_: reply _: self connection _: anInt _: self library class AMQP_REPLY_SUCCESS.
 	reply initializeFromC.
 	reply isSuccess ifFalse: [^reply raiseExceptionForOperation: 'amqp_channel_close' ]]
 			ensure: [self removeOpenChannelWithId: anInt].
@@ -192,7 +469,7 @@ category: 'Logout'
 method: GsAmqpConnection
 closeConnection
 
-	
+
 ^ self _closeConnection ; _destroyConnection ; yourself
 %
 category: 'Transactions'
@@ -221,7 +498,7 @@ consumeMessageInto: aGsAmqpEnvelope timeoutMs: ms
 	If successful, store the message in aGsAmqpEnvelopeand return true. If the timeout expires return false, otherwise raise an exception.
 
 	We implement the wait as a series of short (250 ms) blocking calls to amqp_consume_message() because this function does a blocking poll()
-	call which completely blocks the VM while its waiting. To make it even worse, the rabbitmq code restarts the poll() call on 
+	call which completely blocks the VM while its waiting. To make it even worse, the rabbitmq code restarts the poll() call on
 	EINTR, which means soft and hard breaks will not break the sleep."
 
 	| args |
@@ -352,9 +629,9 @@ getFrameInto: dest withTimeoutMs: ms errorOnTimeout: bool
 				forTimeoutMs: ms.
 	result
 		ifTrue: [dest initializeFromC]
-		ifFalse: 
+		ifFalse:
 			[bool
-				ifTrue: 
+				ifTrue:
 					[GsRabbitMqError signal: 'timeout waiting for a frame after ' , ms asString , ' ms']].
 	^result
 %
@@ -366,7 +643,7 @@ getRpcReplyForOperation: aString
 	| reply |
 	reply := self replyObject clearForReuse .
 	self validateConnection.
-	self library amqp_get_rpc_reply_: reply _: self connection. 
+	self library amqp_get_rpc_reply_: reply _: self connection.
 	reply initializeFromC .
 	^ reply isSuccess
 		ifTrue:[ self ]
@@ -560,7 +837,7 @@ category: 'Restless Polling'
 method: GsAmqpConnection
 performRestlessPollOp: aSymbol withArguments: args forTimeoutMs: ms
 	"We use this to poll for a response from the broker while blocking for no more than 250 ms.
-RabbitMQ does a blocking poll() call which completely blocks the VM while its waiting. 
+RabbitMQ does a blocking poll() call which completely blocks the VM while its waiting.
 To make it even worse, rabbitmq restarts the poll() on EINTR, which means
  soft and hard breaks will not break out of the sleep!
 
@@ -583,14 +860,14 @@ On error, a GsRabbitMqError is signaled.
 				add: timeStruct;
 				yourself.
 	1 to: repeatCount
-		do: 
+		do:
 			[:n |
 			| result |
 			result := self perform: aSymbol withArguments: performArgs.
 			result == false ifFalse: [^result]	"We got a message or raised an exception"].
 	^timeStructFinal == 0
 		ifTrue: [false	"no final poll, so we timed out with no messages received"]
-		ifFalse: 
+		ifFalse:
 			[performArgs := (args copy)
 						add: timeStructFinal;
 						yourself. "Add the final time struct to the arg array"
@@ -619,13 +896,13 @@ pollForPublishConfirmOnChannel: channelId waitUpTo: waitMs
 	result add: headerFrame.
 	bodySize := headerFrame bodySize.
 	bodySize > 0
-		ifTrue: 
+		ifTrue:
 			[bodyMsg := String new.
 			totalBytes := 0.
 			bodyFrame := GsAmqpFrame newWithConnection: self.
 			result add: bodyFrame.
 			[totalBytes < bodySize]
-				whileTrue: 
+				whileTrue:
 					[self getFrameInto: bodyFrame withTimeoutMs: waitMs errorOnTimeout: true.
 					bodyMsg addAll: bodyFrame payload]
 							result
@@ -659,7 +936,7 @@ primConsumeMessageInto: aGsAmqpEnvelope replyObject: reply timeStruct: ts
 		_: 0.
 	reply initializeFromC.
 	^reply isSuccess
-		ifTrue: 
+		ifTrue:
 			[aGsAmqpEnvelope
 				initializeFromC ;
 				destroyCStateUsingLibrary: self library.
@@ -678,7 +955,7 @@ primGetFrameInto: dest timeStruct: ts
 				_: ts.
 	^rc == 0
 		ifTrue: [true]
-		ifFalse: 
+		ifFalse:
 			[rc == GsAmqpRpcReply AMQP_STATUS_TIMEOUT
 				ifTrue: [false]
 				ifFalse: [GsRabbitMqError signalWithErrorCode: rc library: self library]]
@@ -747,7 +1024,7 @@ readMessageInto: gsAmqpMsg channel: channelId
 		_: 0.
 	reply initializeFromC.
 	^reply isSuccess
-		ifTrue: 
+		ifTrue:
 			[msg
 				initializeFromC;
 				destroyCStateUsingLibrary: self library]
@@ -833,7 +1110,7 @@ setSocketOptions
 category: 'Queues'
 method: GsAmqpConnection
 sizeOfQueueWithName: name channel: channelId
-	
+
 
 	| result |
 	self validateOpenChannelId: channelId ; validateConnection.
@@ -845,7 +1122,7 @@ sizeOfQueueWithName: name channel: channelId
 				_: 0 "ignored"
 				_: 0 "ignored"
 				_: 0 "ignored"
-				_: GsAmqpTable emptyTable.	
+				_: GsAmqpTable emptyTable.
 	self getRpcReplyForOperation: 'amqp_queue_declare'.
 	^ (GsAmqpQueueDeclareResult fromCPointer: result) messageCount
 %
@@ -861,7 +1138,7 @@ socket: newValue
 %
 category: 'Queues'
 method: GsAmqpConnection
-stopConsumingQueueOnChannel: channelId consumerTag: consumerTag 
+stopConsumingQueueOnChannel: channelId consumerTag: consumerTag
 	"Reverses a previous call to #beginConsumingQueueWithName. Tells the broker we will no longer be consuming a queue. Returns a string containing the canceled consumer tag on success."
 
 	| result |
@@ -929,7 +1206,7 @@ validateNewChannelId: anInt
 		_validateClass: SmallInteger;
 		_validateMin: 1 max: self class maxChannels .
 	^(self hasOpenChannelWithId: anInt)
-		ifTrue: 
+		ifTrue:
 			[GsRabbitMqError
 				signal: 'Attempt to open channel which is already open (' , anInt asString
 						, ')']
@@ -945,7 +1222,7 @@ validateOpenChannelId: anInt
 		_validateMin: 1 max: self class maxChannels.
 	^(self hasOpenChannelWithId: anInt)
 		ifTrue: [self]
-		ifFalse: 
+		ifFalse:
 			[GsRabbitMqError
 				signal: 'Attempt to use channel which is not open (' , anInt asString , ')']
 %
@@ -963,7 +1240,7 @@ _closeConnection
 	| conn |
 	(conn := self connection)
 		ifNil: [GsRabbitMqError signal: 'Connection already closed']
-		ifNotNil: 
+		ifNotNil:
 			[
 			[| reply |
 			self closeAllChannels.
@@ -984,7 +1261,7 @@ _connectWithTimeoutMs: anInt
 
 | rc timeStruct |
 timeStruct := self library class createStructTimeValForMilliseconds: anInt .
-rc := self library amqp_socket_open_noblock_: self socket _: self host _: self port _: timeStruct . 
+rc := self library amqp_socket_open_noblock_: self socket _: self host _: self port _: timeStruct .
 ^ rc == 0
 	ifTrue:[ self ]
 	ifFalse:[ GsRabbitMqError signalWithErrorCode: rc library: self library ]
@@ -996,7 +1273,7 @@ _destroyConnection
 	| conn |
 	(conn := self connection)
 		ifNil: [GsRabbitMqError signal: 'Connection already destroyed']
-		ifNotNil: 
+		ifNotNil:
 			[[self library amqp_destroy_connection_: conn]
 				ensure: [self connection: nil]].
 	^self
@@ -1007,6 +1284,9 @@ _loginWithUserId: uid password: pw
 
 	| reply |
 	self validateConnection.
+"Prevent SEGV in rabbitmq library"
+	uid _validateClass: String.
+	pw _validateClass: String.
 	reply := self replyObject clearForReuse .
 	self library amqp_login_: reply _: self connection _: '/' _: 0 _: 131072 _: 0 _: 0 varArgs: { #'const char*' . uid . #'const char*' . pw } .
 	reply initializeFromC .
@@ -1014,2117 +1294,1129 @@ _loginWithUserId: uid password: pw
 		ifTrue:[ self setLoggedIn ]
 		ifFalse:[ self reinitializeAfterLoginFailure . reply raiseExceptionForOperation: 'amqp_login']
 %
-! ------------------- Remove existing behavior from GsAmqpCStruct
-removeAllMethods GsAmqpCStruct
-removeAllClassMethods GsAmqpCStruct
-! ------------------- Class methods for GsAmqpCStruct
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromCPointer: aCPointer
+! ------------------- Remove existing behavior from GsAmqpBasicProperties
+removeAllMethods GsAmqpBasicProperties
+removeAllClassMethods GsAmqpBasicProperties
+! ------------------- Class methods for GsAmqpBasicProperties
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_APP_ID_FLAG
 
-"NOT auto freed"
-^ self fromCPointer: aCPointer atOffset: 0 initializeFromC: true
+	^8
 %
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromCPointer: aCByteArray atOffset: offset
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_CLUSTER_ID_FLAG
 
-"NOT auto freed"
-
-
-^ self fromCPointer: aCByteArray atOffset: offset initializeFromC: true
-
-
+	^4
 %
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromCPointer: aCByteArray atOffset: offset initializeFromC: doInitFromC
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_CONTENT_ENCODING_FLAG
 
-"NOT auto freed"
-
-	| res |
-	res := self on: aCByteArray atOffset: offset .
-	doInitFromC ifTrue: [res initializeFromC].
-	^res
+	^16384
 %
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromMemoryReferenceIn: aCByteArray atOffset: offset
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_CONTENT_TYPE_FLAG
 
-	^self
-		fromMemoryReferenceIn: aCByteArray
-		atOffset: offset
-		initializeFromC: true
+	^32768
 %
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromMemoryReferenceIn: aCByteArray atOffset: offset initializeFromC: doInitFromC
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_CORRELATION_ID_FLAG
 
-	^self
-		fromMemoryReferenceIn: aCByteArray
-		atOffset: offset
-		sizeInBytes: self sizeInC
-		initializeFromC: doInitFromC
+	^1024
 %
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromMemoryReferenceIn: aCByteArray atOffset: offset sizeInBytes: bytes
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_DELIVERY_MODE_FLAG
 
-	^self
-		fromMemoryReferenceIn: aCByteArray
-		atOffset: offset
-		sizeInBytes: bytes
-		initializeFromC: true
+	^4096
 %
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromMemoryReferenceIn: aCByteArray atOffset: offset sizeInBytes: bytes initializeFromC: doInitFromC
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_EXPIRATION_FLAG
 
+	^256
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_HEADERS_FLAG
 
-"NOT auto freed"
+	^8192
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_MESSAGE_ID_FLAG
 
-	| res cPointer |
-	
-	cPointer := CPointer forAddress: (aCByteArray uint64At: offset).
-	res := self fromCPointer: cPointer numBytes: bytes.
-	doInitFromC ifTrue: [res initializeFromC].
-	^res
+	^128
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_PRIORITY_FLAG
+
+	^2048
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_REPLY_TO_FLAG
+
+	^512
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_TIMESTAMP_FLAG
+
+	^64
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_TYPE_FLAG
+
+	^32
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_USER_ID_FLAG
+
+	^16
 %
 category: 'Constants'
-classmethod: GsAmqpCStruct
-lastZeroBasedOffset
-
-^self sizeInC - 1
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-new
-
-| result |
-result := self gcMalloc: self sizeInC.
-result initialize.
-^ result
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-new: aSize
-
-"Use new instead "
-^ self shouldNotImplement: #new:
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-on: aCByteArray
-
-	^self on: aCByteArray atOffset: 0
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-on: aCByteArray atOffset: offset
-
-	| res |
-	res := self
-				fromRegionOf: aCByteArray
-				offset: offset
-				numBytes: self sizeInC.
-	^ res initialize ;
-		derivedFrom: aCByteArray;
-	yourself
-%
-category: 'Subclass Methods'
-classmethod: GsAmqpCStruct
-sizeInC
-
-^self subclassResponsibility: #sizeInC
-%
-! ------------------- Instance methods for GsAmqpCStruct
-category: 'Accessing Strings'
-method: GsAmqpCStruct
-byteArrayFromAmqpBytesAtOffset: anOffset
-
-"Receiver contains a amqp_bytes_t struct at offset anOffset. Return a ByteArray containing the bytes that it holds."
-
-	| size |
-	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
-		ifNil: [nil]
-		ifNotNil: [self byteArrayFromCharStarAt: anOffset + 8 numBytes: size]
-%
-category: 'Accessing Strings'
-method: GsAmqpCStruct
-byteObjectFromAmqpBytesAtOffset: anOffset class: aByteClass
-	"Receiver contains a amqp_bytes_t struct at offset anOffset. Return the string that it holds."
-
-	^ (aByteClass isSubclassOf: String)
-		ifTrue: [self stringFromAmqpBytesAtOffset: anOffset]
-		ifFalse: 
-			[(aByteClass isSubclassOf: ByteArray)
-				ifTrue: [self byteArrayFromAmqpBytesAtOffset: anOffset]
-				ifFalse: [self error: 'Unexpected byte class']]
-%
-category: 'Accessing Memory'
-method: GsAmqpCStruct
-cPointerForOffset: offset
-
-^CPointer _allocate _initFrom: self offset: offset
-%
-category: 'Subclass Methods'
-method: GsAmqpCStruct
-flushValuesToC
-
-^self subclassResponsibility: #flushValuesToC
-%
-category: 'Accessing Strings'
-method: GsAmqpCStruct
-getSizeOfAmqpBytesAtOffset: anOffset
-
-	| size |
-	size := self uint64At: anOffset.
-	^size == 0
-		ifTrue: [nil]
-		ifFalse: 
-			[size > 16r20000
-				ifTrue: 
-					[self
-						error: 'ByteArray larger than 128K detected. Possible bad memory reference']
-				ifFalse: [size]]
-%
-category: 'Initialization'
-method: GsAmqpCStruct
-initializeFromC
-
-"Subclasses may overload this method to initialize instance variables from C state at instance creation time."
-
-^ self
-%
-category: 'Accessing Strings'
-method: GsAmqpCStruct
-stringFromAmqpBytesAtOffset: anOffset
-	"Receiver contains a amqp_bytes_t struct at offset anOffset. Return the string that it holds."
-
-	| size |
-	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
-		ifNil: [nil]
-		ifNotNil: [self stringFromCharStarAt: anOffset + 8 numBytes: size]
-%
-category: 'Accessing Strings'
-method: GsAmqpCStruct
-utf16FromAmqpBytesAtOffset: anOffset
-
-"Receiver contains a amqp_bytes_t struct at offset anOffset. Return a Utf8 containing the bytes that it holds."
-
-	| size |
-	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
-		ifNil: [nil]
-		ifNotNil: [self utf16FromCharStarAt: anOffset + 8 numBytes: size]
-%
-category: 'Accessing Strings'
-method: GsAmqpCStruct
-utf8FromAmqpBytesAtOffset: anOffset
-
-"Receiver contains a amqp_bytes_t struct at offset anOffset. Return a Utf8 containing the bytes that it holds."
-
-	| size |
-	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
-		ifNil: [nil]
-		ifNotNil: [self utf8FromCharStarAt: anOffset + 8 numBytes: size]
-%
-category: 'Updating'
-method: GsAmqpCStruct
-zeroMemory
-
-	^self
-		memset: 0 from: 0 to: -1;
-		yourself
-%
-! ------------------- Remove existing behavior from GsAmqpExample
-removeAllMethods GsAmqpExample
-removeAllClassMethods GsAmqpExample
-! ------------------- Class methods for GsAmqpExample
-category: 'Accessing'
-classmethod: GsAmqpExample
-badMessages
-
-^ badMessages 
-%
-category: 'Accessing'
-classmethod: GsAmqpExample
-caCertPath
-
-^ caCertPath ifNil:[ self error: 'caCertPath has not been set' ] ifNotNil:[ caCertPath ]
-%
-category: 'Updating'
-classmethod: GsAmqpExample
-caCertPath: newValue
-
-caCertPath := newValue
-%
-category: 'Accessing'
-classmethod: GsAmqpExample
-certPath
-
-^ certPath ifNil:[ self error: 'certPath has not been set' ] ifNotNil:[ certPath ]
-%
-category: 'Updating'
-classmethod: GsAmqpExample
-certPath: newValue
-
-certPath := newValue
-%
-category: 'Example 99 (Perf Test)'
-classmethod: GsAmqpExample
-committerSharedCounterId
+classmethod: GsAmqpBasicProperties
+AMQP_DELIVERY_NONPERSISTENT
 
 ^ 1
 %
-category: 'Example 99 (Perf Test)'
-classmethod: GsAmqpExample
-committerShouldRun
+category: 'Constants'
+classmethod: GsAmqpBasicProperties
+AMQP_DELIVERY_PERSISTENT
 
-^ 0 ~~ (System sharedCounter: self committerSharedCounterId)
+^ 2
 %
-category: 'Producer - Consumer Coordination'
-classmethod: GsAmqpExample
-consumerIsReady: exampleNum
+category: 'Constants'
+classmethod: GsAmqpBasicProperties
+sizeInC
 
-^ exampleNum == (System sharedCounter: self sharedCounterId)
+^ 200
 %
+! ------------------- Instance methods for GsAmqpBasicProperties
 category: 'Accessing'
-classmethod: GsAmqpExample
-debugEnabled
+method: GsAmqpBasicProperties
+amqpUserId
 
-^ debugEnabled
+^ amqpUserId
 %
 category: 'Updating'
-classmethod: GsAmqpExample
-debugEnabled: bool
-
-debugEnabled := bool
-%
-category: 'Default Credentials'
-classmethod: GsAmqpExample
-defaultHostName
-
-	^ 'localhost'
-%
-category: 'Default Credentials'
-classmethod: GsAmqpExample
-defaultLoginTimeoutMs
-
-^ 10000 "milliseconds = 10 seconds"
-%
-category: 'Default Credentials'
-classmethod: GsAmqpExample
-defaultPassword
-
-^ 'guest'
-%
-category: 'Default Credentials'
-classmethod: GsAmqpExample
-defaultPort
-
-	^ GsAmqpConnection defaultPort
-%
-category: 'Default TLS Credentials'
-classmethod: GsAmqpExample
-defaultPrivateKeyPassphrase
-
-"Default is no passphrase for private key."
-^ nil
-%
-category: 'Default TLS Credentials'
-classmethod: GsAmqpExample
-defaultTlsPort
-
-	^ GsAmqpTlsConnection defaultPort
-%
-category: 'Default Credentials'
-classmethod: GsAmqpExample
-defaultUserId
-
-^ 'guest'
+method: GsAmqpBasicProperties
+amqpUserId: newValue
+	amqpUserId := self newValueForString: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_USER_ID_FLAG
+		newValue: self amqpUserId
+		offset: 152
 %
 category: 'Accessing'
-classmethod: GsAmqpExample
-directExchangeName
-
-^ self exchangeNameForKind: 'direct'
-%
-category: 'Debugging'
-classmethod: GsAmqpExample
-disableDebug
-
-self debugEnabled: false
-%
-category: 'Debugging'
-classmethod: GsAmqpExample
-enableDebug
-
-self debugEnabled: true
-%
-category: 'Example 12 (Binary Messages)'
-classmethod: GsAmqpExample
-encryptionKey
-
-^ ByteArray fromBase64String:  'LEz75mdIdskvShY0PidDNwQjvVSAXThoal5QBS0gD+I='.
-%
-category: 'Example 12 (Binary Messages)'
-classmethod: GsAmqpExample
-encryptionSalt
-
-^ ByteArray fromBase64String:  '80Yay6FJ7V6EQYiJZz6u8Q=='
-%
-category: 'Accessing'
-classmethod: GsAmqpExample
-exchangeNameForKind: aString
-
-^ aString, '.exchange.', self randomShortString
-%
-category: 'Accessing'
-classmethod: GsAmqpExample
-fanoutExchangeName
-
-^ self exchangeNameForKind: 'fanout'
-%
-category: 'Default Connections'
-classmethod: GsAmqpExample
-getConnection: useTls
-
-^ useTls ifTrue:[ self newTlsConnection ] ifFalse:[ self newConnection ]
-%
-category: 'Accessing'
-classmethod: GsAmqpExample
-headersExchangeName
-
-^ self exchangeNameForKind: 'headers'
-%
-category: 'Accessing'
-classmethod: GsAmqpExample
-hostname
-
-^ hostname ifNil:[ self defaultHostName ] ifNotNil:[ hostname ]
+method: GsAmqpBasicProperties
+appId
+	^appId
 %
 category: 'Updating'
-classmethod: GsAmqpExample
-hostname: newValue
+method: GsAmqpBasicProperties
+appId: newValue
 
-hostname := newValue
+	appId := self newValueForString: newValue .
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_APP_ID_FLAG
+		newValue: self appId
+		offset: 168
+%
+category: 'C Memory'
+method: GsAmqpBasicProperties
+clearAmqpBytesAtOffset: offset
+
+self memset: 0 from: offset to: (offset + GsAmqpBytes lastZeroBasedOffset)
+%
+category: 'Flags'
+method: GsAmqpBasicProperties
+clearFlag: aSymbol
+
+self flags: (self flags bitAnd: (self class perform: aSymbol) bitInvert).
+^ self uint32At: 0 put: self flags ; yourself
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+clusterId
+	^clusterId
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+clusterId: newValue
+
+	clusterId := self newValueForString: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CLUSTER_ID_FLAG
+		newValue: self clusterId
+		offset: 184
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+contentEncoding
+	^contentEncoding
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+contentEncoding: newValue
+
+	contentEncoding := self newValueForString: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CONTENT_ENCODING_FLAG
+		newValue: self contentEncoding
+		offset: 24
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+contentType
+	^contentType
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+contentType: newValue
+
+	contentType := self newValueForString: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CONTENT_TYPE_FLAG
+		newValue: self contentType
+		offset: 8
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+correlationId
+	^correlationId
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+correlationId: newValue
+
+	correlationId := self newValueForString: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CORELATION_ID_FLAG
+		newValue: self correlationId
+		offset: 64
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+deliveryMode
+	^deliveryMode
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+deliveryMode: newValue
+
+	| flagName |
+	flagName := #AMQP_BASIC_DELIVERY_MODE_FLAG.
+	newValue _validateMin: 1 max: 2.
+	deliveryMode := newValue.
+	self uint8At: 56 put: newValue.
+	^ newValue == 0
+		ifTrue: [self clearFlag: flagName]
+		ifFalse: [self setFlag: flagName].
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+expiration
+	^expiration
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+expiration: newValue
+
+	expiration := self newValueForString: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_EXPIRATION_FLAG
+		newValue: self expiration
+		offset: 96
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+flags
+	^flags
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+flags: newValue
+
+	newValue _validateMin: 0 max: 16rFFFFFFFF.
+	flags := newValue
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+headers
+	^headers
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+headers: aGsAmqpTable
+
+	| flagName |
+	headers := aGsAmqpTable.
+	flagName := #AMQP_BASIC_HEADERS_FLAG.
+	aGsAmqpTable
+		ifNil:
+			[self
+				clearFlag: flagName;
+				uint32At: 40 put: 0;
+				uint64At: 48 put: 0]
+		ifNotNil:
+			[self
+				setFlag: flagName;
+				uint32At: 40 put: aGsAmqpTable numEntries;
+				uint64At: 48 put: aGsAmqpTable entriesAddress]
 %
 category: 'Initialization'
-classmethod: GsAmqpExample
+method: GsAmqpBasicProperties
 initialize
 
-debugEnabled := false.
-randomString := self newRandomString.
-messages := Array new.
-self numberOfMessages timesRepeat:[ messages add: self newRandomString].
-badMessages := Array new.
-messages do:[:msg| badMessages add: ('BadMessage.', msg)].
+	^self
+		flags: 0 ;
+		deliveryMode: self class AMQP_DELIVERY_PERSISTENT ;
+		yourself 
+%
+category: 'Initialization'
+method: GsAmqpBasicProperties
+initializeFromC
+
+	self flags: (self uint32At: 0).
+	(self testFlag: #AMQP_BASIC_CONTENT_TYPE_FLAG)
+		ifTrue: [self contentType: (self stringFromAmqpBytesAtOffset: 8)].
+	(self testFlag: #AMQP_BASIC_CONTENT_ENCODING_FLAG)
+		ifTrue: [self contentEncoding: (self stringFromAmqpBytesAtOffset: 24)].
+	(self testFlag: #AMQP_BASIC_HEADERS_FLAG)
+		ifTrue: [self headers: (GsAmqpTable fromCPointer: self atOffset: 40) ].
+	(self testFlag: #AMQP_BASIC_DELIVERY_MODE_FLAG)
+		ifTrue: [self deliveryMode: (self uint8At: 56)].
+	(self testFlag: #AMQP_BASIC_PRIORITY_FLAG)
+		ifTrue: [self priority: (self uint8At: 57)].
+	(self testFlag: #AMQP_BASIC_CORRELATION_ID_FLAG)
+		ifTrue: [self correlationId: (self stringFromAmqpBytesAtOffset: 64)].
+	(self testFlag: #AMQP_BASIC_REPLY_TO_FLAG)
+		ifTrue: [self replyTo: (self stringFromAmqpBytesAtOffset: 80)].
+	(self testFlag: #AMQP_BASIC_EXPIRATION_FLAG)
+		ifTrue: [self expiration: (self stringFromAmqpBytesAtOffset: 96)].
+	(self testFlag: #AMQP_BASIC_MESSAGE_ID_FLAG)
+		ifTrue: [self messageId: (self stringFromAmqpBytesAtOffset: 112)].
+	(self testFlag: #AMQP_BASIC_TIMESTAMP_FLAG)
+		ifTrue: [self timestamp: (self uint64At: 128)].
+	(self testFlag: #AMQP_BASIC_TYPE_FLAG)
+		ifTrue: [self type: (self stringFromAmqpBytesAtOffset: 136)].
+	(self testFlag: #AMQP_BASIC_USER_ID_FLAG)
+		ifTrue: [self amqpUserId: (self stringFromAmqpBytesAtOffset: 152)].
+	(self testFlag: #AMQP_BASIC_APP_ID_FLAG)
+		ifTrue: [self appId: (self stringFromAmqpBytesAtOffset: 168)].
+	(self testFlag: #AMQP_BASIC_CLUSTER_ID_FLAG)
+		ifTrue: [self clusterId: (self stringFromAmqpBytesAtOffset: 184)].
+	^self
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+messageId
+	^messageId
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+messageId: newValue
+
+	messageId := self newValueForString: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_MESSAGE_ID_FLAG
+		newValue: self messageId
+		offset: 112
+%
+category: 'Private'
+method: GsAmqpBasicProperties
+newValueForString: aString
+
+	^aString ifNil: [nil] ifNotNil: [GsAmqpBytes fromString: aString]
+%
+category: 'Flags'
+method: GsAmqpBasicProperties
+postUpdateAmqpBytesWithBitFlag: aSymbol newValue: value offset: offset
+
+	value
+		ifNil:
+			[self
+				clearFlag: aSymbol;
+				clearAmqpBytesAtOffset: offset]
+		ifNotNil:
+			[self
+				setFlag: aSymbol;
+				storeAmqpBytes: value atOffset: offset].
+	^self
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+priority
+	^priority
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+priority: newValue
+
+	| flagName |
+	flagName := #AMQP_BASIC_PRIORITY_FLAG.
+	newValue _validateMin: 0 max: 9.
+	priority := newValue.
+	self uint8At: 57 put: newValue.
+	^ newValue == 0
+		ifTrue: [self clearFlag: flagName]
+		ifFalse: [self setFlag: flagName].
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+replyTo
+	^replyTo
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+replyTo: newValue
+
+	replyTo := self newValueForString: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_REPLY_TO_FLAG
+		newValue: self replyTo
+		offset: 80
+%
+category: 'Delivery'
+method: GsAmqpBasicProperties
+setDeliveryNonPersistent
+	^ self delivery: self class AMQP_DELIVERY_NONPERSISTENT
+%
+category: 'Delivery'
+method: GsAmqpBasicProperties
+setDeliveryPersistent
+	^ self delivery: self class AMQP_DELIVERY_PERSISTENT
+%
+category: 'Flags'
+method: GsAmqpBasicProperties
+setFlag: aSymbol
+
+self flags: (self flags bitOr: (self class perform: aSymbol)).
+^ self uint32At: 0 put: self flags ; yourself
+%
+category: 'C Memory'
+method: GsAmqpBasicProperties
+storeAmqpBytes: appIdBytes atOffset: offset
+
+	^self
+		uint64At: offset put: appIdBytes len;
+		uint64At: (offset + 8) put: appIdBytes bytesAddress;
+		yourself
+%
+category: 'Flags'
+method: GsAmqpBasicProperties
+testFlag: aSymbol
+	"Returns true if the flag is set, false if not"
+
+	^0 ~~ (self flags bitAnd: (self class perform: aSymbol))
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+timestamp
+	^timestamp
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+timestamp: newValue
+
+	| flagName |
+	flagName := #AMQP_BASIC_TIMESTAMP_FLAG.
+	timestamp := newValue.
+	self uint64At: 128 put: newValue.
+	^ newValue == 0
+		ifTrue: [self clearFlag: flagName]
+		ifFalse: [self setFlag: flagName].
+
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+type
+	^type
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+type: newValue
+	type := self newValueForString: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_TYPE_FLAG
+		newValue: self type
+		offset: 136
+%
+! ------------------- Remove existing behavior from GsAmqpTable
+removeAllMethods GsAmqpTable
+removeAllClassMethods GsAmqpTable
+! ------------------- Class methods for GsAmqpTable
+category: 'Instance Creation'
+classmethod: GsAmqpTable
+emptyTable
+
+^ self new
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTable
+newFromArrayOfPairs: array
+
+^(self new) initialize ; buildFromArrayOfPairs: array ; yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTable
+newFromDictionary: aDictionary
+
+^(self new) initialize ; buildFromDictionary: aDictionary ; yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTable
+newFromKeys: keyArray values: valueArray
+
+	^(self new)
+		initialize;
+		buildFromKeys: keyArray values: valueArray;
+		yourself
+%
+category: 'Constants'
+classmethod: GsAmqpTable
+sizeInC
+
+^ 16
+%
+! ------------------- Instance methods for GsAmqpTable
+category: 'Building'
+method: GsAmqpTable
+buildFromArrayOfPairs: array
+
+	^self
+		setEntries: (GsAmqpTableEntryArray newFromArrayOfPairs: array);
+		yourself
+%
+category: 'Building'
+method: GsAmqpTable
+buildFromDictionary: dict
+
+	^self
+		setEntries: (GsAmqpTableEntryArray newFromDictionary: dict);
+		yourself
+%
+category: 'Building'
+method: GsAmqpTable
+buildFromKeys: keyArray values: valueArray
+
+	^self
+		setEntries: (GsAmqpTableEntryArray newFromKeys: keyArray values: valueArray);
+		yourself
+%
+category: 'Accessing'
+method: GsAmqpTable
+entries
+	^entries
+%
+category: 'Updating'
+method: GsAmqpTable
+entries: newValue
+	entries := newValue
+%
+category: 'Accessing'
+method: GsAmqpTable
+entriesAddress
+
+^ self uint64At: 8
+%
+category: 'Initialization'
+method: GsAmqpTable
+initializeFromC
+
+^ self numEntries: (self int32At: 0) ;
+	entries: (GsAmqpTableEntryArray fromMemoryReferenceIn: self atOffset: 8 elements: self numEntries)
+	yourself.
+
+%
+category: 'Accessing'
+method: GsAmqpTable
+numEntries
+	^numEntries
+%
+category: 'Updating'
+method: GsAmqpTable
+numEntries: newValue
+	numEntries := newValue
+%
+category: 'Updating'
+method: GsAmqpTable
+setEntries: newValue
+
+	newValue
+		ifNil:
+			[entries := nil.
+			numEntries := 0.
+			self zeroMemory]
+		ifNotNil:
+			[newValue _validateClass: GsAmqpTableEntryArray.
+			entries := newValue.
+			self
+				uint32At: 0 put: (numEntries := newValue numElements);
+				uint64At: 8 put: newValue memoryAddress].
+	^self
+%
+! ------------------- Remove existing behavior from GsAmqpExchange
+removeAllMethods GsAmqpExchange
+removeAllClassMethods GsAmqpExchange
+! ------------------- Class methods for GsAmqpExchange
+category: 'Instance Creation'
+classmethod: GsAmqpExchange
+declareWithConnection: conn name: exchgName type: type channel: channelIdArg durable: durable autoDelete: autoDelete
+
+	|  result channelId |
+	channelId := channelIdArg
+				ifNil: [conn openNextChannel]
+				ifNotNil: [channelIdArg].
+	conn
+				declareExchangeNamed: exchgName
+				channel: channelId
+				type: type
+				durable: durable
+				autoDelete: autoDelete .
+
+	result := self new.
+	^result
+		connection: conn;
+		type: type;
+		channel: channelId;
+		name: exchgName;
+		durable: durable;
+		autoDelete: autoDelete;
+		 yourself
+%
+! ------------------- Instance methods for GsAmqpExchange
+category: 'Deleting'
+method: GsAmqpExchange
+deleteForceIfInUse: forceIfInUse
+
+"Deletes the receiver from the broker. If forceIfInUse is true, the exchange is deleted even if queues are still bound to it.
+If forceIfInUse is false, the exchange is only deleted if there are no queues bound, otherwise an exception is raised."
+
+	^self connection
+		deleteExchangeNamed: self name
+		channel: self channel
+		forceIfInUse:  forceIfInUse
+%
+category: 'Deleting'
+method: GsAmqpExchange
+deleteIfUnused
+
+
+^ self deleteForceIfInUse: false
+%
+category: 'Subclass Methods'
+method: GsAmqpExchange
+exchangKind
+
+^self subclassResponsibility: #exchangKind
+%
+category: 'Deleting'
+method: GsAmqpExchange
+forceDelete
+
+^ self deleteForceIfInUse: true
+%
+category: 'Publishing'
+method: GsAmqpExchange
+publishMessage: msg routingKey: routingKey mandatory: mandatory properties: props
+
+	self connection
+		publishMessage: msg
+		channel: self channel
+		exchange: self name
+		routingKey: routingKey
+		mandatory: mandatory
+		properties: props .
+	^ self
+%
+category: 'Accessing'
+method: GsAmqpExchange
+type
+	^type
+%
+category: 'Updating'
+method: GsAmqpExchange
+type: newValue
+	type := newValue
+%
+! ------------------- Remove existing behavior from GsAmqpTableEntryArray
+removeAllMethods GsAmqpTableEntryArray
+removeAllClassMethods GsAmqpTableEntryArray
+! ------------------- Class methods for GsAmqpTableEntryArray
+category: 'Constants'
+classmethod: GsAmqpTableEntryArray
+elementsToBytes: elements
+
+^ self sizeOfElement * elements
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntryArray
+fromMemoryReferenceIn: aCByteArray atOffset: offset elements: numElements
+
+"Does not allocate new memory. References existing memory at an address contained in aCByteArray at the given offset."
+
+	^(self
+		fromMemoryReferenceIn: aCByteArray
+		atOffset: offset
+		sizeInBytes: (self elementsToBytes: numElements)
+		initializeFromC: false)
+		elements: (Array new: numElements);
+		initializeFromC;
+		yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntryArray
+new
+
+"Use new: instead "
+^ self shouldNotImplement: #new
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntryArray
+new: numElements
+
+	| bytes result |
+	bytes := numElements * self sizeOfElement .
+	result := self gcMalloc: bytes.
+	^result
+		initialize;
+		elements: (Array new: numElements);
+		yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntryArray
+newFromArrayOfPairs: array
+
+	| size |
+	(size := array size) even
+		ifFalse: [self error: 'array of pairs size must be even'].
+	^(self new: size // 2)
+		initialize;
+		buildFromArrayOfPairs: array;
+		yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntryArray
+newFromDictionary: dict
+
+	^(self new: dict size)
+		initialize;
+		buildFromDictionary: dict;
+		yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntryArray
+newFromKeys: keyArray values: valueArray
+
+	| size |
+	(size := keyArray size) == valueArray size
+		ifFalse: [self error: 'size of arrays for keys and values must match'].
+	^(self new: size)
+		initialize;
+		buildFromKeys: keyArray values: valueArray;
+		yourself
+%
+category: 'Constants'
+classmethod: GsAmqpTableEntryArray
+sizeOfElement
+
+^ GsAmqpTableEntry sizeInC
+%
+! ------------------- Instance methods for GsAmqpTableEntryArray
+category: 'Adding'
+method: GsAmqpTableEntryArray
+add: anElement
+
+^ self shouldNotImplement: #add:
+%
+category: 'Adding'
+method: GsAmqpTableEntryArray
+addAll: aCollection
+
+^ self shouldNotImplement: #addAll:
+%
+category: 'Accessing'
+method: GsAmqpTableEntryArray
+at: index
+
+^self elements at: index
+%
+category: 'Updating'
+method: GsAmqpTableEntryArray
+at: oneBasedIdx put: obj
+
+	| offset  |
+
+"Don't allow the elements array to grow"
+	oneBasedIdx > elements size
+		ifTrue: [self _errorIndexOutOfRange: oneBasedIdx].
+"Store reference to obj to protect from GC"
+	self elements at: oneBasedIdx put: obj.
+"Compute C offset in receiver"
+	offset := self offsetForElementIndex: oneBasedIdx.
+	obj
+		ifNil:
+			[self "Clear C memory"
+				memset: 0
+				from: offset
+				to: (self sizeOfElement - 1)]
+		ifNotNil:
+			[obj _validateClass: GsAmqpTableEntry.
+			self "Copy element to C memory"
+				copyBytesFrom: obj
+				from: 1
+				to: self sizeOfElement
+				into: offset]
+%
+category: 'Building'
+method: GsAmqpTableEntryArray
+buildFromArrayOfPairs: array
+
+	| index |
+	index := 0.
+	1 to: array size
+		by: 2
+		do:
+			[:n |
+			index := index + 1.
+			self at: index
+				put: (GsAmqpTableEntry newForKey: (array at: n) value: (array at: n + 1))].
+	^self
+%
+category: 'Building'
+method: GsAmqpTableEntryArray
+buildFromDictionary: dict
+
+| index |
+index := 0.
+dict keysAndValuesDo:[:k :v|
+	index := index + 1.
+	self at: index put: (GsAmqpTableEntry newForKey: k value: v).
+].
+%
+category: 'Building'
+method: GsAmqpTableEntryArray
+buildFromKeys: keysArray values: valuesArray
+
+	| index |
+	index := 0.
+	1 to: keysArray size
+		do:
+			[:n |
+			index := index + 1.
+			self at: index
+				put: (GsAmqpTableEntry newForKey: (keysArray at: n)
+						value: (valuesArray at: n))].
+	^self
+%
+category: 'Accessing'
+method: GsAmqpTableEntryArray
+elements
+	^elements
+%
+category: 'Updating'
+method: GsAmqpTableEntryArray
+elements: newValue
+	elements := newValue
+%
+category: 'Initializing'
+method: GsAmqpTableEntryArray
+initializeFromC
+
+1 to: self elements size do:[:n|
+	self elements at: n put: (GsAmqpTableEntry fromCPointer: self atOffset: (self offsetForElementIndex: n)) ].
 ^ self
 %
 category: 'Accessing'
-classmethod: GsAmqpExample
-loginTimeoutMs
+method: GsAmqpTableEntryArray
+numElements
 
-^ loginTimeoutMs ifNil:[ self defaultLoginTimeoutMs ] ifNotNil:[ loginTimeoutMs ]
+^ elements size
 %
-category: 'Updating'
-classmethod: GsAmqpExample
-loginTimeoutMs: newValue
+category: 'Converting'
+method: GsAmqpTableEntryArray
+offsetForElementIndex: oneBasedIndex
 
-loginTimeoutMs := newValue
-%
-category: 'Example 99 (Perf Test)'
-classmethod: GsAmqpExample
-makeCommitRecords
-
-	| sys ug dt |
-	(sys := System) _cacheName: 'Committer'.
-	ug := UserGlobals.
-	dt := DateTime.
-	
-	[
-		[self committerShouldRun] whileTrue: 
-			[ug at: #foo put: dt now.
-			sys
-				commitTransaction;
-				_sleepMs: 250]]
-			ensure: 
-				[ug removeKey: #foo ifAbsent: [].
-				sys commitTransaction].
-	^true
-%
-category: 'Accessing'
-classmethod: GsAmqpExample
-messages
-
-^ messages 
-%
-category: 'Default Connections'
-classmethod: GsAmqpExample
-newConnection
-
-	^self
-		newConnectionToHost: self hostname
-		port: self port
-		userId: self userId
-		password: self password
-%
-category: 'Default Connections'
-classmethod: GsAmqpExample
-newConnectionToHost: hostname port: port userId: uid password: pw 
-
-^ self newConnectionToHost: hostname port: port userId: uid password: pw timeoutMs: self loginTimeoutMs
-%
-category: 'Default Connections'
-classmethod: GsAmqpExample
-newConnectionToHost: hostname port: port userId: uid password: pw timeoutMs: timeoutMs
-
-	^(GsAmqpConnection newOnHost: hostname port: port)
-		loginWithUserId: uid
-		password: pw
-		timeoutMs: timeoutMs
-%
-category: 'Initialization'
-classmethod: GsAmqpExample
-newRandomString
-
-^ (ByteArray withRandomBytes: 48) asBase64String
-%
-category: 'Default TLS Connections'
-classmethod: GsAmqpExample
-newTlsConnection
-
-	^self
-		newTlsConnectionToHost: self hostname
-		port: self tlsPort
-		userId: self userId
-		password: self password
-		caCertPath: self caCertPath
-		certPath: self certPath
-		keyPath: self privateKey
-		keyPassphrase: self privateKeyPassphrase
-		timeoutMs: self loginTimeoutMs
-%
-category: 'Default TLS Connections'
-classmethod: GsAmqpExample
-newTlsConnectionToHost: hostname port: port userId: uid password: password caCertPath: caCertPath certPath: certPath keyPath: keyPath keyPassphrase: passphrase timeoutMs: timeoutMs
-
-	^(GsAmqpTlsConnection 
-		newOnHost: hostname
-		port: port
-		caCertPath: caCertPath
-		certPath: certPath
-		keyPath: keyPath
-		keyPassphrase: passphrase)
-			loginWithUserId: uid
-			password: password
-			timeoutMs: timeoutMs
+^ (oneBasedIndex - 1) * self sizeOfElement
 %
 category: 'Constants'
-classmethod: GsAmqpExample
-numberOfMessages
+method: GsAmqpTableEntryArray
+sizeOfElement
 
-^ 64
+^ self class sizeOfElement
 %
-category: 'Example 99 (Perf Test)'
-classmethod: GsAmqpExample
-numMessagesForPerformanceTest
+! ------------------- Remove existing behavior from GsAmqpFieldValue
+removeAllMethods GsAmqpFieldValue
+removeAllClassMethods GsAmqpFieldValue
+! ------------------- Class methods for GsAmqpFieldValue
+category: 'Converting'
+classmethod: GsAmqpFieldValue
+amqpFieldKindForObject: obj
 
-^ 500000
+	^obj _isInteger
+		ifTrue: [self AMQP_FIELD_KIND_I64]
+		ifFalse:
+			[ | cls |
+			cls := obj class.
+			cls == Boolean
+				ifTrue: [self AMQP_FIELD_KIND_BOOLEAN]
+				ifFalse:
+					[cls isBytes
+						ifTrue: [self AMQP_FIELD_KIND_UTF8]
+						ifFalse: [self error: 'Invalid object']]]
 %
-category: 'Accessing'
-classmethod: GsAmqpExample
-password
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_ARRAY
 
-^ password ifNil:[ self defaultPassword] ifNotNil:[ password ]
+^ $A asInteger
 %
-category: 'Updating'
-classmethod: GsAmqpExample
-password: newValue
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_BOOLEAN
 
-password := newValue
+^ $t asInteger
 %
-category: 'Accessing'
-classmethod: GsAmqpExample
-port
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_BYTES
 
-^ port ifNil:[ self defaultPort ] ifNotNil:[ port ]
+^ $x asInteger
 %
-category: 'Updating'
-classmethod: GsAmqpExample
-port: newValue
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_DECIMAL
 
-port := newValue
+^ $D asInteger
 %
-category: 'Accessing'
-classmethod: GsAmqpExample
-privateKey
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_F32
 
-^ privateKey ifNil:[ self error: 'private key has not been set' ] ifNotNil:[ privateKey ]
+^ $f asInteger
 %
-category: 'Updating'
-classmethod: GsAmqpExample
-privateKey: newValue
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_F64
 
-privateKey := newValue
+^ $d asInteger
 %
-category: 'Accessing'
-classmethod: GsAmqpExample
-privateKeyPassphrase
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_I16
 
-^ privateKeyPassphrase ifNil:[ self defaultPrivateKeyPassphrase  ] ifNotNil:[ privateKeyPassphrase ]
+^ $s asInteger
 %
-category: 'Updating'
-classmethod: GsAmqpExample
-privateKeyPassphrase: newValue
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_I32
 
-privateKeyPassphrase := newValue
+^ $I asInteger
 %
-category: 'Accessing'
-classmethod: GsAmqpExample
-randomShortString
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_I64
 
-^ randomString copy size: 12
+^ $l asInteger
 %
-category: 'Accessing'
-classmethod: GsAmqpExample
-randomString
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_I8
 
-^ randomString
+^ $b asInteger
 %
-category: 'Accessing'
-classmethod: GsAmqpExample
-routingKey
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_TABLE
 
-^ 'RoutingKey.', self randomShortString
+^ $F asInteger
 %
-category: 'Example 10 (Acknowlegements 2)'
-classmethod: GsAmqpExample
-runConsumerExample10UseTls: useTls
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_TIMESTAMP
 
-"Example of a simple queue consumer using the built-in direct exchange using bulk acknowlegments for all messages received.
-Start the consumer first, then start the producer."
-
-	| conn routingKey queue env count exchgName chan results numExpected debug exampleNum|
-	exampleNum := 10.
-	debug := self debugEnabled.
-	conn := self getConnection: useTls.
-	numExpected := self numberOfMessages .
-	results := Array new.
-	chan := 1. "Channel we will use (SmallInteger)"
-	routingKey := self routingKey. "Routing key"
-	exchgName := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
-"Open a channel"
-	conn openChannelWithId: chan.
-"Declare the queue we will use. Let the broker choose the queue name"
-	queue := GsAmqpQueue
-				declareWithConnection: conn
-				durable: false
-				exclusive: false
-				autoDelete: true.
-	debug ifTrue:[GsFile gciLogServer: 'Queue name is ' , queue name].
-"Bind our queue to the built-in exchange"
-	conn
-		bindQueueWithName: queue name
-		toExchangeWithName: exchgName
-		channel: chan
-		routingKey: routingKey.
-"Tell broker we want to start consuming this queue and that we will send acknowlegements"
-	queue beginConsumingWithNoLocal: false noAck: false.
-	count := 0.
-	env := GsAmqpEnvelope new.
-	self setConsumerReady: exampleNum.
-"Loop until we have received all messages"
-	[count == numExpected] whileFalse: 
-			[(queue consumeMessageInto: env timeoutMs: 3000)
-				ifTrue: 
-					[count := count + 1.
-					results add: env messageBody.
-					debug ifTrue:[GsFile gciLogServer: 'msg ' , count asString , ': ' , env messageBody]. ]
-				ifFalse: [debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...']]].
-"Send acknowlegement to the broker for all messages"
-	queue ackEnvelopeAndAllPrevious: env. 
-"Tell the broker to send us no more messages"
-	self setConsumerNotReady.
-	queue stopConsuming.
-"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
-	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
-	count > numExpected ifTrue:[ debug ifTrue:[GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')]].
-"Unbind the queue from the exchange"
-	queue unbind.
-"Delete the queue"
-	queue deleteIfSafe.
-"Close channel"
-	conn closeChannelWithId: chan.
-"Close socket connection"
-	conn closeConnection.
-"Answer if strings from sender match what we expect"
-	^results = self messages
+^ $T asInteger
 %
-category: 'Example 11 (Polling with GsSocket)'
-classmethod: GsAmqpExample
-runConsumerExample11UseTls: useTls
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_U16
 
-"Example of a simple queue consumer using the built-in direct exchange using a GsSocket to poll the broker.
-Start the consumer first, then start the producer."
-
-	| conn routingKey queue env count exchgName chan results numExpected debug gsSock exampleNum|
-	exampleNum := 11.
-	debug := self debugEnabled.
-	conn := self getConnection: useTls.
-	numExpected := self numberOfMessages .
-	results := Array new.
-	chan := 1. "Channel we will use (SmallInteger)"
-	routingKey := self routingKey. "Routing key"
-	exchgName := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
-"Open a channel"
-	conn openChannelWithId: chan.
-"Get a GsSocket representing the socket to the broker. Do not close or modify this socket!"
-	gsSock := conn asGsSocket .
-"Declare the queue we will use. Let the broker choose the queue name"
-	queue := GsAmqpQueue
-				declareWithConnection: conn
-				durable: false
-				exclusive: false
-				autoDelete: true.
-	debug ifTrue:[GsFile gciLogServer: 'Queue name is ' , queue name].
-"Bind our queue to the built-in exchange"
-	conn
-		bindQueueWithName: queue name
-		toExchangeWithName: exchgName
-		channel: chan
-		routingKey: routingKey.
-"Tell broker we want to start consuming this queue"
-	queue beginConsumingWithNoLocal: false noAck: true.
-	count := 0.
-	env := GsAmqpEnvelope new.
-	self setConsumerReady: exampleNum.
-"Loop until we have received all messages"
-	[count == numExpected] whileFalse:[
-"Use GsSocket methods to know when we have more data to read"
-			[conn hasDataReady or:[gsSock readWillNotBlockWithin: 1000]] 
-				whileFalse:[ debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...' ]].
-			(queue consumeMessageInto: env timeoutMs: 0)
-				ifTrue: 
-					[count := count + 1.
-					results add: env messageBody.
-					debug ifTrue:[GsFile gciLogServer: 'msg ' , count asString , ': ' , env messageBody]. ]
-				ifFalse: [debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...']]].
-"Do not close or otherwise modify gsSock"
-	gsSock := nil.
-"Tell the broker to send us no more messages"
-	queue stopConsuming.
-	self setConsumerNotReady.
-"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
-	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
-	count > numExpected ifTrue:[ debug ifTrue:[GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')]].
-"Unbind the queue from the exchange"
-	queue unbind.
-"Delete the queue"
-	queue deleteIfSafe.
-"Close channel"
-	conn closeChannelWithId: chan.
-"Close socket connection"
-	conn closeConnection.
-"Answer if strings from sender match what we expect"
-	^results = self messages
+^ $u asInteger
 %
-category: 'Example 12 (Binary Messages)'
-classmethod: GsAmqpExample
-runConsumerExample12UseTls: useTls
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_U32
 
-"Example of a simple queue consumer using the built-in direct exchange to receive encrypted binary messages.
-Start the consumer first, then start the producer."
-
-	| conn routingKey queue env count exchgName chan results numExpected debug key salt exampleNum|
-	exampleNum := 12 .
-	debug := self debugEnabled.
-	conn := self getConnection: useTls.
-	numExpected := self numberOfMessages .
-	results := Array new.
-	chan := 1. "Channel we will use (SmallInteger)"
-	routingKey := self routingKey. "Routing key"
-	exchgName := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
-"Open a channel"
-	conn openChannelWithId: chan.
-"Declare the queue we will use. Let the broker choose the queue name"
-	queue := GsAmqpQueue
-				declareWithConnection: conn
-				durable: false
-				exclusive: false
-				autoDelete: true.
-	debug ifTrue:[GsFile gciLogServer: 'Queue name is ' , queue name].
-"Bind our queue to the built-in exchange"
-	conn
-		bindQueueWithName: queue name
-		toExchangeWithName: exchgName
-		channel: chan
-		routingKey: routingKey.
-"Tell broker we want to start consuming this queue"
-	queue beginConsumingWithNoLocal: false noAck: true.
-	count := 0.
-"Get an envelope for handling binary data"
-	env := GsAmqpEnvelope newForBinaryMessage.
-	key := self encryptionKey.
-	salt := self encryptionSalt.
-	self setConsumerReady: exampleNum.
-"Loop until we have received all messages"
-	[count == numExpected] whileFalse: 
-			[(queue consumeMessageInto: env timeoutMs: 3000)
-				ifTrue: 
-					[ | msg |
-					count := count + 1.
-					results add: (msg := env messageBody aesDecryptWith256BitKey: key salt: salt). 
-					debug ifTrue:[GsFile gciLogServer: 'msg ' , count asString , ': ' , env messageBody]. ]
-				ifFalse: [debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...']]].
-"Tell the broker to send us no more messages"
-	queue stopConsuming.
-	self setConsumerNotReady.
-"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
-	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
-	count > numExpected ifTrue:[ debug ifTrue:[GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')]].
-"Unbind the queue from the exchange"
-	queue unbind.
-"Delete the queue"
-	queue deleteIfSafe.
-"Close channel"
-	conn closeChannelWithId: chan.
-"Close socket connection"
-	conn closeConnection.
-"Answer if strings from sender match what we expect"
-	^results = self messages
+^ $i asInteger
 %
-category: 'Example 01 (Simple producer/consumer)'
-classmethod: GsAmqpExample
-runConsumerExample1UseTls: useTls
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_U64
 
-"Example of a simple queue consumer using the built-in direct exchange.
-Start the consumer first, then start the producer."
-
-^ self runSimpleConsumerExample: 1 useTls: useTls
+^ $L asInteger
 %
-category: 'Example 02 (Publisher Confirms 1)'
-classmethod: GsAmqpExample
-runConsumerExample2UseTls: useTls
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_U8
 
-^ self runSimpleConsumerExample: 2 useTls: useTls
+^ $B asInteger
 %
-category: 'Example 03 (Publisher Confirms 2)'
-classmethod: GsAmqpExample
-runConsumerExample3UseTls: useTls
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_UTF8
 
-^ self runSimpleConsumerExample: 3 useTls: useTls
+^ $S asInteger
 %
-category: 'Example 04 (Transactions)'
-classmethod: GsAmqpExample
-runConsumerExample4UseTls: useTls
-
-^ self runSimpleConsumerExample: 4 useTls: useTls
-%
-category: 'Example 05 (Direct Exchange)'
-classmethod: GsAmqpExample
-runConsumerExample5UseTls: useTls
-
-"Example of a simple queue consumer using newly created direct exchange.
-Start the consumer first, then start the producer."
-
-	| conn routingKey queue env count exchg exchgName chan results numExpected debug exampleNum |
-	exampleNum := 5.
-	debug := self debugEnabled.
-	conn := self getConnection: useTls.
-	numExpected := self numberOfMessages .
-	results := Array new.
-	chan := 1. "Channel we will use (SmallInteger)"
-	routingKey := self routingKey. "Routing key"
-	exchgName := self directExchangeName .
-"Open a channel"
-	conn openChannelWithId: chan.
-"Create a new direct exchange"
-	conn deleteExchangeNamed: exchgName  channel: chan forceIfInUse:  true.
-	exchg := GsAmqpDirectExchange declareWithConnection: conn name: exchgName channel: chan durable: false autoDelete: false .
-
-"Declare the queue we will use. Let the broker choose the queue name"
-	queue := GsAmqpQueue
-				declareWithConnection: conn
-				durable: false
-				exclusive: false
-				autoDelete: false.
-	debug ifTrue:[GsFile gciLogServer: 'Queue name is ' , queue name].
-"Bind the queue to our new exchange"
-	queue bindToExchange: exchg routingKey: routingKey .
-"Tell broker we want to start consuming this queue"
-	queue beginConsumingWithNoLocal: false noAck: true.
-	count := 0.
-	env := GsAmqpEnvelope new.
-	self setConsumerReady: exampleNum.
-"Loop until we have received all messages"
-	[count == numExpected] whileFalse: 
-			[(queue consumeMessageInto: env timeoutMs: 3000)
-				ifTrue: 
-					[count := count + 1.
-					results add: env messageBody.
-					debug ifTrue:[GsFile gciLogServer: 'msg ' , count asString , ': ' , env messageBody]. ]
-				ifFalse: [debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...']]].
-"Tell the broker to send us no more messages"
-	queue stopConsuming.
-	self setConsumerNotReady.
-"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
-	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
-	count > numExpected ifTrue:[ debug ifTrue:[GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')]].
-"Unbind the queue from the exchange"
-	queue unbind.
-"Delete the queue"
-	queue forceDelete.
-"Delete the exchange if the producer is done with it"
-	exchg forceDelete.
-"Close channel"
-	conn closeChannelWithId: chan.
-"Close socket connection"
-	conn closeConnection.
-"Answer if strings from sender match what we expect"
-	^results = self messages
-%
-category: 'Example 06 (Fanout Exchange)'
-classmethod: GsAmqpExample
-runConsumerExample6UseTls: useTls
-
-"Example of a simple queue consumer using a newly created fanout exchange.
-Start the consumer first, then start the producer."
-
-	| conn queue env count exchg exchgName chan results numExpected debug exampleNum|
-	exampleNum := 6.
-	debug := self debugEnabled.
-	conn := self getConnection: useTls.
-	numExpected := self numberOfMessages .
-	results := Array new.
-	chan := 1. "Channel we will use (SmallInteger)"
-	exchgName := self fanoutExchangeName .
-"Open a channel"
-	conn openChannelWithId: chan.
-"Create a new fanout exchange"
-	conn deleteExchangeNamed: exchgName  channel: chan forceIfInUse:  true.
-	exchg := GsAmqpFanoutExchange declareWithConnection: conn name: exchgName channel: chan durable: false autoDelete: false .
-
-"Declare the queue we will use. Let the broker choose the queue name"
-	queue := GsAmqpQueue
-				declareWithConnection: conn
-				durable: false
-				exclusive: false
-				autoDelete: false.
-	debug ifTrue:[GsFile gciLogServer: 'Queue name is ' , queue name].
-"Bind the queue to our new exchange, Fanout exchanges do not use a routing key."
-	queue bindToExchange: exchg.
-"Tell broker we want to start consuming this queue"
-	queue beginConsumingWithNoLocal: false noAck: true.
-	count := 0.
-	env := GsAmqpEnvelope new.
-	self setConsumerReady: exampleNum.
-"Loop until we have received all messages"
-	[count == numExpected] whileFalse: 
-			[(queue consumeMessageInto: env timeoutMs: 3000)
-				ifTrue: 
-					[count := count + 1.
-					results add: env messageBody.
-					debug ifTrue:[GsFile gciLogServer: 'msg ' , count asString , ': ' , env messageBody]. ]
-				ifFalse: [debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...']]].
-"Tell the broker to send us no more messages"
-	queue stopConsuming.
-	self setConsumerNotReady.
-"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
-	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
-	count > numExpected ifTrue:[ debug ifTrue:[GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')]].
-"Unbind the queue from the exchange"
-	queue unbind.
-"Delete the queue"
-	queue forceDelete.
-"Delete the exchange if the producer is done with it"
-	exchg forceDelete.
-"Close channel"
-	conn closeChannelWithId: chan.
-"Close socket connection"
-	conn closeConnection.
-"Answer if strings from sender match what we expect"
-	^results = self messages
-%
-category: 'Example 07 (Headers Exchange)'
-classmethod: GsAmqpExample
-runConsumerExample7UseTls: useTls
-
-"Example of a simple queue consumer using a newly created headers exchange.
-Start the consumer first, then start the producer."
-
-	| conn queue env count exchg exchgName chan results numExpected debug matchKeyDict exampleNum|
-	exampleNum := 7.
-	debug := self debugEnabled.
-	conn := self getConnection: useTls.
-	numExpected := self numberOfMessages .
-	results := Array new.
-	chan := 1. "Channel we will use (SmallInteger)"
-	exchgName := self headersExchangeName .
-"Open a channel"
-	conn openChannelWithId: chan.
-"Create a new headers exchange"
-	conn deleteExchangeNamed: exchgName  channel: chan forceIfInUse:  true.
-	exchg := GsAmqpHeadersExchange declareWithConnection: conn name: exchgName channel: chan durable: false autoDelete: false .
-
-"Declare the queue we will use. Let the broker choose the queue name"
-	queue := GsAmqpQueue
-				declareWithConnection: conn
-				durable: false
-				exclusive: false
-				autoDelete: false.
-	debug ifTrue:[GsFile gciLogServer: 'Queue name is ' , queue name].
-"Create a dictionary of header match keys and values."
-	(matchKeyDict := KeyValueDictionary new) at: 'Header1' put: 'foo' ; at: 'Header2' put: 'bar' .
-"Bind new queue to new exchange such that the exchange will route messages to the queue if ANY 
-of the headers match."
-	queue bindToHeadersExchange: exchg matchAnyInDictionary: matchKeyDict.
-"Tell broker we want to start consuming this queue"
-	queue beginConsumingWithNoLocal: false noAck: true.
-	count := 0.
-	env := GsAmqpEnvelope new.
-	self setConsumerReady: exampleNum.
-"Loop until we have received all messages"
-	[count == numExpected] whileFalse: 
-			[(queue consumeMessageInto: env timeoutMs: 3000)
-				ifTrue: 
-					[count := count + 1.
-					results add: env messageBody.
-					debug ifTrue:[GsFile gciLogServer: 'msg ' , count asString , ': ' , env messageBody]. ]
-				ifFalse: [debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...']]].
-"Tell the broker to send us no more messages"
-	queue stopConsuming.
-	self setConsumerNotReady.
-"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
-	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
-	count > numExpected ifTrue:[ debug ifTrue:[GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')]].
-"Unbind the queue from the exchange"
-	queue unbind.
-"Delete the queue"
-	queue forceDelete.
-"Delete the exchange if the producer is done with it"
-	exchg forceDelete.
-"Close channel"
-	conn closeChannelWithId: chan.
-"Close socket connection"
-	conn closeConnection.
-"Answer if strings from sender match what we expect"
-	^results = self messages
-%
-category: 'Example 08 (Topic Exchange)'
-classmethod: GsAmqpExample
-runConsumerExample8UseTls: useTls
-
-"Example of a simple queue consumer using a newly created topic exchange.
-Start the consumer first, then start the producer."
-
-	| conn queue env count exchg exchgName chan results numExpected debug bindkey exampleNum|
-	exampleNum := 8.
-	debug := self debugEnabled.
-	conn := self getConnection: useTls.
-	numExpected := self numberOfMessages .
-	results := Array new.
-	chan := 1. "Channel we will use (SmallInteger)"
-	exchgName := self topicExchangeName .
-
-"For topic exchanges, in the bind key $* represents exactly 1 word and $# represents 0 or more words. 
-So for bind key someTopic.*, someTopic.bindkey will match but someTopic.bindkey.bad will not."
-	bindkey := 'someTopic.*'. 
-
-"Open a channel"
-	conn openChannelWithId: chan.
-"Create a new topic exchange"
-	conn deleteExchangeNamed: exchgName  channel: chan forceIfInUse:  true.
-	exchg := GsAmqpTopicExchange declareWithConnection: conn name: exchgName channel: chan durable: false autoDelete: false .
-
-"Declare the queue we will use. Let the broker choose the queue name"
-	queue := GsAmqpQueue
-				declareWithConnection: conn
-				durable: false
-				exclusive: false
-				autoDelete: false.
-	debug ifTrue:[GsFile gciLogServer: 'Queue name is ' , queue name].
-"Bind new queue to new exchange"
-	queue bindToExchange: exchg routingKey: bindkey .
-"Tell broker we want to start consuming this queue"
-	queue beginConsumingWithNoLocal: false noAck: true.
-	count := 0.
-	env := GsAmqpEnvelope new.
-	self setConsumerReady: exampleNum.
-"Loop until we have received all messages"
-	[count == numExpected] whileFalse: 
-			[(queue consumeMessageInto: env timeoutMs: 3000)
-				ifTrue: 
-					[count := count + 1.
-					results add: env messageBody.
-					debug ifTrue:[GsFile gciLogServer: 'msg ' , count asString , ': ' , env messageBody]. ]
-				ifFalse: [debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...']]].
-"Tell the broker to send us no more messages"
-	queue stopConsuming.
-	self setConsumerNotReady.
-"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
-	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
-	count > numExpected ifTrue:[ debug ifTrue:[GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')]].
-"Unbind the queue from the exchange"
-	queue unbind.
-"Delete the queue"
-	queue forceDelete.
-"Delete the exchange if the producer is done with it"
-	exchg forceDelete.
-"Close channel"
-	conn closeChannelWithId: chan.
-"Close socket connection"
-	conn closeConnection.
-"Answer if strings from sender match what we expect"
-	^results = self messages
-%
-category: 'Example 99 (Perf Test)'
-classmethod: GsAmqpExample
-runConsumerExample99UseTls: useTls
-
-"Example of a simple queue consumer using the built-in direct exchange.
-Start the consumer first, then start the producer."
-
-	| conn routingKey queue env count exchgName chan numExpected sys abortCount startNs endNs exampleNum |
-	exampleNum := 99.
-	(sys := System)
-		_cacheName: 'Consumer';
-		sessionCacheStatAt: 0 put: 0 ;
-		transactionMode: #manualBegin;
-		abortTransaction.
-	abortCount := 0.
-	conn := self getConnection: useTls.
-	numExpected := self numMessagesForPerformanceTest.
-	chan := 1. "Channel we will use (SmallInteger)"
-	routingKey := self routingKey. "Routing key"
-	exchgName := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
-"Open a channel"
-	conn openChannelWithId: chan.
-"Declare the queue we will use. Let the broker choose the queue name"
-	queue := GsAmqpQueue
-				declareWithConnection: conn
-				durable: false
-				exclusive: false
-				autoDelete: true.
-	GsFile gciLogServer: 'Queue name is ' , queue name.
-"Bind our queue to the built-in exchange"
-	conn
-		bindQueueWithName: queue name
-		toExchangeWithName: exchgName
-		channel: chan
-		routingKey: routingKey.
-"Tell broker we want to start consuming this queue"
-	queue beginConsumingWithNoLocal: false noAck: true.
-	env := GsAmqpEnvelope new.
-	self setConsumerReady: exampleNum.
-"Wait here for the producer to start sending messages"
-	[queue consumeMessageInto: env timeoutMs: 3000]
-		whileFalse:[ GsFile gciLogServer: 'Waiting for a message...'].
-	GsFile gciLogServer: 'Started receiving messages.'.
-	count := 1.
-	sys enableSignaledAbortError .
-	startNs := sys timeNs.
-"Loop until we have received all messages"
-	[ [
-			[count == numExpected] whileFalse: [
-				(queue consumeMessageInto: env timeoutMs: 3000)
-					ifTrue:[count := count + 1.
-"Tell RabbitMQ to cleanup memory every 1000 messages"
-						count \\ 1000 == 0 ifTrue: [conn maybeReleaseBuffers].
-						sys sessionCacheStatAt: 0 put: count]
-					ifFalse: [GsFile gciLogServer: 'Waiting for a message...']
-			 ]
-		] on: TransactionBacklog do:[:ex | abortCount := abortCount + 1.
-						sys abortTransaction; enableSignaledAbortError.
-						ex resume].
-		endNs := sys timeNs.
-	] ensure:[sys transactionMode: #autoBegin ; abortTransaction. self setConsumerNotReady ].
-	sys sessionCacheStatAt: 0 put: 0.
-"Tell the broker to send us no more messages"
-	queue stopConsuming.
-"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
-	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
-	count > numExpected ifTrue:[ GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')].
-"Unbind the queue from the exchange"
-	queue unbind.
-"Delete the queue"
-	queue deleteIfSafe.
-"Close channel"
-	conn closeChannelWithId: chan.
-"Close socket connection"
-	conn closeConnection.
-"Answer if strings from sender match what we expect"
-	GsFile
-		gciLogServer: 'Received ' , count asString , ' messages in '
-				, ((endNs - startNs) // 1000000) asString , ' ms and handled '
-				, abortCount asString , ' SigAborts'.
-	^true
-%
-category: 'Example 09 (Acknowlegments 1)'
-classmethod: GsAmqpExample
-runConsumerExample9UseTls: useTls
-
-"Example of a simple queue consumer using the built-in direct exchange using acknowlegments for each message received.
-Start the consumer first, then start the producer."
-
-	| conn routingKey queue env count exchgName chan results numExpected debug exampleNum|
-	exampleNum := 9.
-	debug := self debugEnabled.
-	conn := self getConnection: useTls.
-	numExpected := self numberOfMessages .
-	results := Array new.
-	chan := 1. "Channel we will use (SmallInteger)"
-	routingKey := self routingKey. "Routing key"
-	exchgName := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
-"Open a channel"
-	conn openChannelWithId: chan.
-"Declare the queue we will use. Let the broker choose the queue name"
-	queue := GsAmqpQueue
-				declareWithConnection: conn
-				durable: false
-				exclusive: false
-				autoDelete: true.
-	debug ifTrue:[GsFile gciLogServer: 'Queue name is ' , queue name].
-"Bind our queue to the built-in exchange"
-	conn
-		bindQueueWithName: queue name
-		toExchangeWithName: exchgName
-		channel: chan
-		routingKey: routingKey.
-"Tell broker we want to start consuming this queue and that we will send acknowlegements"
-	queue beginConsumingWithNoLocal: false noAck: false.
-	count := 0.
-	env := GsAmqpEnvelope new.
-	self setConsumerReady: exampleNum.
-"Loop until we have received all messages"
-	[count == numExpected] whileFalse: 
-			[(queue consumeMessageInto: env timeoutMs: 3000)
-				ifTrue: 
-					[count := count + 1.
-					results add: env messageBody.
-					queue ackEnvelope: env. "Send acknowlegement to the broker"
-					debug ifTrue:[GsFile gciLogServer: 'msg ' , count asString , ': ' , env messageBody]. ]
-				ifFalse: [debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...']]].
-"Tell the broker to send us no more messages"
-	queue stopConsuming.
-	self setConsumerNotReady.
-"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
-	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
-	count > numExpected ifTrue:[ debug ifTrue:[GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')]].
-"Unbind the queue from the exchange"
-	queue unbind.
-"Delete the queue"
-	queue deleteIfSafe.
-"Close channel"
-	conn closeChannelWithId: chan.
-"Close socket connection"
-	conn closeConnection.
-"Answer if strings from sender match what we expect"
-	^results = self messages
-%
-category: 'Examples (Consumer)'
-classmethod: GsAmqpExample
-runConsumerExampleNumber: num useTls: useTls
-
-| sym |
-
-sym := ('runConsumerExample', num asString, 'UseTls:') asSymbol.
-^ self perform: sym with: useTls
-
-%
-category: 'Example 10 (Acknowlegements 2)'
-classmethod: GsAmqpExample
-runProducerExample10UseTls: useTls
-
-^ self runSimpleProducerExample: 10 useTls: useTls
-%
-category: 'Example 11 (Polling with GsSocket)'
-classmethod: GsAmqpExample
-runProducerExample11UseTls: useTls
-
-"Example of a simple queue producer using the built-in direct exchange.
-Start the consumer first, then start the producer."
-
-^self runSimpleProducerExample: 11 useTls: useTls
-%
-category: 'Example 12 (Binary Messages)'
-classmethod: GsAmqpExample
-runProducerExample12UseTls: useTls
-
-"Example of a simple queue producer using the built-in direct exchange to send encrypted strings as binary messages.
-Start the consumer first, then start the producer."
-
-	| conn routingKey exchg chan result key salt payload exampleNum|
-	exampleNum := 12.
-	conn := self getConnection: useTls.
-	result := Array new.
-	chan := 1. "Channel we will use (SmallInteger)"
-	routingKey := self routingKey. "Routing key"
-	exchg := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
-"Open a channel"
-	conn openChannelWithId: chan.
-"Get enryption key and salt byte arrays"
-	key := self encryptionKey.
-	salt := self encryptionSalt.
-	payload := ByteArray new.
-"Wait for consumer to be ready"
-	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
-"Publish all messages"
-	self messages do:[:msg|
-"Encrypt"
-			msg aesEncryptWith256BitKey: key salt: salt into: payload.
-"Publish the message to the exchange"
-			conn
-				publishMessage: payload
-				channel: chan
-				exchange: exchg
-				routingKey: routingKey
-				mandatory: false
-				properties: nil].
-"Close channel"
-	conn closeChannelWithId: chan.
-"Close socket connection"
-	conn closeConnection.
-	^ true
-%
-category: 'Example 01 (Simple producer/consumer)'
-classmethod: GsAmqpExample
-runProducerExample1UseTls: useTls
-
-"Example of a simple queue producer using the built-in direct exchange.
-Start the consumer first, then start the producer."
-
-	| conn routingKey exchg chan result exampleNum |
-	exampleNum := 1.
-	conn := self getConnection: useTls.
-	result := Array new.
-	chan := 1. "Channel we will use (SmallInteger)"
-	routingKey := self routingKey. "Routing key"
-	exchg := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
-"Open a channel"
-	conn openChannelWithId: chan.
-"Wait for consumer to be ready"
-	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
-"Publish all messages"
-	self messages do:[:msg|
-"Publish the message to the exchange"
-			conn
-				publishMessage: msg
-				channel: chan
-				exchange: exchg
-				routingKey: routingKey
-				mandatory: false
-				properties: nil].
-"Close channel"
-	conn closeChannelWithId: chan.
-"Close socket connection"
-	conn closeConnection.
-	^ true
-%
-category: 'Example 02 (Publisher Confirms 1)'
-classmethod: GsAmqpExample
-runProducerExample2UseTls: useTls
-
-"Example of a producer use publisher confirms to confirm every message before the next message is sent."
-
-	| routingKey conn exchgName publisher  debug count exampleNum|
-	exampleNum := 2.
-	debug := self debugEnabled .
-	conn := self getConnection: useTls.
-	routingKey := self routingKey.
-	exchgName :=  GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
-
-"opens a new dedicated channel and enables publisher confirms"
-	publisher := GsAmqpConfirmedMessagePublisher
-				newForConnection: conn
-				exchange: exchgName
-				routingKey: routingKey
-				mandatory: false.
-	count := 0.
-"Wait for consumer to be ready"
-	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
-"Publish all messages"
-	self messages
-		do: 
-			[:msg |
-			| confirmed msgObj |
-			count := count + 1.
-"Publish the message to the exchange"
-			msgObj := publisher publishMessageString: msg.
-			debug ifTrue:[GsFile gciLogServer: 'Sent message ' , count asString , ' waiting for ACK'].
-"Poll for confirmation"
-			[(confirmed := publisher pollForConfirmsWithTimeoutMs: 1000) size == 0]
-				whileTrue: [debug ifTrue:[GsFile gciLogServer: ('Still waiting for confirmation of message ', count asString)]].
-			debug ifTrue:[confirmed do:[:e |
-					GsFile gciLogServer: 'Got confirmation for msg ' , e id asString , ': '
-								, e state asString]]].
-"Close socket connection"
-	conn closeConnection.
-	^true
-%
-category: 'Example 03 (Publisher Confirms 2)'
-classmethod: GsAmqpExample
-runProducerExample3UseTls: useTls
-	"Example of a simple queue producer using the built-in direct exchange.
-	All messages are sent before looking for any publisher confirms. This allows for fewer round trips to the 
-	broker because the broker may confirm multiple messages with a single response.
-	Start the consumer first, then start the producer."
-
-	| bindkey debug count conn exchg publisher undeliverable ok exampleNum |
-	exampleNum := 3.
-	debug := self debugEnabled.
-	bindkey := self routingKey.
-	exchg := GsAmqpDirectExchange defaultName.	"Name of a built-in exchange"
-	conn := self getConnection: useTls.
-"Open a new channel and enable publisher confirms"
-	publisher := GsAmqpConfirmedMessagePublisher
-				newForConnection: conn
-				exchange: exchg
-				routingKey: bindkey
-				mandatory: true.
-"Wait for consumer to be ready"
-	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
-"Publish messages all at once"
-	count := 0.
-	self messages do: 
-			[:msg |
-			| msgObj |
-			count := count + 1.
-			"Publish the message to the exchange"
-			msgObj := publisher publishMessageString: msg.
-			debug ifTrue: [GsFile gciLogServer: ('Sent message ' , count asString)]].
-
-"Poll for confirmations until all confirms are received."
-	[publisher publishedMessages size > 0] whileTrue: 
-			[| results |
-			debug
-				ifTrue: 
-					[GsFile
-						gciLogServer: ('Waiting on ' , publisher publishedMessages size asString
-								, ' outstanding acks')].
-			results := publisher pollForConfirmsWithTimeoutMs: 100.
-			debug
-				ifTrue: 
-					[results size == 0
-						ifTrue: [GsFile gciLogServer: ('Got nothing after waiting 100 ms')]
-						ifFalse: 
-							[results do: 
-									[:msg |
-									GsFile gciLogServer: ('Got result for msg ' , msg id asString , ': '
-												, msg state asString)]]]].
-	undeliverable := publisher undeliverableMessageCount.
-	ok := undeliverable size == 0.
-	(ok not and:[debug]) ifTrue:[
-			GsFile gciLogServer: (undeliverable asString, ' messages were not delivered by the broker ('
-								, publisher returnedMessageCount asString , ' returned, '
-								, publisher rejectedMessageCount asString , ' rejected)')
-	].
-
-"Close broker connection"
-	conn closeConnection.
-	^ok
-%
-category: 'Example 04 (Transactions)'
-classmethod: GsAmqpExample
-runProducerExample4UseTls: useTls
-
-"Example of a simple queue producer using the built-in direct exchange and RabbitMQ transactions.
-Start the consumer first, then start the producer."
-
-	| bindkey conn exchg chan exampleNum|
-	exampleNum := 4.
-	chan := 1. "Channel we will use (SmallInteger)"
-	bindkey := self routingKey.
-	exchg := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
-"Connect to remote host"
-	conn := self getConnection: useTls.
-"Open a channel"
-	conn openChannelWithId: chan.
-"Put channel in transaction mode"
-	conn makeChannelTransactional: chan.
-"Wait for consumer to be ready"
-	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
-"Publish bad messages"
-	self badMessages do:[:badMsg|
-			conn
-				publishMessage: badMsg
-				channel: chan
-				exchange: exchg
-				routingKey: bindkey
-				mandatory: false
-				properties: nil.
-			].
-"Rollback the transaction. Consumer should not see any of these messages."
-	conn rollbackTransactionOnChannel: chan.
-"Now publish good messages"
-	self messages do:[:msg|
-"Publish the message to the exchange"
-			conn
-				publishMessage: msg
-				channel: chan
-				exchange: exchg
-				routingKey: bindkey
-				mandatory: false
-				properties: nil.
-			].
-"Commit. Consumer should now receive all messages."
-	conn commitTransactionOnChannel: chan.
-"Close socket connection"
-	conn closeConnection.
-	^true
-%
-category: 'Example 05 (Direct Exchange)'
-classmethod: GsAmqpExample
-runProducerExample5UseTls: useTls
-
-"Example of a simple queue consumer using a newly created direct exchange.
-Start the consumer first, then start the producer."
-
-	| conn routingKey exchg exchgName chan  debug exampleNum|
-	exampleNum := 5.
-	debug := self debugEnabled.
-	conn := self getConnection: useTls.
-	chan := 1. "Channel we will use (SmallInteger)"
-	routingKey := self routingKey. "Routing key"
-"Open a channel"
-	conn openChannelWithId: chan.
-"declare the exchange. Consumer already created it"
-	exchgName := self directExchangeName .
-	exchg := GsAmqpDirectExchange declareWithConnection: conn name: exchgName channel: chan durable: false autoDelete: false .
-"Wait for consumer to be ready"
-	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
-"Publish all messages"
-	self messages do:[:msg|
-"Publish the message to the exchange"
-			exchg 
-				publishMessage: msg
-				routingKey: routingKey
-				mandatory: false
-				properties: nil].
-"Close channel"
-	conn closeChannelWithId: chan.
-"Close socket connection"
-	conn closeConnection.
-	^true
-%
-category: 'Example 06 (Fanout Exchange)'
-classmethod: GsAmqpExample
-runProducerExample6UseTls: useTls
-
-"Example of a simple queue consumer using a newly created fanout exchange.
-Start the consumer first, then start the producer."
-
-	| conn exchg exchgName chan  debug exampleNum |
-	exampleNum := 6.
-	debug := self debugEnabled.
-	conn := self getConnection: useTls.
-	chan := 1. "Channel we will use (SmallInteger)"
-"Open a channel"
-	conn openChannelWithId: chan.
-"declare the exchange. Consumer already created it"
-	exchgName := self fanoutExchangeName .
-	exchg := GsAmqpFanoutExchange declareWithConnection: conn name: exchgName channel: chan durable: false autoDelete: false .
-"Wait for consumer to be ready"
-	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
-"Publish all messages"
-	self messages do:[:msg|
-"Publish the message to the exchange"
-			exchg 
-				publishMessage: msg
-				mandatory: false
-				properties: nil].
-"Close channel"
-	conn closeChannelWithId: chan.
-"Close socket connection"
-	conn closeConnection.
-	^true
-%
-category: 'Example 07 (Headers Exchange)'
-classmethod: GsAmqpExample
-runProducerExample7UseTls: useTls
-
-"Example of a simple queue consumer using a newly created headers exchange.
-Start the consumer first, then start the producer."
-
-	| conn exchg exchgName chan  debug keys badValues goodValues badProps goodProps exampleNum |
-	exampleNum := 7 .
-	debug := self debugEnabled.
-	conn := self getConnection: useTls.
-	chan := 1. "Channel we will use (SmallInteger)"
-"Open a channel"
-	conn openChannelWithId: chan.
-"declare the exchange. Consumer already created it"
-	exchgName := self headersExchangeName .
-	exchg := GsAmqpHeadersExchange declareWithConnection: conn name: exchgName channel: chan durable: false autoDelete: false .
-	keys := Array with: 'Header1' with: 'Header2'.
-	badValues := Array with: 'NoMatchHere' with: 'NoMatchThere' .
-	goodValues := Array with: 'foo' with: 'bar' .
-	badProps := GsAmqpHeadersExchange generateMessagePropertiesFromHeadersKeys: keys values: badValues  .
-	goodProps := GsAmqpHeadersExchange generateMessagePropertiesFromHeadersKeys: keys values: goodValues.
-"Wait for consumer to be ready"
-	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
-"Publish bad messages using badProps to the exchange. Consumer should not see these."
-	self badMessages do:[:msg|
-			exchg publishMessage: msg routingKey: nil mandatory: false properties: badProps ].
-
-"Publish good messages using goodProps to the exchange. Consumer should see all these."
-	self messages do:[:msg|
-			exchg publishMessage: msg routingKey: nil mandatory: false properties: goodProps ].
-
-"Close channel"
-	conn closeChannelWithId: chan.
-"Close socket connection"
-	conn closeConnection.
-	^true
-%
-category: 'Example 08 (Topic Exchange)'
-classmethod: GsAmqpExample
-runProducerExample8UseTls: useTls
-
-"Example of a simple queue consumer using a newly created topic exchange.
-Start the consumer first, then start the producer."
-
-	| conn exchg exchgName chan  debug goodBindKey badBindKey exampleNum |
-	exampleNum := 8.
-	debug := self debugEnabled.
-	conn := self getConnection: useTls.
-	chan := 1. "Channel we will use (SmallInteger)"
-"Open a channel"
-	conn openChannelWithId: chan.
-"declare the exchange. Consumer already created it"
-	exchgName := self topicExchangeName .
-	exchg := GsAmqpTopicExchange declareWithConnection: conn name: exchgName channel: chan durable: false autoDelete: false .
-	goodBindKey := 'someTopic.bindkey'.
-	badBindKey := 'someTopic.bindkey.bad'.
-"Wait for consumer to be ready"
-	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
-"Publish bad messages using badBindKey to the exchange. Consumer should not see these."
-	self badMessages do:[:msg|
-			exchg publishMessage: msg routingKey: badBindKey mandatory: false properties: nil ].
-
-"Publish good messages using goodBindKey to the exchange. Consumer should see all these."
-	self messages do:[:msg|
-			exchg publishMessage: msg routingKey: goodBindKey mandatory: false properties: nil ].
-
-"Close channel"
-	conn closeChannelWithId: chan.
-"Close socket connection"
-	conn closeConnection.
-	^true
-%
-category: 'Example 99 (Perf Test)'
-classmethod: GsAmqpExample
-runProducerExample99UseTls: useTls
-
-"Example of a simple queue producer using the built-in direct exchange to send 1M messages while handling SigAborts outside of transaction.
-Starts an external session to generate commit records.
-Start the consumer first, then start the producer."
-
-	| conn routingKey exchg chan sys numSent numToSend idx max messages abortCount startNs endNs sess exampleNum|
-	exampleNum := 99 .
-	conn := self getConnection: useTls.
-	abortCount := 0.
-	sys := System.
-	sys _cacheName: 'Producer' ; 		
-		sessionCacheStatAt: 0 put: 0 ;
-		transactionMode: #manualBegin;
-		abortTransaction.
-
-	chan := 1. "Channel we will use (SmallInteger)"
-	routingKey := self routingKey. "Routing key"
-	exchg := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
-"Open a channel"
-	conn openChannelWithId: chan.
-"Publish all messages"
-	messages := self messages.
-	numToSend := self numMessagesForPerformanceTest.
-	numSent := 0.
-	max := messages size.
-	idx := 1.
-	abortCount := 0.
-"Start external session"
-	sess := (GsTsExternalSession newDefault) login ; yourself .
-	self setRunCommitter: true.
-"Wait for consumer to be ready"
-	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
-"tell external session to create 4 commit records per second"
-	sess nbExecute: 'GsAmqpExample makeCommitRecords' .
-	startNs := sys timeNs.
-	[ [
-			[numSent == numToSend] whileFalse:[
-				conn
-					publishMessage: (messages at: idx)
-					channel: chan
-					exchange: exchg
-					routingKey: routingKey
-					mandatory: false
-					properties: nil.
-			numSent := numSent + 1.
-			idx := idx + 1.
-			idx > max ifTrue:[ idx := 1 ].
-"Tell RabbitMQ to cleanup memory every 1000 messages"
-			numSent \\ 1000 == 0 ifTrue: [conn maybeReleaseBuffers].
-			sys sessionCacheStatAt: 0 put: numSent.
-			].
-		] on: TransactionBacklog do:[:ex | abortCount := abortCount + 1.
-						sys abortTransaction; enableSignaledAbortError.
-						ex resume].
-		endNs := System timeNs.
-	] ensure:[ sess logout. sys transactionMode: #autoBegin ; abortTransaction. self setRunCommitter: false ].
-	sys sessionCacheStatAt: 0 put: 0.
-"Close channel"
-	conn closeChannelWithId: chan.
-"Close socket connection"
-	conn closeConnection.
-	GsFile gciLogServer: ('Sent unexpected token->', numSent asString, ' messages in ',
-		 ((endNs - startNs) // 1000000) asString, 
-		' ms and handled ', abortCount asString, ' SigAborts').
-	^ true
-%
-category: 'Example 09 (Acknowlegments 1)'
-classmethod: GsAmqpExample
-runProducerExample9UseTls: useTls
-
-^ self runSimpleProducerExample: 9 useTls: useTls
-%
-category: 'Examples (Producer)'
-classmethod: GsAmqpExample
-runProducerExampleNumber: num useTls: useTls
-
-| sym |
-
-sym := ('runProducerExample', num asString, 'UseTls:') asSymbol.
-^ self perform: sym with: useTls
-
-%
-category: 'Examples (Consumer)'
-classmethod: GsAmqpExample
-runSimpleConsumerExample: exampleNum useTls: useTls
-
-"Example of a simple queue consumer using the built-in direct exchange.
-Start the consumer first, then start the producer."
-
-	| conn routingKey queue env count exchgName chan results numExpected debug |
-	debug := self debugEnabled.
-	conn := self getConnection: useTls.
-	numExpected := self numberOfMessages .
-	results := Array new.
-	chan := 1. "Channel we will use (SmallInteger)"
-	routingKey := self routingKey. "Routing key"
-	exchgName := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
-"Open a channel"
-	conn openChannelWithId: chan.
-"Declare the queue we will use. Let the broker choose the queue name"
-	queue := GsAmqpQueue
-				declareWithConnection: conn
-				durable: false
-				exclusive: false
-				autoDelete: true.
-	debug ifTrue:[GsFile gciLogServer: 'Queue name is ' , queue name].
-"Bind our queue to the built-in exchange"
-	conn
-		bindQueueWithName: queue name
-		toExchangeWithName: exchgName
-		channel: chan
-		routingKey: routingKey.
-"Tell broker we want to start consuming this queue"
-	queue beginConsumingWithNoLocal: false noAck: true.
-	count := 0.
-	env := GsAmqpEnvelope new.
-	self setConsumerReady: exampleNum .
-"Loop until we have received all messages"
-	[count == numExpected] whileFalse: 
-			[(queue consumeMessageInto: env timeoutMs: 3000)
-				ifTrue: 
-					[count := count + 1.
-					results add: env messageBody.
-					debug ifTrue:[GsFile gciLogServer: 'msg ' , count asString , ': ' , env messageBody]. ]
-				ifFalse: [debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...']]].
-"Tell the broker to send us no more messages"
-	queue stopConsuming.
-	self setConsumerNotReady.
-"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
-	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
-	count > numExpected ifTrue:[ debug ifTrue:[GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')]].
-"Unbind the queue from the exchange"
-	queue unbind.
-"Delete the queue"
-	queue deleteIfSafe.
-"Close channel"
-	conn closeChannelWithId: chan.
-"Close socket connection"
-	conn closeConnection.
-"Answer if strings from sender match what we expect"
-	^results = self messages
-%
-category: 'Examples (Producer)'
-classmethod: GsAmqpExample
-runSimpleProducerExample: exampleNum useTls: useTls
-
-"Example of a simple queue producer using the built-in direct exchange.
-Start the consumer first, then start the producer."
-
-	| conn routingKey exchg chan result |
-	conn := self getConnection: useTls.
-	result := Array new.
-	chan := 1. "Channel we will use (SmallInteger)"
-	routingKey := self routingKey. "Routing key"
-	exchg := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
-"Open a channel"
-	conn openChannelWithId: chan.
-"Wait for consumer to be ready"
-	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
-"Publish all messages"
-	self messages do:[:msg|
-"Publish the message to the exchange"
-			conn
-				publishMessage: msg
-				channel: chan
-				exchange: exchg
-				routingKey: routingKey
-				mandatory: false
-				properties: nil].
-"Close channel"
-	conn closeChannelWithId: chan.
-"Close socket connection"
-	conn closeConnection.
-	^ true
-%
-category: 'Producer - Consumer Coordination'
-classmethod: GsAmqpExample
-setConsumerNotReady
-
-^ self setConsumerReady: 0
-%
-category: 'Producer - Consumer Coordination'
-classmethod: GsAmqpExample
-setConsumerReady: exampleNum
-
-System sharedCounter: self sharedCounterId setValue: exampleNum
-%
-category: 'Example 99 (Perf Test)'
-classmethod: GsAmqpExample
-setRunCommitter: bool
-
-System sharedCounter: (self committerSharedCounterId) setValue: bool asBit
-%
-category: 'Producer - Consumer Coordination'
-classmethod: GsAmqpExample
-sharedCounterId
-
-"Shared counter use to coordinate producers and consumers"
-
-^ 0
-%
-category: 'Accessing'
-classmethod: GsAmqpExample
-tlsPort
-
-^ tlsPort ifNil:[ self defaultTlsPort ] ifNotNil:[ tlsPort ]
-%
-category: 'Updating'
-classmethod: GsAmqpExample
-tlsPort: newValue
-
-tlsPort := newValue
-%
-category: 'Accessing'
-classmethod: GsAmqpExample
-topicExchangeName
-
-^ self exchangeNameForKind: 'topic'
-%
-category: 'Accessing'
-classmethod: GsAmqpExample
-userId
-
-^ userId ifNil:[ self defaultUserId ] ifNotNil:[ userId ]
-%
-category: 'Updating'
-classmethod: GsAmqpExample
-userId: newValue
-
-userId := newValue
-%
-category: 'Producer - Consumer Coordination'
-classmethod: GsAmqpExample
-waitForConsumerReady: exampleNum upTo: ms
-
-	^(self waitForConsumerReadyNoError: exampleNum upTo: ms)
-		ifTrue: [true]
-		ifFalse: 
-			[self error: ('timeout waiting for consumer for example ', exampleNum asString, 'to start after ' , ms asString
-						, ' milliseconds')]
-%
-category: 'Producer - Consumer Coordination'
-classmethod: GsAmqpExample
-waitForConsumerReadyNoError: exampleNum upTo: ms
-
-	| endNs sys |
-	sys := System.
-	endNs := sys timeNs + (ms * 1000000).
-	[sys timeNs < endNs] whileTrue: [(
-		self consumerIsReady: exampleNum) ifTrue: [^true].
-		sys _sleepMs: 100.
-	].
-	^false "timed out"
-%
-category: 'Producer - Consumer Coordination'
-classmethod: GsAmqpExample
-waitForConsumerTimeMs
-
-"Time in milliseconds for the consumer to be ready."
-
-^ 60000
-%
-! ------------------- Instance methods for GsAmqpExample
-! ------------------- Remove existing behavior from GsAmqpTlsConnection
-removeAllMethods GsAmqpTlsConnection
-removeAllClassMethods GsAmqpTlsConnection
-! ------------------- Class methods for GsAmqpTlsConnection
-category: 'Constants'
-classmethod: GsAmqpTlsConnection
-defaultPort
-
-^ 5671
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_VOID
+
+^ $V asInteger
 %
 category: 'Instance Creation'
-classmethod: GsAmqpTlsConnection
-newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyObj: aGsTlsPrivateKey 
+classmethod: GsAmqpFieldValue
+newForObject: anObject
 
+"anObject must be a Boolean, SmallInteger or String"
 
-	| result |
-	aGsTlsPrivateKey _validateClass: GsTlsPrivateKey .
-	result := self newOnHost: hostOrIp port: aPort.
-	^result
-		caCertPath: caCertPath;
-		certPath: certPath;
-		privateKey: aGsTlsPrivateKey;
-		yourself
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTlsConnection
-newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyPath: keyPath
-
-"Use this method only if the private key file referenced by keyPath does not have a passphrase."
-
-	| result |
-	result := self newOnHost: hostOrIp port: aPort.
-	^result
-		caCertPath: caCertPath;
-		certPath: certPath;
-		privateKey: keyPath;
-		yourself
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTlsConnection
-newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyPath: keyPath keyPassphrase: passPhrase
-
-"Use this method if the private key file requires a passphrase."
-
-	"Note: amqp_ssl_socket_set_key_passwd() does not appear to work.
-As a workaround, we decrypt and load the private key using GsTlsPrivateKey, then pass the PEM string to RabbitMQ."
-
-	| aGsTlsPrivateKey |
-	aGsTlsPrivateKey := GsTlsPrivateKey newFromPemFile: keyPath
-				withPassphrase: passPhrase.
-	^self
-		newOnHost: hostOrIp
-		port: aPort
-		caCertPath: caCertPath
-		certPath: certPath
-		keyObj: aGsTlsPrivateKey
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTlsConnection
-newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyString: keyString keyPassphrase: passPhrase
-
-"Use this method when you have a private key in the form of a PEM string. pass phrase must be the pass phrase for the private key or nil
-if the key requires no pass phrase."
-
-"Note: amqp_ssl_socket_set_key_passwd() does not appear to work.
-As a workaround, we decrypt and load the private key using GsTlsPrivateKey, then pass the PEM string to RabbitMQ."
-
-	|  aGsTlsPrivateKey |
-	aGsTlsPrivateKey := GsTlsPrivateKey newFromPemString: keyString withPassphrase: passPhrase .
-	^ self newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyObj: aGsTlsPrivateKey 
-%
-! ------------------- Instance methods for GsAmqpTlsConnection
-category: 'Accessing'
-method: GsAmqpTlsConnection
-caCertPath
-	^caCertPath
-%
-category: 'Updating'
-method: GsAmqpTlsConnection
-caCertPath: newValue
-	caCertPath := newValue
-%
-category: 'Accessing'
-method: GsAmqpTlsConnection
-certPath
-	^certPath
-%
-category: 'Updating'
-method: GsAmqpTlsConnection
-certPath: newValue
-	certPath := newValue
-%
-category: 'Initialization'
-method: GsAmqpTlsConnection
-initialize
-
-	super initialize.
-	^self
-		verifyPeer: false;
-		verifyHostname: false;
-		yourself
-%
-category: 'Initialization'
-method: GsAmqpTlsConnection
-newSocket
-
-self validateConnection.
-^ self library amqp_ssl_socket_new_:  self connection
-%
-category: 'Accessing'
-method: GsAmqpTlsConnection
-privateKey
-	^privateKey
-%
-category: 'Updating'
-method: GsAmqpTlsConnection
-privateKey: newValue
-	privateKey := newValue
-%
-category: 'Private'
-method: GsAmqpTlsConnection
-setCaCert
-
-| rc |
-self validateCaCertPath; validateSocket .
-rc := self library amqp_ssl_socket_set_cacert_: self socket _: self caCertPath.
-^ rc == 0
-	ifTrue:[ self ]
-	ifFalse:[ GsRabbitMqError signalWithErrorCode: rc library: self library ]
-%
-category: 'Private'
-method: GsAmqpTlsConnection
-setCertAndKey
-
-	| rc |
-	self validateCertPath ; validatePrivateKey .
-	(self privateKey isKindOf: GsTlsPrivateKey)
-		ifTrue: [^self setCertAndKeyFromPemString].
-	self validateSocket .
-	rc := self library
-		amqp_ssl_socket_set_key_: self socket
-		_: self certPath
-		_: self privateKey.
-	^rc == 0
-		ifTrue: [self]
-		ifFalse: [GsRabbitMqError signalWithErrorCode: rc library: self library]
-%
-category: 'Private'
-method: GsAmqpTlsConnection
-setCertAndKeyFromPemString
-"privateKey is a GsTlsPrivateKey"
-	| rc pem cba key |
-	self validateSocket ; validatePrivateKey ; validateCertPath .
-	(key := self privateKey) _validateClass: GsTlsPrivateKey .
-	pem := key asPemString.
-	cba := CByteArray withAll: pem.
-	rc := self library
-				amqp_ssl_socket_set_key_buffer_: self socket
-				_: self certPath
-				_: cba
-				_: pem size.
-"Workaround for Issue 723: amqp_ssl_socket_set_key_buffer returns 1 on success instead of AMQP_STATUS_OK (0)
-accept rc ==1 as Success.  See: https://github.com/alanxz/rabbitmq-c/issues/723"
-	^(rc == 1 or:[ rc == 0])
-		ifTrue: [self]
-		ifFalse: [GsRabbitMqError signalWithErrorCode: rc library: self library]
-%
-category: 'Private'
-method: GsAmqpTlsConnection
-setSocketOptions
-
-
-^ self setCaCert ; 
-	setCertAndKey ;
-	setVerifyPeer ; 
-	setVerifyHostname ;
+^ (self new)
+	 initialize ;
+	setValue: anObject ;
 	yourself
 %
-category: 'Private'
-method: GsAmqpTlsConnection
-setVerifyHostname
+category: 'Constants'
+classmethod: GsAmqpFieldValue
+sizeInC
 
-| val |
-self validateSocket .
-(val := self verifyHostname) _validateClass: Boolean .
-self library amqp_ssl_socket_set_verify_hostname_: self socket _: val asBit .
-^ self
+^ 24
 %
-category: 'Private'
-method: GsAmqpTlsConnection
-setVerifyPeer
+! ------------------- Instance methods for GsAmqpFieldValue
+category: 'Initialization'
+method: GsAmqpFieldValue
+initializeFromC
 
-| val |
-self validateSocket .
-(val := self verifyPeer) _validateClass: Boolean .
-self library amqp_ssl_socket_set_verify_peer_: self socket _: val asBit.
-^ self
-%
-category: 'Validation'
-method: GsAmqpTlsConnection
-validateCaCertPath
-
-	| obj |
-	(obj := self caCertPath)
-		ifNil: [self error: 'path to CA cert has not been set']
-		ifNotNil: [obj _validateClass: String].
-	^self
-%
-category: 'Validation'
-method: GsAmqpTlsConnection
-validateCertPath
-
-	| obj |
-	(obj := self certPath)
-		ifNil: [self error: 'path to cert has not been set']
-		ifNotNil: [obj _validateClass: String].
-	^self
-%
-category: 'Validation'
-method: GsAmqpTlsConnection
-validatePrivateKey
-
-	| obj |
-	(obj := self privateKey)
-		ifNil: [self error: 'private key has not been set']
-		ifNotNil: [obj _validateClasses: { String . GsTlsPrivateKey } ].
+	self kind: (self uint8At: 0).
+	self value: (self valueIsBoolean
+				ifTrue: [0 ~~ self uint32At: 8]
+				ifFalse:
+					[self valueIsString
+						ifTrue:
+							[| amqpBytes |
+							amqpBytes := GsAmqpBytes fromCPointer: self atOffset: 8.
+							Association newWithKey: amqpBytes convertToString value: amqpBytes]
+						ifFalse:
+							[self valueIsInteger
+								ifTrue: [self int64At: 8]
+								ifFalse: [self error: 'Unsupported value kind ' , self kind asString]]]).
 	^self
 %
 category: 'Accessing'
-method: GsAmqpTlsConnection
-verifyHostname
-	^verifyHostname
+method: GsAmqpFieldValue
+kind
+	^kind
 %
 category: 'Updating'
-method: GsAmqpTlsConnection
-verifyHostname: newValue
-	verifyHostname := newValue
+method: GsAmqpFieldValue
+kind: newValue
+	kind := newValue
+%
+category: 'Updating'
+method: GsAmqpFieldValue
+setValue: aValue
+
+"Currently only Booleans, Integers and Strings are supported for values"
+	value := aValue. "Reference the incoming arg. We may override this later"
+	aValue
+		ifNil: [self memset: 0 from: 0 to: -1]
+		ifNotNil:
+			[aValue _isInteger
+				ifTrue: [self storeInteger: aValue]
+				ifFalse:
+					[aValue class == Boolean
+						ifTrue: [self storeBoolean: aValue]
+						ifFalse: [self storeStringAsUtf8: aValue]]].
+	^self
+%
+category: 'Updating'
+method: GsAmqpFieldValue
+storeBoolean: aBoolean
+
+^ self uint8At: 0 put: (kind := self class AMQP_FIELD_KIND_BOOLEAN) ;
+	uint64At: 8 put: aBoolean asBit ;
+	yourself
+%
+category: 'Updating'
+method: GsAmqpFieldValue
+storeInteger: anInt
+
+^ self uint8At: 0 put: (kind := self class AMQP_FIELD_KIND_I64) ;
+	int64At: 8 put: anInt ;
+	yourself
+%
+category: 'Updating'
+method: GsAmqpFieldValue
+storeStringAsUtf8: aString
+
+"Create a new GsAmqpBytes object. We must reference it so it does not get garbage collected."
+| amqpBytes |
+value := Association newWithKey: aString value: (amqpBytes := GsAmqpBytes fromStringEncodeAsUtf8: aString).
+^ self uint8At: 0 put: (kind := self class AMQP_FIELD_KIND_UTF8) ;
+	uint64At: 8 put: amqpBytes len ;
+	uint64At: 16 put: amqpBytes bytesAddress ;
+	yourself
 %
 category: 'Accessing'
-method: GsAmqpTlsConnection
-verifyPeer
-	^verifyPeer
+method: GsAmqpFieldValue
+value
+	^value
 %
 category: 'Updating'
-method: GsAmqpTlsConnection
-verifyPeer: newValue
-	verifyPeer := newValue
+method: GsAmqpFieldValue
+value: newValue
+	value := newValue
+%
+category: 'Testing'
+method: GsAmqpFieldValue
+valueIsBoolean
+
+| myKind |
+myKind := self kind.
+myKind _validateClass: SmallInteger.
+^ myKind == self class AMQP_FIELD_KIND_BOOLEAN
+%
+category: 'Testing'
+method: GsAmqpFieldValue
+valueIsInteger
+
+| myKind |
+myKind := self kind.
+myKind _validateClass: SmallInteger.
+"Hard code values for performance"
+(myKind == 66 or:[ myKind == 73 ]) ifTrue:[ ^ true ].
+(myKind == 76 or:[ myKind == 98 ]) ifTrue:[ ^ true ].
+(myKind == 105 or:[ myKind == 108 ]) ifTrue:[ ^ true ].
+(myKind == 115 or:[ myKind == 117 ]) ifTrue:[ ^ true ].
+^ false
+
+%
+category: 'Testing'
+method: GsAmqpFieldValue
+valueIsString
+
+| myKind |
+myKind := self kind.
+myKind _validateClass: SmallInteger.
+^ myKind == self class AMQP_FIELD_KIND_UTF8
 %
 ! ------------------- Remove existing behavior from GsAmqpRpcReply
 removeAllMethods GsAmqpRpcReply
@@ -3340,728 +2632,1902 @@ method: GsAmqpRpcReply
 replyType: newValue
 	replyType := newValue
 %
-! ------------------- Remove existing behavior from GsAmqpFieldValue
-removeAllMethods GsAmqpFieldValue
-removeAllClassMethods GsAmqpFieldValue
-! ------------------- Class methods for GsAmqpFieldValue
-category: 'Converting'
-classmethod: GsAmqpFieldValue
-amqpFieldKindForObject: obj
-
-	^obj _isInteger
-		ifTrue: [self AMQP_FIELD_KIND_I64]
-		ifFalse: 
-			[ | cls |
-			cls := obj class.
-			cls == Boolean
-				ifTrue: [self AMQP_FIELD_KIND_BOOLEAN]
-				ifFalse: 
-					[cls isBytes
-						ifTrue: [self AMQP_FIELD_KIND_UTF8]
-						ifFalse: [self error: 'Invalid object']]]
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_ARRAY
-
-^ $A asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_BOOLEAN
-
-^ $t asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_BYTES
-
-^ $x asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_DECIMAL
-
-^ $D asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_F32
-
-^ $f asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_F64
-
-^ $d asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_I16
-
-^ $s asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_I32
-
-^ $I asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_I64
-
-^ $l asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_I8
-
-^ $b asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_TABLE
-
-^ $F asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_TIMESTAMP
-
-^ $T asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_U16
-
-^ $u asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_U32
-
-^ $i asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_U64
-
-^ $L asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_U8
-
-^ $B asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_UTF8
-
-^ $S asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_VOID
-
-^ $V asInteger
-%
-category: 'Instance Creation'
-classmethod: GsAmqpFieldValue
-newForObject: anObject
-
-"anObject must be a Boolean, SmallInteger or String"
-
-^ (self new)
-	 initialize ;
-	setValue: anObject ;
-	yourself
-%
+! ------------------- Remove existing behavior from GsAmqpTlsConnection
+removeAllMethods GsAmqpTlsConnection
+removeAllClassMethods GsAmqpTlsConnection
+! ------------------- Class methods for GsAmqpTlsConnection
 category: 'Constants'
-classmethod: GsAmqpFieldValue
-sizeInC
+classmethod: GsAmqpTlsConnection
+defaultPort
 
-^ 24
-%
-! ------------------- Instance methods for GsAmqpFieldValue
-category: 'Initialization'
-method: GsAmqpFieldValue
-initializeFromC
-
-	self kind: (self uint8At: 0).
-	self value: (self valueIsBoolean
-				ifTrue: [0 ~~ self uint32At: 8]
-				ifFalse: 
-					[self valueIsString
-						ifTrue: 
-							[| amqpBytes |
-							amqpBytes := GsAmqpBytes fromCPointer: self atOffset: 8.
-							Association newWithKey: amqpBytes convertToString value: amqpBytes]
-						ifFalse: 
-							[self valueIsInteger
-								ifTrue: [self int64At: 8]
-								ifFalse: [self error: 'Unsupported value kind ' , self kind asString]]]).
-	^self
-%
-category: 'Accessing'
-method: GsAmqpFieldValue
-kind
-	^kind
-%
-category: 'Updating'
-method: GsAmqpFieldValue
-kind: newValue
-	kind := newValue
-%
-category: 'Updating'
-method: GsAmqpFieldValue
-setValue: aValue
-
-"Currently only Booleans, Integers and Strings are supported for values"
-	value := aValue. "Reference the incoming arg. We may override this later"
-	aValue
-		ifNil: [self memset: 0 from: 0 to: -1]
-		ifNotNil: 
-			[aValue _isInteger
-				ifTrue: [self storeInteger: aValue]
-				ifFalse: 
-					[aValue class == Boolean
-						ifTrue: [self storeBoolean: aValue]
-						ifFalse: [self storeStringAsUtf8: aValue]]].
-	^self
-%
-category: 'Updating'
-method: GsAmqpFieldValue
-storeBoolean: aBoolean
-
-^ self uint8At: 0 put: (kind := self class AMQP_FIELD_KIND_BOOLEAN) ;
-	uint64At: 8 put: aBoolean asBit ;
-	yourself
-%
-category: 'Updating'
-method: GsAmqpFieldValue
-storeInteger: anInt
-
-^ self uint8At: 0 put: (kind := self class AMQP_FIELD_KIND_I64) ;
-	int64At: 8 put: anInt ;
-	yourself
-%
-category: 'Updating'
-method: GsAmqpFieldValue
-storeStringAsUtf8: aString
-
-"Create a new GsAmqpBytes object. We must reference it so it does not get garbage collected."
-| amqpBytes |
-value := Association newWithKey: aString value: (amqpBytes := GsAmqpBytes fromStringEncodeAsUtf8: aString). 
-^ self uint8At: 0 put: (kind := self class AMQP_FIELD_KIND_UTF8) ;
-	uint64At: 8 put: amqpBytes len ;
-	uint64At: 16 put: amqpBytes bytesAddress ;
-	yourself
-%
-category: 'Accessing'
-method: GsAmqpFieldValue
-value
-	^value
-%
-category: 'Updating'
-method: GsAmqpFieldValue
-value: newValue
-	value := newValue
-%
-category: 'Testing'
-method: GsAmqpFieldValue
-valueIsBoolean
-
-| myKind |
-myKind := self kind.
-myKind _validateClass: SmallInteger.
-^ myKind == self class AMQP_FIELD_KIND_BOOLEAN
-%
-category: 'Testing'
-method: GsAmqpFieldValue
-valueIsInteger
-
-| myKind |
-myKind := self kind.
-myKind _validateClass: SmallInteger.
-"Hard code values for performance"
-(myKind == 66 or:[ myKind == 73 ]) ifTrue:[ ^ true ].
-(myKind == 76 or:[ myKind == 98 ]) ifTrue:[ ^ true ].
-(myKind == 105 or:[ myKind == 108 ]) ifTrue:[ ^ true ].
-(myKind == 115 or:[ myKind == 117 ]) ifTrue:[ ^ true ].
-^ false
-
-%
-category: 'Testing'
-method: GsAmqpFieldValue
-valueIsString
-
-| myKind |
-myKind := self kind.
-myKind _validateClass: SmallInteger.
-^ myKind == self class AMQP_FIELD_KIND_UTF8
-%
-! ------------------- Remove existing behavior from GsAmqpEntity
-removeAllMethods GsAmqpEntity
-removeAllClassMethods GsAmqpEntity
-! ------------------- Class methods for GsAmqpEntity
-! ------------------- Instance methods for GsAmqpEntity
-category: 'Accessing'
-method: GsAmqpEntity
-autoDelete
-	^autoDelete
-%
-category: 'Updating'
-method: GsAmqpEntity
-autoDelete: newValue
-	autoDelete := newValue
-%
-category: 'Accessing'
-method: GsAmqpEntity
-channel
-	^channel
-%
-category: 'Updating'
-method: GsAmqpEntity
-channel: newValue
-	channel := newValue
-%
-category: 'Accessing'
-method: GsAmqpEntity
-connection
-	^connection
-%
-category: 'Updating'
-method: GsAmqpEntity
-connection: newValue
-	connection := newValue
-%
-category: 'Accessing'
-method: GsAmqpEntity
-durable
-	^durable
-%
-category: 'Updating'
-method: GsAmqpEntity
-durable: newValue
-	durable := newValue
-%
-category: 'Accessing'
-method: GsAmqpEntity
-name
-	^name
-%
-category: 'Updating'
-method: GsAmqpEntity
-name: newValue
-	name := newValue
-%
-! ------------------- Remove existing behavior from GsAmqpTableEntryArray
-removeAllMethods GsAmqpTableEntryArray
-removeAllClassMethods GsAmqpTableEntryArray
-! ------------------- Class methods for GsAmqpTableEntryArray
-category: 'Constants'
-classmethod: GsAmqpTableEntryArray
-elementsToBytes: elements 
-
-^ self sizeOfElement * elements
+^ 5671
 %
 category: 'Instance Creation'
-classmethod: GsAmqpTableEntryArray
-fromMemoryReferenceIn: aCByteArray atOffset: offset elements: numElements
+classmethod: GsAmqpTlsConnection
+newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyObj: aGsTlsPrivateKey
 
-"Does not allocate new memory. References existing memory at an address contained in aCByteArray at the given offset."
 
-	^(self
-		fromMemoryReferenceIn: aCByteArray
-		atOffset: offset
-		sizeInBytes: (self elementsToBytes: numElements)
-		initializeFromC: false)
-		elements: (Array new: numElements);
-		initializeFromC;
-		yourself
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTableEntryArray
-new
-
-"Use new: instead "
-^ self shouldNotImplement: #new
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTableEntryArray
-new: numElements
-
-	| bytes result |
-	bytes := numElements * self sizeOfElement .
-	result := self gcMalloc: bytes.
+	| result |
+	aGsTlsPrivateKey _validateClass: GsTlsPrivateKey .
+	result := self newOnHost: hostOrIp port: aPort.
 	^result
-		initialize;
-		elements: (Array new: numElements);
+		caCertPath: caCertPath;
+		certPath: certPath;
+		privateKey: aGsTlsPrivateKey;
 		yourself
 %
 category: 'Instance Creation'
-classmethod: GsAmqpTableEntryArray
-newFromArrayOfPairs: array
+classmethod: GsAmqpTlsConnection
+newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyPath: keyPath
 
-	| size |
-	(size := array size) even
-		ifFalse: [self error: 'array of pairs size must be even'].
-	^(self new: size // 2)
-		initialize;
-		buildFromArrayOfPairs: array;
+"Use this method only if the private key file referenced by keyPath does not have a passphrase."
+
+	| result |
+	result := self newOnHost: hostOrIp port: aPort.
+	^result
+		caCertPath: caCertPath;
+		certPath: certPath;
+		privateKey: keyPath;
 		yourself
 %
 category: 'Instance Creation'
-classmethod: GsAmqpTableEntryArray
-newFromDictionary: dict
+classmethod: GsAmqpTlsConnection
+newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyPath: keyPath keyPassphrase: passPhrase
 
-	^(self new: dict size)
-		initialize;
-		buildFromDictionary: dict;
-		yourself
+"Use this method if the private key file requires a passphrase."
+
+	"Note: amqp_ssl_socket_set_key_passwd() does not appear to work.
+As a workaround, we decrypt and load the private key using GsTlsPrivateKey, then pass the PEM string to RabbitMQ."
+
+	| aGsTlsPrivateKey |
+	aGsTlsPrivateKey := GsTlsPrivateKey newFromPemFile: keyPath
+				withPassphrase: passPhrase.
+	^self
+		newOnHost: hostOrIp
+		port: aPort
+		caCertPath: caCertPath
+		certPath: certPath
+		keyObj: aGsTlsPrivateKey
 %
 category: 'Instance Creation'
-classmethod: GsAmqpTableEntryArray
-newFromKeys: keyArray values: valueArray
+classmethod: GsAmqpTlsConnection
+newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyString: keyString keyPassphrase: passPhrase
 
-	| size |
-	(size := keyArray size) == valueArray size
-		ifFalse: [self error: 'size of arrays for keys and values must match'].
-	^(self new: size)
-		initialize;
-		buildFromKeys: keyArray values: valueArray;
-		yourself
-%
-category: 'Constants'
-classmethod: GsAmqpTableEntryArray
-sizeOfElement
+"Use this method when you have a private key in the form of a PEM string. pass phrase must be the pass phrase for the private key or nil
+if the key requires no pass phrase."
 
-^ GsAmqpTableEntry sizeInC
-%
-! ------------------- Instance methods for GsAmqpTableEntryArray
-category: 'Adding'
-method: GsAmqpTableEntryArray
-add: anElement
+"Note: amqp_ssl_socket_set_key_passwd() does not appear to work.
+As a workaround, we decrypt and load the private key using GsTlsPrivateKey, then pass the PEM string to RabbitMQ."
 
-^ self shouldNotImplement: #add:
+	|  aGsTlsPrivateKey |
+	aGsTlsPrivateKey := GsTlsPrivateKey newFromPemString: keyString withPassphrase: passPhrase .
+	^ self newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyObj: aGsTlsPrivateKey
 %
-category: 'Adding'
-method: GsAmqpTableEntryArray
-addAll: aCollection 
-
-^ self shouldNotImplement: #addAll:
-%
+! ------------------- Instance methods for GsAmqpTlsConnection
 category: 'Accessing'
-method: GsAmqpTableEntryArray
-at: index
-
-^self elements at: index
+method: GsAmqpTlsConnection
+caCertPath
+	^caCertPath
 %
 category: 'Updating'
-method: GsAmqpTableEntryArray
-at: oneBasedIdx put: obj
-
-	| offset  |
-
-"Don't allow the elements array to grow"
-	oneBasedIdx > elements size
-		ifTrue: [self _errorIndexOutOfRange: oneBasedIdx].
-"Store reference to obj to protect from GC"
-	self elements at: oneBasedIdx put: obj.
-"Compute C offset in receiver"
-	offset := self offsetForElementIndex: oneBasedIdx.
-	obj
-		ifNil: 
-			[self "Clear C memory"
-				memset: 0
-				from: offset
-				to: (self sizeOfElement - 1)]
-		ifNotNil: 
-			[obj _validateClass: GsAmqpTableEntry.
-			self "Copy element to C memory"
-				copyBytesFrom: obj
-				from: 1
-				to: self sizeOfElement
-				into: offset]
+method: GsAmqpTlsConnection
+caCertPath: newValue
+	caCertPath := newValue
 %
-category: 'Building'
-method: GsAmqpTableEntryArray
-buildFromArrayOfPairs: array
+category: 'Accessing'
+method: GsAmqpTlsConnection
+certPath
+	^certPath
+%
+category: 'Updating'
+method: GsAmqpTlsConnection
+certPath: newValue
+	certPath := newValue
+%
+category: 'Initialization'
+method: GsAmqpTlsConnection
+initialize
 
-	| index |
-	index := 0.
-	1 to: array size
-		by: 2
-		do: 
-			[:n |
-			index := index + 1.
-			self at: index
-				put: (GsAmqpTableEntry newForKey: (array at: n) value: (array at: n + 1))].
+	super initialize.
+	^self
+		verifyPeer: false;
+		verifyHostname: false;
+		yourself
+%
+category: 'Initialization'
+method: GsAmqpTlsConnection
+newSocket
+
+self validateConnection.
+^ self library amqp_ssl_socket_new_:  self connection
+%
+category: 'Accessing'
+method: GsAmqpTlsConnection
+privateKey
+	^privateKey
+%
+category: 'Updating'
+method: GsAmqpTlsConnection
+privateKey: newValue
+	privateKey := newValue
+%
+category: 'Private'
+method: GsAmqpTlsConnection
+setCaCert
+
+| rc |
+self validateCaCertPath; validateSocket .
+rc := self library amqp_ssl_socket_set_cacert_: self socket _: self caCertPath.
+^ rc == 0
+	ifTrue:[ self ]
+	ifFalse:[ GsRabbitMqError signalWithErrorCode: rc library: self library ]
+%
+category: 'Private'
+method: GsAmqpTlsConnection
+setCertAndKey
+
+	| rc |
+	self validateCertPath ; validatePrivateKey .
+	(self privateKey isKindOf: GsTlsPrivateKey)
+		ifTrue: [^self setCertAndKeyFromPemString].
+	self validateSocket .
+	rc := self library
+		amqp_ssl_socket_set_key_: self socket
+		_: self certPath
+		_: self privateKey.
+	^rc == 0
+		ifTrue: [self]
+		ifFalse: [GsRabbitMqError signalWithErrorCode: rc library: self library]
+%
+category: 'Private'
+method: GsAmqpTlsConnection
+setCertAndKeyFromPemString
+"privateKey is a GsTlsPrivateKey"
+	| rc pem cba key |
+	self validateSocket ; validatePrivateKey ; validateCertPath .
+	(key := self privateKey) _validateClass: GsTlsPrivateKey .
+	pem := key asPemString.
+	cba := CByteArray withAll: pem.
+	rc := self library
+				amqp_ssl_socket_set_key_buffer_: self socket
+				_: self certPath
+				_: cba
+				_: pem size.
+"Workaround for Issue 723: amqp_ssl_socket_set_key_buffer returns 1 on success instead of AMQP_STATUS_OK (0)
+accept rc ==1 as Success.  See: https://github.com/alanxz/rabbitmq-c/issues/723"
+	^(rc == 1 or:[ rc == 0])
+		ifTrue: [self]
+		ifFalse: [GsRabbitMqError signalWithErrorCode: rc library: self library]
+%
+category: 'Private'
+method: GsAmqpTlsConnection
+setSocketOptions
+
+
+^ self setCaCert ;
+	setCertAndKey ;
+	setVerifyPeer ;
+	setVerifyHostname ;
+	yourself
+%
+category: 'Private'
+method: GsAmqpTlsConnection
+setVerifyHostname
+
+| val |
+self validateSocket .
+(val := self verifyHostname) _validateClass: Boolean .
+self library amqp_ssl_socket_set_verify_hostname_: self socket _: val asBit .
+^ self
+%
+category: 'Private'
+method: GsAmqpTlsConnection
+setVerifyPeer
+
+| val |
+self validateSocket .
+(val := self verifyPeer) _validateClass: Boolean .
+self library amqp_ssl_socket_set_verify_peer_: self socket _: val asBit.
+^ self
+%
+category: 'Validation'
+method: GsAmqpTlsConnection
+validateCaCertPath
+
+	| obj |
+	(obj := self caCertPath)
+		ifNil: [self error: 'path to CA cert has not been set']
+		ifNotNil: [obj _validateClass: String].
 	^self
 %
-category: 'Building'
-method: GsAmqpTableEntryArray
-buildFromDictionary: dict
+category: 'Validation'
+method: GsAmqpTlsConnection
+validateCertPath
 
-| index |
-index := 0.
-dict keysAndValuesDo:[:k :v|
-	index := index + 1.
-	self at: index put: (GsAmqpTableEntry newForKey: k value: v).
-].
+	| obj |
+	(obj := self certPath)
+		ifNil: [self error: 'path to cert has not been set']
+		ifNotNil: [obj _validateClass: String].
+	^self
 %
-category: 'Building'
-method: GsAmqpTableEntryArray
-buildFromKeys: keysArray values: valuesArray
+category: 'Validation'
+method: GsAmqpTlsConnection
+validatePrivateKey
 
-	| index |
-	index := 0.
-	1 to: keysArray size
-		do: 
-			[:n |
-			index := index + 1.
-			self at: index
-				put: (GsAmqpTableEntry newForKey: (keysArray at: n)
-						value: (valuesArray at: n))].
+	| obj |
+	(obj := self privateKey)
+		ifNil: [self error: 'private key has not been set']
+		ifNotNil: [obj _validateClasses: { String . GsTlsPrivateKey } ].
 	^self
 %
 category: 'Accessing'
-method: GsAmqpTableEntryArray
-elements
-	^elements
+method: GsAmqpTlsConnection
+verifyHostname
+	^verifyHostname
 %
 category: 'Updating'
-method: GsAmqpTableEntryArray
-elements: newValue
-	elements := newValue
+method: GsAmqpTlsConnection
+verifyHostname: newValue
+	verifyHostname := newValue
 %
-category: 'Initializing'
-method: GsAmqpTableEntryArray
-initializeFromC
+category: 'Accessing'
+method: GsAmqpTlsConnection
+verifyPeer
+	^verifyPeer
+%
+category: 'Updating'
+method: GsAmqpTlsConnection
+verifyPeer: newValue
+	verifyPeer := newValue
+%
+! ------------------- Remove existing behavior from GsAmqpExample
+removeAllMethods GsAmqpExample
+removeAllClassMethods GsAmqpExample
+! ------------------- Class methods for GsAmqpExample
+category: 'Accessing'
+classmethod: GsAmqpExample
+amqpUserId
 
-1 to: self elements size do:[:n|
-	self elements at: n put: (GsAmqpTableEntry fromCPointer: self atOffset: (self offsetForElementIndex: n)) ].
+^ amqpUserId ifNil:[ self defaultUserId ] ifNotNil:[ amqpUserId ]
+%
+category: 'Updating'
+classmethod: GsAmqpExample
+amqpUserId: newValue
+
+amqpUserId := newValue
+%
+category: 'Accessing'
+classmethod: GsAmqpExample
+badMessages
+
+^ badMessages
+%
+category: 'Accessing'
+classmethod: GsAmqpExample
+caCertPath
+
+^ caCertPath ifNil:[ self error: 'caCertPath has not been set' ] ifNotNil:[ caCertPath ]
+%
+category: 'Updating'
+classmethod: GsAmqpExample
+caCertPath: newValue
+
+caCertPath := newValue
+%
+category: 'Accessing'
+classmethod: GsAmqpExample
+certPath
+
+^ certPath ifNil:[ self error: 'certPath has not been set' ] ifNotNil:[ certPath ]
+%
+category: 'Updating'
+classmethod: GsAmqpExample
+certPath: newValue
+
+certPath := newValue
+%
+category: 'Example 99 (Perf Test)'
+classmethod: GsAmqpExample
+committerSharedCounterId
+
+^ 1
+%
+category: 'Example 99 (Perf Test)'
+classmethod: GsAmqpExample
+committerShouldRun
+
+^ 0 ~~ (System sharedCounter: self committerSharedCounterId)
+%
+category: 'Producer - Consumer Coordination'
+classmethod: GsAmqpExample
+consumerIsReady: exampleNum
+
+^ exampleNum == (System sharedCounter: self sharedCounterId)
+%
+category: 'Accessing'
+classmethod: GsAmqpExample
+debugEnabled
+
+^ debugEnabled
+%
+category: 'Updating'
+classmethod: GsAmqpExample
+debugEnabled: bool
+
+debugEnabled := bool
+%
+category: 'Default Credentials'
+classmethod: GsAmqpExample
+defaultHostName
+
+	^ 'localhost'
+%
+category: 'Default Credentials'
+classmethod: GsAmqpExample
+defaultLoginTimeoutMs
+
+^ 10000 "milliseconds = 10 seconds"
+%
+category: 'Default Credentials'
+classmethod: GsAmqpExample
+defaultPassword
+
+^ 'guest'
+%
+category: 'Default Credentials'
+classmethod: GsAmqpExample
+defaultPort
+
+	^ GsAmqpConnection defaultPort
+%
+category: 'Default TLS Credentials'
+classmethod: GsAmqpExample
+defaultPrivateKeyPassphrase
+
+"Default is no passphrase for private key."
+^ nil
+%
+category: 'Default TLS Credentials'
+classmethod: GsAmqpExample
+defaultTlsPort
+
+	^ GsAmqpTlsConnection defaultPort
+%
+category: 'Default Credentials'
+classmethod: GsAmqpExample
+defaultUserId
+
+^ 'guest'
+%
+category: 'Accessing'
+classmethod: GsAmqpExample
+directExchangeName
+
+^ self exchangeNameForKind: 'direct'
+%
+category: 'Debugging'
+classmethod: GsAmqpExample
+disableDebug
+
+self debugEnabled: false
+%
+category: 'Debugging'
+classmethod: GsAmqpExample
+enableDebug
+
+self debugEnabled: true
+%
+category: 'Example 12 (Binary Messages)'
+classmethod: GsAmqpExample
+encryptionKey
+
+^ ByteArray fromBase64String:  'LEz75mdIdskvShY0PidDNwQjvVSAXThoal5QBS0gD+I='.
+%
+category: 'Example 12 (Binary Messages)'
+classmethod: GsAmqpExample
+encryptionSalt
+
+^ ByteArray fromBase64String:  '80Yay6FJ7V6EQYiJZz6u8Q=='
+%
+category: 'Accessing'
+classmethod: GsAmqpExample
+exchangeNameForKind: aString
+
+^ aString, '.exchange.', self randomShortString
+%
+category: 'Accessing'
+classmethod: GsAmqpExample
+fanoutExchangeName
+
+^ self exchangeNameForKind: 'fanout'
+%
+category: 'Default Connections'
+classmethod: GsAmqpExample
+getConnection: useTls
+
+^ useTls ifTrue:[ self newTlsConnection ] ifFalse:[ self newConnection ]
+%
+category: 'Accessing'
+classmethod: GsAmqpExample
+headersExchangeName
+
+^ self exchangeNameForKind: 'headers'
+%
+category: 'Accessing'
+classmethod: GsAmqpExample
+hostname
+
+^ hostname ifNil:[ self defaultHostName ] ifNotNil:[ hostname ]
+%
+category: 'Updating'
+classmethod: GsAmqpExample
+hostname: newValue
+
+hostname := newValue
+%
+category: 'Initialization'
+classmethod: GsAmqpExample
+initialize
+
+debugEnabled := false.
+randomString := self newRandomString.
+messages := Array new.
+self numberOfMessages timesRepeat:[ messages add: self newRandomString].
+badMessages := Array new.
+messages do:[:msg| badMessages add: ('BadMessage.', msg)].
 ^ self
 %
 category: 'Accessing'
-method: GsAmqpTableEntryArray
-numElements
+classmethod: GsAmqpExample
+loginTimeoutMs
 
-^ elements size
-%
-category: 'Converting'
-method: GsAmqpTableEntryArray
-offsetForElementIndex: oneBasedIndex
-
-^ (oneBasedIndex - 1) * self sizeOfElement
-%
-category: 'Constants'
-method: GsAmqpTableEntryArray
-sizeOfElement
-
-^ self class sizeOfElement
-%
-! ------------------- Remove existing behavior from GsAmqpExchange
-removeAllMethods GsAmqpExchange
-removeAllClassMethods GsAmqpExchange
-! ------------------- Class methods for GsAmqpExchange
-category: 'Instance Creation'
-classmethod: GsAmqpExchange
-declareWithConnection: conn name: exchgName type: type channel: channelIdArg durable: durable autoDelete: autoDelete
-
-	|  result channelId |
-	channelId := channelIdArg
-				ifNil: [conn openNextChannel]
-				ifNotNil: [channelIdArg].
-	conn
-				declareExchangeNamed: exchgName
-				channel: channelId
-				type: type
-				durable: durable
-				autoDelete: autoDelete .
-				
-	result := self new.
-	^result
-		connection: conn;
-		type: type;
-		channel: channelId;
-		name: exchgName;
-		durable: durable;
-		autoDelete: autoDelete;
-		 yourself
-%
-! ------------------- Instance methods for GsAmqpExchange
-category: 'Deleting'
-method: GsAmqpExchange
-deleteForceIfInUse: forceIfInUse
-
-"Deletes the receiver from the broker. If forceIfInUse is true, the exchange is deleted even if queues are still bound to it. 
-If forceIfInUse is false, the exchange is only deleted if there are no queues bound, otherwise an exception is raised."
-
-	^self connection
-		deleteExchangeNamed: self name
-		channel: self channel
-		forceIfInUse:  forceIfInUse
-%
-category: 'Deleting'
-method: GsAmqpExchange
-deleteIfUnused
-
-
-^ self deleteForceIfInUse: false
-%
-category: 'Subclass Methods'
-method: GsAmqpExchange
-exchangKind
-
-^self subclassResponsibility: #exchangKind
-%
-category: 'Deleting'
-method: GsAmqpExchange
-forceDelete
-
-^ self deleteForceIfInUse: true
-%
-category: 'Publishing'
-method: GsAmqpExchange
-publishMessage: msg routingKey: routingKey mandatory: mandatory properties: props
-
-	self connection
-		publishMessage: msg
-		channel: self channel
-		exchange: self name
-		routingKey: routingKey
-		mandatory: mandatory
-		properties: props .
-	^ self
-%
-category: 'Accessing'
-method: GsAmqpExchange
-type
-	^type
+^ loginTimeoutMs ifNil:[ self defaultLoginTimeoutMs ] ifNotNil:[ loginTimeoutMs ]
 %
 category: 'Updating'
-method: GsAmqpExchange
-type: newValue
-	type := newValue
-%
-! ------------------- Remove existing behavior from GsAmqpTable
-removeAllMethods GsAmqpTable
-removeAllClassMethods GsAmqpTable
-! ------------------- Class methods for GsAmqpTable
-category: 'Instance Creation'
-classmethod: GsAmqpTable
-emptyTable
+classmethod: GsAmqpExample
+loginTimeoutMs: newValue
 
-^ self new
+loginTimeoutMs := newValue
 %
-category: 'Instance Creation'
-classmethod: GsAmqpTable
-newFromArrayOfPairs: array
+category: 'Example 99 (Perf Test)'
+classmethod: GsAmqpExample
+makeCommitRecords
 
-^(self new) initialize ; buildFromArrayOfPairs: array ; yourself
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTable
-newFromDictionary: aDictionary
+	| sys ug dt |
+	(sys := System) _cacheName: 'Committer'.
+	ug := UserGlobals.
+	dt := DateTime.
 
-^(self new) initialize ; buildFromDictionary: aDictionary ; yourself
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTable
-newFromKeys: keyArray values: valueArray
-
-	^(self new)
-		initialize;
-		buildFromKeys: keyArray values: valueArray;
-		yourself
-%
-category: 'Constants'
-classmethod: GsAmqpTable
-sizeInC
-
-^ 16
-%
-! ------------------- Instance methods for GsAmqpTable
-category: 'Building'
-method: GsAmqpTable
-buildFromArrayOfPairs: array
-
-	^self
-		setEntries: (GsAmqpTableEntryArray newFromArrayOfPairs: array);
-		yourself
-%
-category: 'Building'
-method: GsAmqpTable
-buildFromDictionary: dict
-
-	^self
-		setEntries: (GsAmqpTableEntryArray newFromDictionary: dict);
-		yourself
-%
-category: 'Building'
-method: GsAmqpTable
-buildFromKeys: keyArray values: valueArray
-
-	^self
-		setEntries: (GsAmqpTableEntryArray newFromKeys: keyArray values: valueArray);
-		yourself
+	[
+		[self committerShouldRun] whileTrue:
+			[ug at: #foo put: dt now.
+			sys
+				commitTransaction;
+				_sleepMs: 250]]
+			ensure:
+				[ug removeKey: #foo ifAbsent: [].
+				sys commitTransaction].
+	^true
 %
 category: 'Accessing'
-method: GsAmqpTable
-entries
-	^entries
-%
-category: 'Updating'
-method: GsAmqpTable
-entries: newValue
-	entries := newValue
-%
-category: 'Accessing'
-method: GsAmqpTable
-entriesAddress
+classmethod: GsAmqpExample
+messages
 
-^ self uint64At: 8
+^ messages
+%
+category: 'Default Connections'
+classmethod: GsAmqpExample
+newConnection
+
+	^self
+		newConnectionToHost: self hostname
+		port: self port
+		userId: self amqpUserId
+		password: self password
+%
+category: 'Default Connections'
+classmethod: GsAmqpExample
+newConnectionToHost: hostname port: port userId: uid password: pw
+
+^ self newConnectionToHost: hostname port: port userId: uid password: pw timeoutMs: self loginTimeoutMs
+%
+category: 'Default Connections'
+classmethod: GsAmqpExample
+newConnectionToHost: hostname port: port userId: uid password: pw timeoutMs: timeoutMs
+
+	^(GsAmqpConnection newOnHost: hostname port: port)
+		loginWithUserId: uid
+		password: pw
+		timeoutMs: timeoutMs
 %
 category: 'Initialization'
-method: GsAmqpTable
-initializeFromC
+classmethod: GsAmqpExample
+newRandomString
 
-^ self numEntries: (self int32At: 0) ;
-	entries: (GsAmqpTableEntryArray fromMemoryReferenceIn: self atOffset: 8 elements: self numEntries)
-	yourself.
-	
+^ (ByteArray withRandomBytes: 48) asBase64String
+%
+category: 'Default TLS Connections'
+classmethod: GsAmqpExample
+newTlsConnection
+
+	^self
+		newTlsConnectionToHost: self hostname
+		port: self tlsPort
+		userId: self amqpUserId
+		password: self password
+		caCertPath: self caCertPath
+		certPath: self certPath
+		keyPath: self privateKey
+		keyPassphrase: self privateKeyPassphrase
+		timeoutMs: self loginTimeoutMs
+%
+category: 'Default TLS Connections'
+classmethod: GsAmqpExample
+newTlsConnectionToHost: hostname port: port userId: uid password: password caCertPath: caCertPath certPath: certPath keyPath: keyPath keyPassphrase: passphrase timeoutMs: timeoutMs
+
+	^(GsAmqpTlsConnection
+		newOnHost: hostname
+		port: port
+		caCertPath: caCertPath
+		certPath: certPath
+		keyPath: keyPath
+		keyPassphrase: passphrase)
+			loginWithUserId: uid
+			password: password
+			timeoutMs: timeoutMs
+%
+category: 'Constants'
+classmethod: GsAmqpExample
+numberOfMessages
+
+^ 64
+%
+category: 'Constants'
+classmethod: GsAmqpExample
+numExamples
+
+^ 12
+%
+category: 'Example 99 (Perf Test)'
+classmethod: GsAmqpExample
+numMessagesForPerformanceTest
+
+^ 500000
 %
 category: 'Accessing'
-method: GsAmqpTable
-numEntries
-	^numEntries
-%
-category: 'Updating'
-method: GsAmqpTable
-numEntries: newValue
-	numEntries := newValue
-%
-category: 'Updating'
-method: GsAmqpTable
-setEntries: newValue
+classmethod: GsAmqpExample
+password
 
-	newValue
-		ifNil: 
-			[entries := nil.
-			numEntries := 0.
-			self zeroMemory]
-		ifNotNil: 
-			[newValue _validateClass: GsAmqpTableEntryArray.
-			entries := newValue.
-			self
-				uint32At: 0 put: (numEntries := newValue numElements);
-				uint64At: 8 put: newValue memoryAddress].
-	^self
+^ password ifNil:[ self defaultPassword] ifNotNil:[ password ]
 %
+category: 'Updating'
+classmethod: GsAmqpExample
+password: newValue
+
+password := newValue
+%
+category: 'Accessing'
+classmethod: GsAmqpExample
+port
+
+^ port ifNil:[ self defaultPort ] ifNotNil:[ port ]
+%
+category: 'Updating'
+classmethod: GsAmqpExample
+port: newValue
+
+port := newValue
+%
+category: 'Accessing'
+classmethod: GsAmqpExample
+privateKey
+
+^ privateKey ifNil:[ self error: 'private key has not been set' ] ifNotNil:[ privateKey ]
+%
+category: 'Updating'
+classmethod: GsAmqpExample
+privateKey: newValue
+
+privateKey := newValue
+%
+category: 'Accessing'
+classmethod: GsAmqpExample
+privateKeyPassphrase
+
+^ privateKeyPassphrase ifNil:[ self defaultPrivateKeyPassphrase  ] ifNotNil:[ privateKeyPassphrase ]
+%
+category: 'Updating'
+classmethod: GsAmqpExample
+privateKeyPassphrase: newValue
+
+privateKeyPassphrase := newValue
+%
+category: 'Accessing'
+classmethod: GsAmqpExample
+randomShortString
+
+^ randomString copy size: 12
+%
+category: 'Accessing'
+classmethod: GsAmqpExample
+randomString
+
+^ randomString
+%
+category: 'Accessing'
+classmethod: GsAmqpExample
+routingKey
+
+^ 'RoutingKey.', self randomShortString
+%
+category: 'Example 10 (Acknowlegements 2)'
+classmethod: GsAmqpExample
+runConsumerExample10UseTls: useTls
+
+"Example of a simple queue consumer using the built-in direct exchange using bulk acknowlegments for all messages received.
+Start the consumer first, then start the producer."
+
+	| conn routingKey queue env count exchgName chan results numExpected debug exampleNum|
+	exampleNum := 10.
+	debug := self debugEnabled.
+	conn := self getConnection: useTls.
+	numExpected := self numberOfMessages .
+	results := Array new.
+	chan := 1. "Channel we will use (SmallInteger)"
+	routingKey := self routingKey. "Routing key"
+	exchgName := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
+"Open a channel"
+	conn openChannelWithId: chan.
+"Declare the queue we will use. Let the broker choose the queue name"
+	queue := GsAmqpQueue
+				declareWithConnection: conn
+				durable: false
+				exclusive: false
+				autoDelete: true.
+	debug ifTrue:[GsFile gciLogServer: 'Queue name is ' , queue name].
+"Bind our queue to the built-in exchange"
+	conn
+		bindQueueWithName: queue name
+		toExchangeWithName: exchgName
+		channel: chan
+		routingKey: routingKey.
+"Tell broker we want to start consuming this queue and that we will send acknowlegements"
+	queue beginConsumingWithNoLocal: false noAck: false.
+	count := 0.
+	env := GsAmqpEnvelope new.
+	self setConsumerReady: exampleNum.
+"Loop until we have received all messages"
+	[count == numExpected] whileFalse:
+			[(queue consumeMessageInto: env timeoutMs: 3000)
+				ifTrue:
+					[count := count + 1.
+					results add: env messageBody.
+					debug ifTrue:[GsFile gciLogServer: 'msg ' , count asString , ': ' , env messageBody]. ]
+				ifFalse: [debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...']]].
+"Send acknowlegement to the broker for all messages"
+	queue ackEnvelopeAndAllPrevious: env.
+"Tell the broker to send us no more messages"
+	self setConsumerNotReady.
+	queue stopConsuming.
+"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
+	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
+	count > numExpected ifTrue:[ debug ifTrue:[GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')]].
+"Unbind the queue from the exchange"
+	queue unbind.
+"Delete the queue"
+	queue deleteIfSafe.
+"Close channel"
+	conn closeChannelWithId: chan.
+"Close socket connection"
+	conn closeConnection.
+"Answer if strings from sender match what we expect"
+	^results = self messages
+%
+category: 'Example 11 (Polling with GsSocket)'
+classmethod: GsAmqpExample
+runConsumerExample11UseTls: useTls
+
+"Example of a simple queue consumer using the built-in direct exchange using a GsSocket to poll the broker.
+Start the consumer first, then start the producer."
+
+	| conn routingKey queue env count exchgName chan results numExpected debug gsSock exampleNum|
+	exampleNum := 11.
+	debug := self debugEnabled.
+	conn := self getConnection: useTls.
+	numExpected := self numberOfMessages .
+	results := Array new.
+	chan := 1. "Channel we will use (SmallInteger)"
+	routingKey := self routingKey. "Routing key"
+	exchgName := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
+"Open a channel"
+	conn openChannelWithId: chan.
+"Get a GsSocket representing the socket to the broker. Do not close or modify this socket!"
+	gsSock := conn asGsSocket .
+"Declare the queue we will use. Let the broker choose the queue name"
+	queue := GsAmqpQueue
+				declareWithConnection: conn
+				durable: false
+				exclusive: false
+				autoDelete: true.
+	debug ifTrue:[GsFile gciLogServer: 'Queue name is ' , queue name].
+"Bind our queue to the built-in exchange"
+	conn
+		bindQueueWithName: queue name
+		toExchangeWithName: exchgName
+		channel: chan
+		routingKey: routingKey.
+"Tell broker we want to start consuming this queue"
+	queue beginConsumingWithNoLocal: false noAck: true.
+	count := 0.
+	env := GsAmqpEnvelope new.
+	self setConsumerReady: exampleNum.
+"Loop until we have received all messages"
+	[count == numExpected] whileFalse:[
+"Use GsSocket methods to know when we have more data to read"
+			[conn hasDataReady or:[gsSock readWillNotBlockWithin: 1000]]
+				whileFalse:[ debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...' ]].
+			(queue consumeMessageInto: env timeoutMs: 0)
+				ifTrue:
+					[count := count + 1.
+					results add: env messageBody.
+					debug ifTrue:[GsFile gciLogServer: 'msg ' , count asString , ': ' , env messageBody]. ]
+				ifFalse: [debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...']]].
+"Do not close or otherwise modify gsSock"
+	gsSock := nil.
+"Tell the broker to send us no more messages"
+	queue stopConsuming.
+	self setConsumerNotReady.
+"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
+	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
+	count > numExpected ifTrue:[ debug ifTrue:[GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')]].
+"Unbind the queue from the exchange"
+	queue unbind.
+"Delete the queue"
+	queue deleteIfSafe.
+"Close channel"
+	conn closeChannelWithId: chan.
+"Close socket connection"
+	conn closeConnection.
+"Answer if strings from sender match what we expect"
+	^results = self messages
+%
+category: 'Example 12 (Binary Messages)'
+classmethod: GsAmqpExample
+runConsumerExample12UseTls: useTls
+
+"Example of a simple queue consumer using the built-in direct exchange to receive encrypted binary messages.
+Start the consumer first, then start the producer."
+
+	| conn routingKey queue env count exchgName chan results numExpected debug key salt exampleNum|
+	exampleNum := 12 .
+	debug := self debugEnabled.
+	conn := self getConnection: useTls.
+	numExpected := self numberOfMessages .
+	results := Array new.
+	chan := 1. "Channel we will use (SmallInteger)"
+	routingKey := self routingKey. "Routing key"
+	exchgName := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
+"Open a channel"
+	conn openChannelWithId: chan.
+"Declare the queue we will use. Let the broker choose the queue name"
+	queue := GsAmqpQueue
+				declareWithConnection: conn
+				durable: false
+				exclusive: false
+				autoDelete: true.
+	debug ifTrue:[GsFile gciLogServer: 'Queue name is ' , queue name].
+"Bind our queue to the built-in exchange"
+	conn
+		bindQueueWithName: queue name
+		toExchangeWithName: exchgName
+		channel: chan
+		routingKey: routingKey.
+"Tell broker we want to start consuming this queue"
+	queue beginConsumingWithNoLocal: false noAck: true.
+	count := 0.
+"Get an envelope for handling binary data"
+	env := GsAmqpEnvelope newForBinaryMessage.
+	key := self encryptionKey.
+	salt := self encryptionSalt.
+	self setConsumerReady: exampleNum.
+"Loop until we have received all messages"
+	[count == numExpected] whileFalse:
+			[(queue consumeMessageInto: env timeoutMs: 3000)
+				ifTrue:
+					[ | msg |
+					count := count + 1.
+					results add: (msg := env messageBody aesDecryptWith256BitKey: key salt: salt).
+					debug ifTrue:[GsFile gciLogServer: 'msg ' , count asString , ': ' , env messageBody]. ]
+				ifFalse: [debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...']]].
+"Tell the broker to send us no more messages"
+	queue stopConsuming.
+	self setConsumerNotReady.
+"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
+	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
+	count > numExpected ifTrue:[ debug ifTrue:[GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')]].
+"Unbind the queue from the exchange"
+	queue unbind.
+"Delete the queue"
+	queue deleteIfSafe.
+"Close channel"
+	conn closeChannelWithId: chan.
+"Close socket connection"
+	conn closeConnection.
+"Answer if strings from sender match what we expect"
+	^results = self messages
+%
+category: 'Example 01 (Simple producer/consumer)'
+classmethod: GsAmqpExample
+runConsumerExample1UseTls: useTls
+
+"Example of a simple queue consumer using the built-in direct exchange.
+Start the consumer first, then start the producer."
+
+^ self runSimpleConsumerExample: 1 useTls: useTls
+%
+category: 'Example 02 (Publisher Confirms 1)'
+classmethod: GsAmqpExample
+runConsumerExample2UseTls: useTls
+
+^ self runSimpleConsumerExample: 2 useTls: useTls
+%
+category: 'Example 03 (Publisher Confirms 2)'
+classmethod: GsAmqpExample
+runConsumerExample3UseTls: useTls
+
+^ self runSimpleConsumerExample: 3 useTls: useTls
+%
+category: 'Example 04 (Transactions)'
+classmethod: GsAmqpExample
+runConsumerExample4UseTls: useTls
+
+^ self runSimpleConsumerExample: 4 useTls: useTls
+%
+category: 'Example 05 (Direct Exchange)'
+classmethod: GsAmqpExample
+runConsumerExample5UseTls: useTls
+
+"Example of a simple queue consumer using newly created direct exchange.
+Start the consumer first, then start the producer."
+
+	| conn routingKey queue env count exchg exchgName chan results numExpected debug exampleNum |
+	exampleNum := 5.
+	debug := self debugEnabled.
+	conn := self getConnection: useTls.
+	numExpected := self numberOfMessages .
+	results := Array new.
+	chan := 1. "Channel we will use (SmallInteger)"
+	routingKey := self routingKey. "Routing key"
+	exchgName := self directExchangeName .
+"Open a channel"
+	conn openChannelWithId: chan.
+"Create a new direct exchange"
+	conn deleteExchangeNamed: exchgName  channel: chan forceIfInUse:  true.
+	exchg := GsAmqpDirectExchange declareWithConnection: conn name: exchgName channel: chan durable: false autoDelete: false .
+
+"Declare the queue we will use. Let the broker choose the queue name"
+	queue := GsAmqpQueue
+				declareWithConnection: conn
+				durable: false
+				exclusive: false
+				autoDelete: false.
+	debug ifTrue:[GsFile gciLogServer: 'Queue name is ' , queue name].
+"Bind the queue to our new exchange"
+	queue bindToExchange: exchg routingKey: routingKey .
+"Tell broker we want to start consuming this queue"
+	queue beginConsumingWithNoLocal: false noAck: true.
+	count := 0.
+	env := GsAmqpEnvelope new.
+	self setConsumerReady: exampleNum.
+"Loop until we have received all messages"
+	[count == numExpected] whileFalse:
+			[(queue consumeMessageInto: env timeoutMs: 3000)
+				ifTrue:
+					[count := count + 1.
+					results add: env messageBody.
+					debug ifTrue:[GsFile gciLogServer: 'msg ' , count asString , ': ' , env messageBody]. ]
+				ifFalse: [debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...']]].
+"Tell the broker to send us no more messages"
+	queue stopConsuming.
+	self setConsumerNotReady.
+"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
+	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
+	count > numExpected ifTrue:[ debug ifTrue:[GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')]].
+"Unbind the queue from the exchange"
+	queue unbind.
+"Delete the queue"
+	queue forceDelete.
+"Delete the exchange if the producer is done with it"
+	exchg forceDelete.
+"Close channel"
+	conn closeChannelWithId: chan.
+"Close socket connection"
+	conn closeConnection.
+"Answer if strings from sender match what we expect"
+	^results = self messages
+%
+category: 'Example 06 (Fanout Exchange)'
+classmethod: GsAmqpExample
+runConsumerExample6UseTls: useTls
+
+"Example of a simple queue consumer using a newly created fanout exchange.
+Start the consumer first, then start the producer."
+
+	| conn queue env count exchg exchgName chan results numExpected debug exampleNum|
+	exampleNum := 6.
+	debug := self debugEnabled.
+	conn := self getConnection: useTls.
+	numExpected := self numberOfMessages .
+	results := Array new.
+	chan := 1. "Channel we will use (SmallInteger)"
+	exchgName := self fanoutExchangeName .
+"Open a channel"
+	conn openChannelWithId: chan.
+"Create a new fanout exchange"
+	conn deleteExchangeNamed: exchgName  channel: chan forceIfInUse:  true.
+	exchg := GsAmqpFanoutExchange declareWithConnection: conn name: exchgName channel: chan durable: false autoDelete: false .
+
+"Declare the queue we will use. Let the broker choose the queue name"
+	queue := GsAmqpQueue
+				declareWithConnection: conn
+				durable: false
+				exclusive: false
+				autoDelete: false.
+	debug ifTrue:[GsFile gciLogServer: 'Queue name is ' , queue name].
+"Bind the queue to our new exchange, Fanout exchanges do not use a routing key."
+	queue bindToExchange: exchg.
+"Tell broker we want to start consuming this queue"
+	queue beginConsumingWithNoLocal: false noAck: true.
+	count := 0.
+	env := GsAmqpEnvelope new.
+	self setConsumerReady: exampleNum.
+"Loop until we have received all messages"
+	[count == numExpected] whileFalse:
+			[(queue consumeMessageInto: env timeoutMs: 3000)
+				ifTrue:
+					[count := count + 1.
+					results add: env messageBody.
+					debug ifTrue:[GsFile gciLogServer: 'msg ' , count asString , ': ' , env messageBody]. ]
+				ifFalse: [debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...']]].
+"Tell the broker to send us no more messages"
+	queue stopConsuming.
+	self setConsumerNotReady.
+"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
+	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
+	count > numExpected ifTrue:[ debug ifTrue:[GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')]].
+"Unbind the queue from the exchange"
+	queue unbind.
+"Delete the queue"
+	queue forceDelete.
+"Delete the exchange if the producer is done with it"
+	exchg forceDelete.
+"Close channel"
+	conn closeChannelWithId: chan.
+"Close socket connection"
+	conn closeConnection.
+"Answer if strings from sender match what we expect"
+	^results = self messages
+%
+category: 'Example 07 (Headers Exchange)'
+classmethod: GsAmqpExample
+runConsumerExample7UseTls: useTls
+
+"Example of a simple queue consumer using a newly created headers exchange.
+Start the consumer first, then start the producer."
+
+	| conn queue env count exchg exchgName chan results numExpected debug matchKeyDict exampleNum|
+	exampleNum := 7.
+	debug := self debugEnabled.
+	conn := self getConnection: useTls.
+	numExpected := self numberOfMessages .
+	results := Array new.
+	chan := 1. "Channel we will use (SmallInteger)"
+	exchgName := self headersExchangeName .
+"Open a channel"
+	conn openChannelWithId: chan.
+"Create a new headers exchange"
+	conn deleteExchangeNamed: exchgName  channel: chan forceIfInUse:  true.
+	exchg := GsAmqpHeadersExchange declareWithConnection: conn name: exchgName channel: chan durable: false autoDelete: false .
+
+"Declare the queue we will use. Let the broker choose the queue name"
+	queue := GsAmqpQueue
+				declareWithConnection: conn
+				durable: false
+				exclusive: false
+				autoDelete: false.
+	debug ifTrue:[GsFile gciLogServer: 'Queue name is ' , queue name].
+"Create a dictionary of header match keys and values."
+	(matchKeyDict := KeyValueDictionary new) at: 'Header1' put: 'foo' ; at: 'Header2' put: 'bar' .
+"Bind new queue to new exchange such that the exchange will route messages to the queue if ANY
+of the headers match."
+	queue bindToHeadersExchange: exchg matchAnyInDictionary: matchKeyDict.
+"Tell broker we want to start consuming this queue"
+	queue beginConsumingWithNoLocal: false noAck: true.
+	count := 0.
+	env := GsAmqpEnvelope new.
+	self setConsumerReady: exampleNum.
+"Loop until we have received all messages"
+	[count == numExpected] whileFalse:
+			[(queue consumeMessageInto: env timeoutMs: 3000)
+				ifTrue:
+					[count := count + 1.
+					results add: env messageBody.
+					debug ifTrue:[GsFile gciLogServer: 'msg ' , count asString , ': ' , env messageBody]. ]
+				ifFalse: [debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...']]].
+"Tell the broker to send us no more messages"
+	queue stopConsuming.
+	self setConsumerNotReady.
+"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
+	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
+	count > numExpected ifTrue:[ debug ifTrue:[GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')]].
+"Unbind the queue from the exchange"
+	queue unbind.
+"Delete the queue"
+	queue forceDelete.
+"Delete the exchange if the producer is done with it"
+	exchg forceDelete.
+"Close channel"
+	conn closeChannelWithId: chan.
+"Close socket connection"
+	conn closeConnection.
+"Answer if strings from sender match what we expect"
+	^results = self messages
+%
+category: 'Example 08 (Topic Exchange)'
+classmethod: GsAmqpExample
+runConsumerExample8UseTls: useTls
+
+"Example of a simple queue consumer using a newly created topic exchange.
+Start the consumer first, then start the producer."
+
+	| conn queue env count exchg exchgName chan results numExpected debug bindkey exampleNum|
+	exampleNum := 8.
+	debug := self debugEnabled.
+	conn := self getConnection: useTls.
+	numExpected := self numberOfMessages .
+	results := Array new.
+	chan := 1. "Channel we will use (SmallInteger)"
+	exchgName := self topicExchangeName .
+
+"For topic exchanges, in the bind key $* represents exactly 1 word and $# represents 0 or more words.
+So for bind key someTopic.*, someTopic.bindkey will match but someTopic.bindkey.bad will not."
+	bindkey := 'someTopic.*'.
+
+"Open a channel"
+	conn openChannelWithId: chan.
+"Create a new topic exchange"
+	conn deleteExchangeNamed: exchgName  channel: chan forceIfInUse:  true.
+	exchg := GsAmqpTopicExchange declareWithConnection: conn name: exchgName channel: chan durable: false autoDelete: false .
+
+"Declare the queue we will use. Let the broker choose the queue name"
+	queue := GsAmqpQueue
+				declareWithConnection: conn
+				durable: false
+				exclusive: false
+				autoDelete: false.
+	debug ifTrue:[GsFile gciLogServer: 'Queue name is ' , queue name].
+"Bind new queue to new exchange"
+	queue bindToExchange: exchg routingKey: bindkey .
+"Tell broker we want to start consuming this queue"
+	queue beginConsumingWithNoLocal: false noAck: true.
+	count := 0.
+	env := GsAmqpEnvelope new.
+	self setConsumerReady: exampleNum.
+"Loop until we have received all messages"
+	[count == numExpected] whileFalse:
+			[(queue consumeMessageInto: env timeoutMs: 3000)
+				ifTrue:
+					[count := count + 1.
+					results add: env messageBody.
+					debug ifTrue:[GsFile gciLogServer: 'msg ' , count asString , ': ' , env messageBody]. ]
+				ifFalse: [debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...']]].
+"Tell the broker to send us no more messages"
+	queue stopConsuming.
+	self setConsumerNotReady.
+"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
+	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
+	count > numExpected ifTrue:[ debug ifTrue:[GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')]].
+"Unbind the queue from the exchange"
+	queue unbind.
+"Delete the queue"
+	queue forceDelete.
+"Delete the exchange if the producer is done with it"
+	exchg forceDelete.
+"Close channel"
+	conn closeChannelWithId: chan.
+"Close socket connection"
+	conn closeConnection.
+"Answer if strings from sender match what we expect"
+	^results = self messages
+%
+category: 'Example 99 (Perf Test)'
+classmethod: GsAmqpExample
+runConsumerExample99UseTls: useTls
+
+"Example of a simple queue consumer using the built-in direct exchange.
+Start the consumer first, then start the producer."
+
+	| conn routingKey queue env count exchgName chan numExpected sys abortCount startNs endNs exampleNum |
+	exampleNum := 99.
+	(sys := System)
+		_cacheName: 'Consumer';
+		sessionCacheStatAt: 0 put: 0 ;
+		transactionMode: #manualBegin;
+		abortTransaction.
+	abortCount := 0.
+	conn := self getConnection: useTls.
+	numExpected := self numMessagesForPerformanceTest.
+	chan := 1. "Channel we will use (SmallInteger)"
+	routingKey := self routingKey. "Routing key"
+	exchgName := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
+"Open a channel"
+	conn openChannelWithId: chan.
+"Declare the queue we will use. Let the broker choose the queue name"
+	queue := GsAmqpQueue
+				declareWithConnection: conn
+				durable: false
+				exclusive: false
+				autoDelete: true.
+	GsFile gciLogServer: 'Queue name is ' , queue name.
+"Bind our queue to the built-in exchange"
+	conn
+		bindQueueWithName: queue name
+		toExchangeWithName: exchgName
+		channel: chan
+		routingKey: routingKey.
+"Tell broker we want to start consuming this queue"
+	queue beginConsumingWithNoLocal: false noAck: true.
+	env := GsAmqpEnvelope new.
+	self setConsumerReady: exampleNum.
+"Wait here for the producer to start sending messages"
+	[queue consumeMessageInto: env timeoutMs: 3000]
+		whileFalse:[ GsFile gciLogServer: 'Waiting for a message...'].
+	GsFile gciLogServer: 'Started receiving messages.'.
+	count := 1.
+	sys enableSignaledAbortError .
+	startNs := sys timeNs.
+"Loop until we have received all messages"
+	[ [
+			[count == numExpected] whileFalse: [
+				(queue consumeMessageInto: env timeoutMs: 3000)
+					ifTrue:[count := count + 1.
+"Tell RabbitMQ to cleanup memory every 1000 messages"
+						count \\ 1000 == 0 ifTrue: [conn maybeReleaseBuffers].
+						sys sessionCacheStatAt: 0 put: count]
+					ifFalse: [GsFile gciLogServer: 'Waiting for a message...']
+			 ]
+		] on: TransactionBacklog do:[:ex | abortCount := abortCount + 1.
+						sys abortTransaction; enableSignaledAbortError.
+						ex resume].
+		endNs := sys timeNs.
+	] ensure:[sys transactionMode: #autoBegin ; abortTransaction. self setConsumerNotReady ].
+	sys sessionCacheStatAt: 0 put: 0.
+"Tell the broker to send us no more messages"
+	queue stopConsuming.
+"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
+	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
+	count > numExpected ifTrue:[ GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')].
+"Unbind the queue from the exchange"
+	queue unbind.
+"Delete the queue"
+	queue deleteIfSafe.
+"Close channel"
+	conn closeChannelWithId: chan.
+"Close socket connection"
+	conn closeConnection.
+"Answer if strings from sender match what we expect"
+	GsFile
+		gciLogServer: 'Received ' , count asString , ' messages in '
+				, ((endNs - startNs) // 1000000) asString , ' ms and handled '
+				, abortCount asString , ' SigAborts'.
+	^true
+%
+category: 'Example 09 (Acknowlegments 1)'
+classmethod: GsAmqpExample
+runConsumerExample9UseTls: useTls
+
+"Example of a simple queue consumer using the built-in direct exchange using acknowlegments for each message received.
+Start the consumer first, then start the producer."
+
+	| conn routingKey queue env count exchgName chan results numExpected debug exampleNum|
+	exampleNum := 9.
+	debug := self debugEnabled.
+	conn := self getConnection: useTls.
+	numExpected := self numberOfMessages .
+	results := Array new.
+	chan := 1. "Channel we will use (SmallInteger)"
+	routingKey := self routingKey. "Routing key"
+	exchgName := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
+"Open a channel"
+	conn openChannelWithId: chan.
+"Declare the queue we will use. Let the broker choose the queue name"
+	queue := GsAmqpQueue
+				declareWithConnection: conn
+				durable: false
+				exclusive: false
+				autoDelete: true.
+	debug ifTrue:[GsFile gciLogServer: 'Queue name is ' , queue name].
+"Bind our queue to the built-in exchange"
+	conn
+		bindQueueWithName: queue name
+		toExchangeWithName: exchgName
+		channel: chan
+		routingKey: routingKey.
+"Tell broker we want to start consuming this queue and that we will send acknowlegements"
+	queue beginConsumingWithNoLocal: false noAck: false.
+	count := 0.
+	env := GsAmqpEnvelope new.
+	self setConsumerReady: exampleNum.
+"Loop until we have received all messages"
+	[count == numExpected] whileFalse:
+			[(queue consumeMessageInto: env timeoutMs: 3000)
+				ifTrue:
+					[count := count + 1.
+					results add: env messageBody.
+					queue ackEnvelope: env. "Send acknowlegement to the broker"
+					debug ifTrue:[GsFile gciLogServer: 'msg ' , count asString , ': ' , env messageBody]. ]
+				ifFalse: [debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...']]].
+"Tell the broker to send us no more messages"
+	queue stopConsuming.
+	self setConsumerNotReady.
+"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
+	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
+	count > numExpected ifTrue:[ debug ifTrue:[GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')]].
+"Unbind the queue from the exchange"
+	queue unbind.
+"Delete the queue"
+	queue deleteIfSafe.
+"Close channel"
+	conn closeChannelWithId: chan.
+"Close socket connection"
+	conn closeConnection.
+"Answer if strings from sender match what we expect"
+	^results = self messages
+%
+category: 'Examples (Consumer)'
+classmethod: GsAmqpExample
+runConsumerExampleNumber: num useTls: useTls
+
+| sym |
+
+sym := ('runConsumerExample', num asString, 'UseTls:') asSymbol.
+^ self perform: sym with: useTls
+
+%
+category: 'Example 10 (Acknowlegements 2)'
+classmethod: GsAmqpExample
+runProducerExample10UseTls: useTls
+
+^ self runSimpleProducerExample: 10 useTls: useTls
+%
+category: 'Example 11 (Polling with GsSocket)'
+classmethod: GsAmqpExample
+runProducerExample11UseTls: useTls
+
+"Example of a simple queue producer using the built-in direct exchange.
+Start the consumer first, then start the producer."
+
+^self runSimpleProducerExample: 11 useTls: useTls
+%
+category: 'Example 12 (Binary Messages)'
+classmethod: GsAmqpExample
+runProducerExample12UseTls: useTls
+
+"Example of a simple queue producer using the built-in direct exchange to send encrypted strings as binary messages.
+Start the consumer first, then start the producer."
+
+	| conn routingKey exchg chan result key salt payload exampleNum|
+	exampleNum := 12.
+	conn := self getConnection: useTls.
+	result := Array new.
+	chan := 1. "Channel we will use (SmallInteger)"
+	routingKey := self routingKey. "Routing key"
+	exchg := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
+"Open a channel"
+	conn openChannelWithId: chan.
+"Get enryption key and salt byte arrays"
+	key := self encryptionKey.
+	salt := self encryptionSalt.
+	payload := ByteArray new.
+"Wait for consumer to be ready"
+	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
+"Publish all messages"
+	self messages do:[:msg|
+"Encrypt"
+			msg aesEncryptWith256BitKey: key salt: salt into: payload.
+"Publish the message to the exchange"
+			conn
+				publishMessage: payload
+				channel: chan
+				exchange: exchg
+				routingKey: routingKey
+				mandatory: false
+				properties: nil].
+"Close channel"
+	conn closeChannelWithId: chan.
+"Close socket connection"
+	conn closeConnection.
+	^ true
+%
+category: 'Example 01 (Simple producer/consumer)'
+classmethod: GsAmqpExample
+runProducerExample1UseTls: useTls
+
+"Example of a simple queue producer using the built-in direct exchange.
+Start the consumer first, then start the producer."
+
+	| conn routingKey exchg chan result exampleNum |
+	exampleNum := 1.
+	conn := self getConnection: useTls.
+	result := Array new.
+	chan := 1. "Channel we will use (SmallInteger)"
+	routingKey := self routingKey. "Routing key"
+	exchg := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
+"Open a channel"
+	conn openChannelWithId: chan.
+"Wait for consumer to be ready"
+	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
+"Publish all messages"
+	self messages do:[:msg|
+"Publish the message to the exchange"
+			conn
+				publishMessage: msg
+				channel: chan
+				exchange: exchg
+				routingKey: routingKey
+				mandatory: false
+				properties: nil].
+"Close channel"
+	conn closeChannelWithId: chan.
+"Close socket connection"
+	conn closeConnection.
+	^ true
+%
+category: 'Example 02 (Publisher Confirms 1)'
+classmethod: GsAmqpExample
+runProducerExample2UseTls: useTls
+
+"Example of a producer use publisher confirms to confirm every message before the next message is sent."
+
+	| routingKey conn exchgName publisher  debug count exampleNum|
+	exampleNum := 2.
+	debug := self debugEnabled .
+	conn := self getConnection: useTls.
+	routingKey := self routingKey.
+	exchgName :=  GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
+
+"opens a new dedicated channel and enables publisher confirms"
+	publisher := GsAmqpConfirmedMessagePublisher
+				newForConnection: conn
+				exchange: exchgName
+				routingKey: routingKey
+				mandatory: false.
+	count := 0.
+"Wait for consumer to be ready"
+	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
+"Publish all messages"
+	self messages
+		do:
+			[:msg |
+			| confirmed msgObj |
+			count := count + 1.
+"Publish the message to the exchange"
+			msgObj := publisher publishMessageString: msg.
+			debug ifTrue:[GsFile gciLogServer: 'Sent message ' , count asString , ' waiting for ACK'].
+"Poll for confirmation"
+			[(confirmed := publisher pollForConfirmsWithTimeoutMs: 1000) size == 0]
+				whileTrue: [debug ifTrue:[GsFile gciLogServer: ('Still waiting for confirmation of message ', count asString)]].
+			debug ifTrue:[confirmed do:[:e |
+					GsFile gciLogServer: 'Got confirmation for msg ' , e id asString , ': '
+								, e state asString]]].
+"Close socket connection"
+	conn closeConnection.
+	^true
+%
+category: 'Example 03 (Publisher Confirms 2)'
+classmethod: GsAmqpExample
+runProducerExample3UseTls: useTls
+	"Example of a simple queue producer using the built-in direct exchange.
+	All messages are sent before looking for any publisher confirms. This allows for fewer round trips to the
+	broker because the broker may confirm multiple messages with a single response.
+	Start the consumer first, then start the producer."
+
+	| bindkey debug count conn exchg publisher undeliverable ok exampleNum |
+	exampleNum := 3.
+	debug := self debugEnabled.
+	bindkey := self routingKey.
+	exchg := GsAmqpDirectExchange defaultName.	"Name of a built-in exchange"
+	conn := self getConnection: useTls.
+"Open a new channel and enable publisher confirms"
+	publisher := GsAmqpConfirmedMessagePublisher
+				newForConnection: conn
+				exchange: exchg
+				routingKey: bindkey
+				mandatory: true.
+"Wait for consumer to be ready"
+	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
+"Publish messages all at once"
+	count := 0.
+	self messages do:
+			[:msg |
+			| msgObj |
+			count := count + 1.
+			"Publish the message to the exchange"
+			msgObj := publisher publishMessageString: msg.
+			debug ifTrue: [GsFile gciLogServer: ('Sent message ' , count asString)]].
+
+"Poll for confirmations until all confirms are received."
+	[publisher publishedMessages size > 0] whileTrue:
+			[| results |
+			debug
+				ifTrue:
+					[GsFile
+						gciLogServer: ('Waiting on ' , publisher publishedMessages size asString
+								, ' outstanding acks')].
+			results := publisher pollForConfirmsWithTimeoutMs: 100.
+			debug
+				ifTrue:
+					[results size == 0
+						ifTrue: [GsFile gciLogServer: ('Got nothing after waiting 100 ms')]
+						ifFalse:
+							[results do:
+									[:msg |
+									GsFile gciLogServer: ('Got result for msg ' , msg id asString , ': '
+												, msg state asString)]]]].
+	undeliverable := publisher undeliverableMessageCount.
+	ok := undeliverable size == 0.
+	(ok not and:[debug]) ifTrue:[
+			GsFile gciLogServer: (undeliverable asString, ' messages were not delivered by the broker ('
+								, publisher returnedMessageCount asString , ' returned, '
+								, publisher rejectedMessageCount asString , ' rejected)')
+	].
+
+"Close broker connection"
+	conn closeConnection.
+	^ok
+%
+category: 'Example 04 (Transactions)'
+classmethod: GsAmqpExample
+runProducerExample4UseTls: useTls
+
+"Example of a simple queue producer using the built-in direct exchange and RabbitMQ transactions.
+Start the consumer first, then start the producer."
+
+	| bindkey conn exchg chan exampleNum|
+	exampleNum := 4.
+	chan := 1. "Channel we will use (SmallInteger)"
+	bindkey := self routingKey.
+	exchg := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
+"Connect to remote host"
+	conn := self getConnection: useTls.
+"Open a channel"
+	conn openChannelWithId: chan.
+"Put channel in transaction mode"
+	conn makeChannelTransactional: chan.
+"Wait for consumer to be ready"
+	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
+"Publish bad messages"
+	self badMessages do:[:badMsg|
+			conn
+				publishMessage: badMsg
+				channel: chan
+				exchange: exchg
+				routingKey: bindkey
+				mandatory: false
+				properties: nil.
+			].
+"Rollback the transaction. Consumer should not see any of these messages."
+	conn rollbackTransactionOnChannel: chan.
+"Now publish good messages"
+	self messages do:[:msg|
+"Publish the message to the exchange"
+			conn
+				publishMessage: msg
+				channel: chan
+				exchange: exchg
+				routingKey: bindkey
+				mandatory: false
+				properties: nil.
+			].
+"Commit. Consumer should now receive all messages."
+	conn commitTransactionOnChannel: chan.
+"Close socket connection"
+	conn closeConnection.
+	^true
+%
+category: 'Example 05 (Direct Exchange)'
+classmethod: GsAmqpExample
+runProducerExample5UseTls: useTls
+
+"Example of a simple queue consumer using a newly created direct exchange.
+Start the consumer first, then start the producer."
+
+	| conn routingKey exchg exchgName chan  debug exampleNum|
+	exampleNum := 5.
+	debug := self debugEnabled.
+	conn := self getConnection: useTls.
+	chan := 1. "Channel we will use (SmallInteger)"
+	routingKey := self routingKey. "Routing key"
+"Open a channel"
+	conn openChannelWithId: chan.
+"declare the exchange. Consumer already created it"
+	exchgName := self directExchangeName .
+	exchg := GsAmqpDirectExchange declareWithConnection: conn name: exchgName channel: chan durable: false autoDelete: false .
+"Wait for consumer to be ready"
+	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
+"Publish all messages"
+	self messages do:[:msg|
+"Publish the message to the exchange"
+			exchg
+				publishMessage: msg
+				routingKey: routingKey
+				mandatory: false
+				properties: nil].
+"Close channel"
+	conn closeChannelWithId: chan.
+"Close socket connection"
+	conn closeConnection.
+	^true
+%
+category: 'Example 06 (Fanout Exchange)'
+classmethod: GsAmqpExample
+runProducerExample6UseTls: useTls
+
+"Example of a simple queue consumer using a newly created fanout exchange.
+Start the consumer first, then start the producer."
+
+	| conn exchg exchgName chan  debug exampleNum |
+	exampleNum := 6.
+	debug := self debugEnabled.
+	conn := self getConnection: useTls.
+	chan := 1. "Channel we will use (SmallInteger)"
+"Open a channel"
+	conn openChannelWithId: chan.
+"declare the exchange. Consumer already created it"
+	exchgName := self fanoutExchangeName .
+	exchg := GsAmqpFanoutExchange declareWithConnection: conn name: exchgName channel: chan durable: false autoDelete: false .
+"Wait for consumer to be ready"
+	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
+"Publish all messages"
+	self messages do:[:msg|
+"Publish the message to the exchange"
+			exchg
+				publishMessage: msg
+				mandatory: false
+				properties: nil].
+"Close channel"
+	conn closeChannelWithId: chan.
+"Close socket connection"
+	conn closeConnection.
+	^true
+%
+category: 'Example 07 (Headers Exchange)'
+classmethod: GsAmqpExample
+runProducerExample7UseTls: useTls
+
+"Example of a simple queue consumer using a newly created headers exchange.
+Start the consumer first, then start the producer."
+
+	| conn exchg exchgName chan  debug keys badValues goodValues badProps goodProps exampleNum |
+	exampleNum := 7 .
+	debug := self debugEnabled.
+	conn := self getConnection: useTls.
+	chan := 1. "Channel we will use (SmallInteger)"
+"Open a channel"
+	conn openChannelWithId: chan.
+"declare the exchange. Consumer already created it"
+	exchgName := self headersExchangeName .
+	exchg := GsAmqpHeadersExchange declareWithConnection: conn name: exchgName channel: chan durable: false autoDelete: false .
+	keys := Array with: 'Header1' with: 'Header2'.
+	badValues := Array with: 'NoMatchHere' with: 'NoMatchThere' .
+	goodValues := Array with: 'foo' with: 'bar' .
+	badProps := GsAmqpHeadersExchange generateMessagePropertiesFromHeadersKeys: keys values: badValues  .
+	goodProps := GsAmqpHeadersExchange generateMessagePropertiesFromHeadersKeys: keys values: goodValues.
+"Wait for consumer to be ready"
+	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
+"Publish bad messages using badProps to the exchange. Consumer should not see these."
+	self badMessages do:[:msg|
+			exchg publishMessage: msg routingKey: nil mandatory: false properties: badProps ].
+
+"Publish good messages using goodProps to the exchange. Consumer should see all these."
+	self messages do:[:msg|
+			exchg publishMessage: msg routingKey: nil mandatory: false properties: goodProps ].
+
+"Close channel"
+	conn closeChannelWithId: chan.
+"Close socket connection"
+	conn closeConnection.
+	^true
+%
+category: 'Example 08 (Topic Exchange)'
+classmethod: GsAmqpExample
+runProducerExample8UseTls: useTls
+
+"Example of a simple queue consumer using a newly created topic exchange.
+Start the consumer first, then start the producer."
+
+	| conn exchg exchgName chan  debug goodBindKey badBindKey exampleNum |
+	exampleNum := 8.
+	debug := self debugEnabled.
+	conn := self getConnection: useTls.
+	chan := 1. "Channel we will use (SmallInteger)"
+"Open a channel"
+	conn openChannelWithId: chan.
+"declare the exchange. Consumer already created it"
+	exchgName := self topicExchangeName .
+	exchg := GsAmqpTopicExchange declareWithConnection: conn name: exchgName channel: chan durable: false autoDelete: false .
+	goodBindKey := 'someTopic.bindkey'.
+	badBindKey := 'someTopic.bindkey.bad'.
+"Wait for consumer to be ready"
+	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
+"Publish bad messages using badBindKey to the exchange. Consumer should not see these."
+	self badMessages do:[:msg|
+			exchg publishMessage: msg routingKey: badBindKey mandatory: false properties: nil ].
+
+"Publish good messages using goodBindKey to the exchange. Consumer should see all these."
+	self messages do:[:msg|
+			exchg publishMessage: msg routingKey: goodBindKey mandatory: false properties: nil ].
+
+"Close channel"
+	conn closeChannelWithId: chan.
+"Close socket connection"
+	conn closeConnection.
+	^true
+%
+category: 'Example 99 (Perf Test)'
+classmethod: GsAmqpExample
+runProducerExample99UseTls: useTls
+
+"Example of a simple queue producer using the built-in direct exchange to send 1M messages while handling SigAborts outside of transaction.
+Starts an external session to generate commit records.
+Start the consumer first, then start the producer."
+
+	| conn routingKey exchg chan sys numSent numToSend idx max messages abortCount startNs endNs sess exampleNum|
+	exampleNum := 99 .
+	conn := self getConnection: useTls.
+	abortCount := 0.
+	sys := System.
+	sys _cacheName: 'Producer' ;
+		sessionCacheStatAt: 0 put: 0 ;
+		transactionMode: #manualBegin;
+		abortTransaction.
+
+	chan := 1. "Channel we will use (SmallInteger)"
+	routingKey := self routingKey. "Routing key"
+	exchg := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
+"Open a channel"
+	conn openChannelWithId: chan.
+"Publish all messages"
+	messages := self messages.
+	numToSend := self numMessagesForPerformanceTest.
+	numSent := 0.
+	max := messages size.
+	idx := 1.
+	abortCount := 0.
+"Start external session"
+	sess := (GsTsExternalSession newDefault) login ; yourself .
+	self setRunCommitter: true.
+"Wait for consumer to be ready"
+	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
+"tell external session to create 4 commit records per second"
+	sess nbExecute: 'GsAmqpExample makeCommitRecords' .
+	startNs := sys timeNs.
+	[ [
+			[numSent == numToSend] whileFalse:[
+				conn
+					publishMessage: (messages at: idx)
+					channel: chan
+					exchange: exchg
+					routingKey: routingKey
+					mandatory: false
+					properties: nil.
+			numSent := numSent + 1.
+			idx := idx + 1.
+			idx > max ifTrue:[ idx := 1 ].
+"Tell RabbitMQ to cleanup memory every 1000 messages"
+			numSent \\ 1000 == 0 ifTrue: [conn maybeReleaseBuffers].
+			sys sessionCacheStatAt: 0 put: numSent.
+			].
+		] on: TransactionBacklog do:[:ex | abortCount := abortCount + 1.
+						sys abortTransaction; enableSignaledAbortError.
+						ex resume].
+		endNs := System timeNs.
+	] ensure:[ sess logout. sys transactionMode: #autoBegin ; abortTransaction. self setRunCommitter: false ].
+	sys sessionCacheStatAt: 0 put: 0.
+"Close channel"
+	conn closeChannelWithId: chan.
+"Close socket connection"
+	conn closeConnection.
+	GsFile gciLogServer: ('Sent unexpected token->', numSent asString, ' messages in ',
+		 ((endNs - startNs) // 1000000) asString,
+		' ms and handled ', abortCount asString, ' SigAborts').
+	^ true
+%
+category: 'Example 09 (Acknowlegments 1)'
+classmethod: GsAmqpExample
+runProducerExample9UseTls: useTls
+
+^ self runSimpleProducerExample: 9 useTls: useTls
+%
+category: 'Examples (Producer)'
+classmethod: GsAmqpExample
+runProducerExampleNumber: num useTls: useTls
+
+| sym |
+
+sym := ('runProducerExample', num asString, 'UseTls:') asSymbol.
+^ self perform: sym with: useTls
+
+%
+category: 'Examples (Consumer)'
+classmethod: GsAmqpExample
+runSimpleConsumerExample: exampleNum useTls: useTls
+
+"Example of a simple queue consumer using the built-in direct exchange.
+Start the consumer first, then start the producer."
+
+	| conn routingKey queue env count exchgName chan results numExpected debug |
+	debug := self debugEnabled.
+	conn := self getConnection: useTls.
+	numExpected := self numberOfMessages .
+	results := Array new.
+	chan := 1. "Channel we will use (SmallInteger)"
+	routingKey := self routingKey. "Routing key"
+	exchgName := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
+"Open a channel"
+	conn openChannelWithId: chan.
+"Declare the queue we will use. Let the broker choose the queue name"
+	queue := GsAmqpQueue
+				declareWithConnection: conn
+				durable: false
+				exclusive: false
+				autoDelete: true.
+	debug ifTrue:[GsFile gciLogServer: 'Queue name is ' , queue name].
+"Bind our queue to the built-in exchange"
+	conn
+		bindQueueWithName: queue name
+		toExchangeWithName: exchgName
+		channel: chan
+		routingKey: routingKey.
+"Tell broker we want to start consuming this queue"
+	queue beginConsumingWithNoLocal: false noAck: true.
+	count := 0.
+	env := GsAmqpEnvelope new.
+	self setConsumerReady: exampleNum .
+"Loop until we have received all messages"
+	[count == numExpected] whileFalse:
+			[(queue consumeMessageInto: env timeoutMs: 3000)
+				ifTrue:
+					[count := count + 1.
+					results add: env messageBody.
+					debug ifTrue:[GsFile gciLogServer: 'msg ' , count asString , ': ' , env messageBody]. ]
+				ifFalse: [debug ifTrue:[GsFile gciLogServer: 'Waiting for a message...']]].
+"Tell the broker to send us no more messages"
+	queue stopConsuming.
+	self setConsumerNotReady.
+"Check if there are any more messages for us but do not block. The broker could have sent a message before it received the stop message."
+	[queue consumeMessageInto: env timeoutMs: 0] whileTrue:[ count := count + 1 ].
+	count > numExpected ifTrue:[ debug ifTrue:[GsFile gciLogServer: ((count - numExpected) asString, ' messages were discarded.')]].
+"Unbind the queue from the exchange"
+	queue unbind.
+"Delete the queue"
+	queue deleteIfSafe.
+"Close channel"
+	conn closeChannelWithId: chan.
+"Close socket connection"
+	conn closeConnection.
+"Answer if strings from sender match what we expect"
+	^results = self messages
+%
+category: 'Examples (Producer)'
+classmethod: GsAmqpExample
+runSimpleProducerExample: exampleNum useTls: useTls
+
+"Example of a simple queue producer using the built-in direct exchange.
+Start the consumer first, then start the producer."
+
+	| conn routingKey exchg chan result |
+	conn := self getConnection: useTls.
+	result := Array new.
+	chan := 1. "Channel we will use (SmallInteger)"
+	routingKey := self routingKey. "Routing key"
+	exchg := GsAmqpDirectExchange defaultName. "Name of a built-in exchange"
+"Open a channel"
+	conn openChannelWithId: chan.
+"Wait for consumer to be ready"
+	self waitForConsumerReady: exampleNum upTo: self waitForConsumerTimeMs.
+"Publish all messages"
+	self messages do:[:msg|
+"Publish the message to the exchange"
+			conn
+				publishMessage: msg
+				channel: chan
+				exchange: exchg
+				routingKey: routingKey
+				mandatory: false
+				properties: nil].
+"Close channel"
+	conn closeChannelWithId: chan.
+"Close socket connection"
+	conn closeConnection.
+	^ true
+%
+category: 'Producer - Consumer Coordination'
+classmethod: GsAmqpExample
+setConsumerNotReady
+
+^ self setConsumerReady: 0
+%
+category: 'Producer - Consumer Coordination'
+classmethod: GsAmqpExample
+setConsumerReady: exampleNum
+
+System sharedCounter: self sharedCounterId setValue: exampleNum
+%
+category: 'Example 99 (Perf Test)'
+classmethod: GsAmqpExample
+setRunCommitter: bool
+
+System sharedCounter: (self committerSharedCounterId) setValue: bool asBit
+%
+category: 'Producer - Consumer Coordination'
+classmethod: GsAmqpExample
+sharedCounterId
+
+"Shared counter use to coordinate producers and consumers"
+
+^ 0
+%
+category: 'Accessing'
+classmethod: GsAmqpExample
+tlsPort
+
+^ tlsPort ifNil:[ self defaultTlsPort ] ifNotNil:[ tlsPort ]
+%
+category: 'Updating'
+classmethod: GsAmqpExample
+tlsPort: newValue
+
+tlsPort := newValue
+%
+category: 'Accessing'
+classmethod: GsAmqpExample
+topicExchangeName
+
+^ self exchangeNameForKind: 'topic'
+%
+category: 'Producer - Consumer Coordination'
+classmethod: GsAmqpExample
+waitForConsumerReady: exampleNum upTo: ms
+
+	^(self waitForConsumerReadyNoError: exampleNum upTo: ms)
+		ifTrue: [true]
+		ifFalse:
+			[self error: ('timeout waiting for consumer for example ', exampleNum asString, 'to start after ' , ms asString
+						, ' milliseconds')]
+%
+category: 'Producer - Consumer Coordination'
+classmethod: GsAmqpExample
+waitForConsumerReadyNoError: exampleNum upTo: ms
+
+	| endNs sys |
+	sys := System.
+	endNs := sys timeNs + (ms * 1000000).
+	[sys timeNs < endNs] whileTrue: [(
+		self consumerIsReady: exampleNum) ifTrue: [^true].
+		sys _sleepMs: 100.
+	].
+	^false "timed out"
+%
+category: 'Producer - Consumer Coordination'
+classmethod: GsAmqpExample
+waitForConsumerTimeMs
+
+"Time in milliseconds for the consumer to be ready."
+
+^ 60000
+%
+! ------------------- Instance methods for GsAmqpExample
 ! ------------------- Remove existing behavior from GsAmqpHeadersExchange
 removeAllMethods GsAmqpHeadersExchange
 removeAllClassMethods GsAmqpHeadersExchange
@@ -4091,7 +4557,7 @@ props headers: table.
 %
 category: 'Headers Generation'
 classmethod: GsAmqpHeadersExchange
-generateMessagePropertiesFromHeadersKeys: keys values: values 
+generateMessagePropertiesFromHeadersKeys: keys values: values
 
 | table props |
 table := GsAmqpTable newFromKeys: keys values: values.
@@ -4259,13 +4725,13 @@ method: GsAmqpTableEntry
 setKey: newValue
 
 	newValue
-		ifNil: 
+		ifNil:
 			[key := nil.
 			self
 				memset: 0
 				from: self keyOffset
 				to: self valueOffset - 1]
-		ifNotNil: 
+		ifNotNil:
 			[| amqpBytes |
 			key := Association newWithKey: newValue
 						value: (amqpBytes := GsAmqpBytes fromString: newValue).
@@ -4279,10 +4745,10 @@ method: GsAmqpTableEntry
 setValue: newValue
 
 	newValue
-		ifNil: 
+		ifNil:
 			[value := nil.
 			self memset: 0 from: self class valueOffset to: -1 "clear C state" ]
-		ifNotNil: 
+		ifNotNil:
 			[newValue _validateClass: GsAmqpFieldValue.
 			value := newValue.
 			self "copy C state from newValue into receiver"
@@ -4545,7 +5011,7 @@ initializeFromC
 	classId: (self uint16At: 24) ;
 	methodId: (self uint16At: 26) ;
 	yourself
-	
+
 %
 category: 'Accessing'
 method: GsAmqpConnectionClose
@@ -4629,7 +5095,7 @@ basicPollForConfirmsNoWaitIntoMethodFrame: methodFrame resultInto: result
 
 	| didWork |
 	didWork := false.
-	[true] whileTrue: 
+	[true] whileTrue:
 			[| gotDataThisTime |
 			self hasUnconfirmedMessages ifFalse: [^ didWork]. "Early exit for no more outstanding acks"
 			(gotDataThisTime := self primPollForConfirmsWithTimeoutMs: 0
@@ -4650,7 +5116,7 @@ basicPollForConfirmsWithTimeoutMs: ms methodFrame: methodFrame resultInto: resul
 
 	self hasUnconfirmedMessages ifFalse: [^false].	"Early exit for no more outstanding acks"
 	^(self primPollForConfirmsWithTimeoutMs: ms methodFrame: methodFrame)
-		ifTrue: 
+		ifTrue:
 			["Got a frame, process it"
 			self processFrame: methodFrame addMessageTo: result.
 			methodFrame initializeForReuse.
@@ -4777,7 +5243,7 @@ noMoreUnconfirmedMessages
 %
 category: 'Polling'
 method: GsAmqpConfirmedMessagePublisher
-pollForConfirmsWithTimeoutMs: ms 
+pollForConfirmsWithTimeoutMs: ms
 
 ^ self pollForConfirmsWithTimeoutMs: ms getAtMost: SmallInteger maximumValue
 %
@@ -4792,20 +5258,20 @@ pollForConfirmsWithTimeoutMs: ms getAtMost: maxConfirms
 
 	"Simple case: do not loop/retry if caller wants no wait or wai forever"
 	ms <= 0
-		ifTrue: 
+		ifTrue:
 			[self
 				basicPollForConfirmsWithTimeoutMs: ms
 				methodFrame: methodFrame
 				resultInto: result]
-		ifFalse: 
+		ifFalse:
 			[| nowMs endTimeMs done |
 			nowMs := sys _timeMs.
 			endTimeMs := nowMs + ms.
 			done := false.
-			[done] whileFalse: 
+			[done] whileFalse:
 					[| timeLeftMs |
 					(timeLeftMs := endTimeMs - nowMs) > 0
-						ifTrue: 
+						ifTrue:
 							[self
 								basicPollForConfirmsWithTimeoutMs: timeLeftMs
 								methodFrame: methodFrame
@@ -4837,7 +5303,7 @@ processBasicAck: aGsAmqpMethod addMessageTo: anArray
 	msgs := multiple "Multiple == true means all messages up to and include id are acknowleged"
 				ifTrue: [self allMessageUpToIncludingId: id]
 				ifFalse: [Array with: (self messageForId: id)].
-	msgs do: 
+	msgs do:
 			[:msg |
 			msg setConfirmed.	"Update message state"
 			self publishedMessages remove: msg.	"Remove from published"
@@ -4904,13 +5370,13 @@ processFrame: aGsAmqpFrame addMessageTo: anArray
 	payload := aGsAmqpFrame payload.
 	payload isBasicAck
 		ifTrue: [self processBasicAck: payload addMessageTo: anArray]
-		ifFalse: 
+		ifFalse:
 			[payload isBasicNack
 				ifTrue: [self processBasicNack: payload addMessageTo: anArray]
-				ifFalse: 
+				ifFalse:
 					[payload isBasicReject
 						ifTrue: [self processBasicReject: payload addMessageTo: anArray]
-						ifFalse: 
+						ifFalse:
 							[payload isBasicReturn
 								ifTrue: [self processBasicReturn: payload addMessageTo: anArray]
 								ifFalse: [self error: 'unexpected payload kind']]]].
@@ -4921,7 +5387,7 @@ category: 'Polling'
 method: GsAmqpConfirmedMessagePublisher
 processRejectedMessages: anArray
 
-	anArray do: 
+	anArray do:
 			[:msg |
 			msg setRejected.	"Update message state"
 			self publishedMessages remove: msg.	"Remove from published"
@@ -5040,7 +5506,7 @@ classmethod: GsRabbitMqError
 newFromRpcReply: reply forOperation: aString
 
 	^reply isSuccess
-		ifTrue: 
+		ifTrue:
 			[self error: 'Attempt to raise an exception from a successful operation']
 		ifFalse: [self new initializeFromReply: reply forOperation: aString]
 %
@@ -5090,7 +5556,7 @@ method: GsRabbitMqError
 initialize
 
 super initialize.
-^ self amqpErrorCode: 0 
+^ self amqpErrorCode: 0
 	yourself
 %
 category: 'Initialize'
@@ -5126,7 +5592,7 @@ category: 'Initialize'
 method: GsRabbitMqError
 initializeLibraryExceptionFromReply: reply forOperation: aString
 
-^ self amqpErrorCode: reply libraryErrorNotNoError ; 
+^ self amqpErrorCode: reply libraryErrorNotNoError ;
 	details: (self buildErrorStringForOperation: aString with: ('with a library exception ', (reply connection library amqp_error_string2_: self amqpErrorCode))) ;
 	yourself
 %
@@ -5134,7 +5600,7 @@ category: 'Initialize'
 method: GsRabbitMqError
 initializeServerExceptionFromReply: reply forOperation: aString
 
-^ self amqpErrorCode: reply methodNumber ; 
+^ self amqpErrorCode: reply methodNumber ;
 	details: (self buildErrorStringForOperation: aString with: ('with a server exception. The server returned: ' , (reply connection library methodNumberToString: self amqpErrorCode))) ;
 	yourself
 %
@@ -5142,7 +5608,7 @@ category: 'Initialize'
 method: GsRabbitMqError
 initializeSocketEofExceptionFromReply: reply forOperation: aString
 
-^ self amqpErrorCode: GsAmqpRpcReply AMQP_STATUS_SOCKET_CLOSED ; 
+^ self amqpErrorCode: GsAmqpRpcReply AMQP_STATUS_SOCKET_CLOSED ;
 	details: (self buildErrorStringForOperation: aString with: ('with socket EOF exception ', (reply connection library methodNumberToString: self amqpErrorCode))) ;
 	yourself
 %
@@ -5201,19 +5667,19 @@ struct timeval
   __suseconds_t tv_usec; // microseconds, 8 bytes
 };
 
-The result is a CByteArray containing 16 bytes in C space. Since it is created using gcMalloc:, the 
+The result is a CByteArray containing 16 bytes in C space. Since it is created using gcMalloc:, the
 space will be freed by the garbage collection when no longer in use.
 
 Passing nil to the CCallout passes NULL to the C function which causes blocking behavior"
 
 	^ms
 		ifNil: [nil] "Caller wants infinite timeout (blocking)"
-		ifNotNil: 
+		ifNotNil:
 			[| seconds microSeconds |
 			ms _validateClass: SmallInteger .
 			seconds := ms // 1000.
 			microSeconds := 1000 * (ms \\ 1000).
-			CByteArray fromArrayOfInt64: 
+			CByteArray fromArrayOfInt64:
 					{seconds.
 					microSeconds}]
 %
@@ -5223,25 +5689,25 @@ createTimeStructArrayForMs: ms
 	"Answer an Array of 3 elements:
 
 1) CByteArray representing timeStruct for the repeated short blocking operations or sleeps, or nil for inifinite wait.
-2) SmallInteger representing the repeat count for item 1. 
+2) SmallInteger representing the repeat count for item 1.
 3) CByteArray representing timeStruct for the final short block or sleep, or 0 for no final block or sleep.
 "
 
 	^ms == nil
-		ifTrue: 
+		ifTrue:
 			["Caller wants blocking wait with infinite timeout. Implement as 250 waits with a very high repeat count"
 			Array
 				with: (self createStructTimeValForMilliseconds: self maxBlockMsTimeMs)
 				with: SmallInteger maximumValue
 				with: 0]
-		ifFalse: 
+		ifFalse:
 			[ms == 0
-				ifTrue: 
+				ifTrue:
 					[Array
 						with: (self createStructTimeValForMilliseconds: 0)
 						with: 1
 						with: 0]
-				ifFalse: 
+				ifFalse:
 					[| mod div maxBlockMs result |
 					maxBlockMs := self maxBlockTimeMs.
 					div := ms // maxBlockMs.
@@ -5280,7 +5746,7 @@ normg@moop>git branch
 			'rabbitmq-c/ssl_socket.h'}.
 	searchpath := '/moop3/users/normg/rabbitmq_inst/include'.
 	lib := '/moop3/users/normg/rabbitmq_inst/lib/librabbitmq'.
-	paths do: 
+	paths do:
 			[:e |
 			hdr := CHeader path: e searchPath: searchpath.
 			hdr
@@ -5294,12 +5760,12 @@ classmethod: GsLibRabbitMq
 initializeFunctions
 	 | library |
 	 library := CLibrary named: '/moop3/users/normg/rabbitmq_inst/lib/librabbitmq' .
-   self initializeFunctions: library . 
+   self initializeFunctions: library .
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
-initializeFunctions: aCLibrary 
-	self 
+initializeFunctions: aCLibrary
+	self
 	initializeFunction_amqp_basic_ack_inLibrary: aCLibrary ;
 	initializeFunction_amqp_basic_cancel_inLibrary: aCLibrary ;
 	initializeFunction_amqp_basic_consume_inLibrary: aCLibrary ;
@@ -5426,7 +5892,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_basic_ack_inLibrary: cLibrary
 
-	Function_amqp_basic_ack := CCallout 
+	Function_amqp_basic_ack := CCallout
 		library: cLibrary
 		name: 'amqp_basic_ack'
 		result: #'int32'
@@ -5438,8 +5904,8 @@ initializeFunction_amqp_basic_cancel_inLibrary: cLibrary
   Function_amqp_basic_cancel := CCalloutStructs library: cLibrary name: 'amqp_basic_cancel'
   result: #'ptr'
   args: #(  #'ptr'"state"  #'uint16'"channel"  #'struct'"consumer_tag"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil nil nil 16  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil nil nil 16  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
@@ -5447,23 +5913,23 @@ initializeFunction_amqp_basic_consume_inLibrary: cLibrary
   Function_amqp_basic_consume := CCalloutStructs library: cLibrary name: 'amqp_basic_consume'
   result: #'ptr'
   args: #(  #'ptr'"state"  #'uint16'"channel"  #'struct'"queue"  #'struct'"consumer_tag"  #'int32'"no_local"  #'int32'"no_ack"  #'int32'"exclusive"  #'struct'"arguments"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil nil nil 16 16 nil nil nil 16  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil nil nil 16 16 nil nil nil 16  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_basic_get_inLibrary: cLibrary
   Function_amqp_basic_get := CCalloutStructs library: cLibrary name: 'amqp_basic_get'
-  result:  #struct 
+  result:  #struct
   args: #(  #'ptr'"state"  #'uint16'"channel"  #'struct'"queue"  #'int32'"no_ack"    )
-	 varArgsAfter: -1 
-	 structSizes: #( 32 nil nil 16 nil  ). 
+	 varArgsAfter: -1
+	 structSizes: #( 32 nil nil 16 nil  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_basic_nack_inLibrary: cLibrary
 
-	Function_amqp_basic_nack := CCallout 
+	Function_amqp_basic_nack := CCallout
 		library: cLibrary
 		name: 'amqp_basic_nack'
 		result: #'int32'
@@ -5475,14 +5941,14 @@ initializeFunction_amqp_basic_publish_inLibrary: cLibrary
   Function_amqp_basic_publish := CCalloutStructs library: cLibrary name: 'amqp_basic_publish'
   result: #'int32'
   args: #(  #'ptr'"state"  #'uint16'"channel"  #'struct'"exchange"  #'struct'"routing_key"  #'int32'"mandatory"  #'int32'"immediate"  #'ptr'"properties"  #'struct'"body"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil nil nil 16 16 nil nil nil 16  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil nil nil 16 16 nil nil nil 16  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_basic_qos_inLibrary: cLibrary
 
-	Function_amqp_basic_qos := CCallout 
+	Function_amqp_basic_qos := CCallout
 		library: cLibrary
 		name: 'amqp_basic_qos'
 		result: #'ptr'
@@ -5492,7 +5958,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_basic_recover_inLibrary: cLibrary
 
-	Function_amqp_basic_recover := CCallout 
+	Function_amqp_basic_recover := CCallout
 		library: cLibrary
 		name: 'amqp_basic_recover'
 		result: #'ptr'
@@ -5502,7 +5968,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_basic_reject_inLibrary: cLibrary
 
-	Function_amqp_basic_reject := CCallout 
+	Function_amqp_basic_reject := CCallout
 		library: cLibrary
 		name: 'amqp_basic_reject'
 		result: #'int32'
@@ -5514,41 +5980,41 @@ initializeFunction_amqp_bytes_free_inLibrary: cLibrary
   Function_amqp_bytes_free := CCalloutStructs library: cLibrary name: 'amqp_bytes_free'
   result: #'void'
   args: #(  #'struct'"bytes"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil 16  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil 16  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_bytes_malloc_dup_inLibrary: cLibrary
   Function_amqp_bytes_malloc_dup := CCalloutStructs library: cLibrary name: 'amqp_bytes_malloc_dup'
-  result:  #struct 
+  result:  #struct
   args: #(  #'struct'"src"    )
-	 varArgsAfter: -1 
-	 structSizes: #( 16 16  ). 
+	 varArgsAfter: -1
+	 structSizes: #( 16 16  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_bytes_malloc_inLibrary: cLibrary
   Function_amqp_bytes_malloc := CCalloutStructs library: cLibrary name: 'amqp_bytes_malloc'
-  result:  #struct 
+  result:  #struct
   args: #(  #'uint64'"amount"    )
-	 varArgsAfter: -1 
-	 structSizes: #( 16 nil  ). 
+	 varArgsAfter: -1
+	 structSizes: #( 16 nil  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_channel_close_inLibrary: cLibrary
   Function_amqp_channel_close := CCalloutStructs library: cLibrary name: 'amqp_channel_close'
-  result:  #struct 
+  result:  #struct
   args: #(  #'ptr'"state"  #'uint16'"channel"  #'int32'"code"    )
-	 varArgsAfter: -1 
-	 structSizes: #( 32 nil nil nil  ). 
+	 varArgsAfter: -1
+	 structSizes: #( 32 nil nil nil  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_channel_flow_inLibrary: cLibrary
 
-	Function_amqp_channel_flow := CCallout 
+	Function_amqp_channel_flow := CCallout
 		library: cLibrary
 		name: 'amqp_channel_flow'
 		result: #'ptr'
@@ -5558,7 +6024,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_channel_open_inLibrary: cLibrary
 
-	Function_amqp_channel_open := CCallout 
+	Function_amqp_channel_open := CCallout
 		library: cLibrary
 		name: 'amqp_channel_open'
 		result: #'ptr'
@@ -5568,7 +6034,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_confirm_select_inLibrary: cLibrary
 
-	Function_amqp_confirm_select := CCallout 
+	Function_amqp_confirm_select := CCallout
 		library: cLibrary
 		name: 'amqp_confirm_select'
 		result: #'ptr'
@@ -5578,10 +6044,10 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_connection_close_inLibrary: cLibrary
   Function_amqp_connection_close := CCalloutStructs library: cLibrary name: 'amqp_connection_close'
-  result:  #struct 
+  result:  #struct
   args: #(  #'ptr'"state"  #'int32'"code"    )
-	 varArgsAfter: -1 
-	 structSizes: #( 32 nil nil  ). 
+	 varArgsAfter: -1
+	 structSizes: #( 32 nil nil  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
@@ -5589,14 +6055,14 @@ initializeFunction_amqp_connection_update_secret_inLibrary: cLibrary
   Function_amqp_connection_update_secret := CCalloutStructs library: cLibrary name: 'amqp_connection_update_secret'
   result: #'ptr'
   args: #(  #'ptr'"state"  #'uint16'"channel"  #'struct'"new_secret"  #'struct'"reason"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil nil nil 16 16  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil nil nil 16 16  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_constant_is_hard_error_inLibrary: cLibrary
 
-	Function_amqp_constant_is_hard_error := CCallout 
+	Function_amqp_constant_is_hard_error := CCallout
 		library: cLibrary
 		name: 'amqp_constant_is_hard_error'
 		result: #'int32'
@@ -5606,7 +6072,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_constant_name_inLibrary: cLibrary
 
-	Function_amqp_constant_name := CCallout 
+	Function_amqp_constant_name := CCallout
 		library: cLibrary
 		name: 'amqp_constant_name'
 		result: #'char*'
@@ -5616,25 +6082,25 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_consume_message_inLibrary: cLibrary
   Function_amqp_consume_message := CCalloutStructs library: cLibrary name: 'amqp_consume_message'
-  result:  #struct 
+  result:  #struct
   args: #(  #'ptr'"state"  #'ptr'"envelope"  #'ptr'"timeout"  #'int32'"flags"    )
-	 varArgsAfter: -1 
-	 structSizes: #( 32 nil nil nil nil  ). 
+	 varArgsAfter: -1
+	 structSizes: #( 32 nil nil nil nil  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_cstring_bytes_inLibrary: cLibrary
   Function_amqp_cstring_bytes := CCalloutStructs library: cLibrary name: 'amqp_cstring_bytes'
-  result:  #struct 
+  result:  #struct
   args: #(  #'const char*'"cstr"    )
-	 varArgsAfter: -1 
-	 structSizes: #( 16 nil  ). 
+	 varArgsAfter: -1
+	 structSizes: #( 16 nil  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_data_in_buffer_inLibrary: cLibrary
 
-	Function_amqp_data_in_buffer := CCallout 
+	Function_amqp_data_in_buffer := CCallout
 		library: cLibrary
 		name: 'amqp_data_in_buffer'
 		result: #'int32'
@@ -5646,8 +6112,8 @@ initializeFunction_amqp_decode_method_inLibrary: cLibrary
   Function_amqp_decode_method := CCalloutStructs library: cLibrary name: 'amqp_decode_method'
   result: #'int32'
   args: #(  #'uint32'"methodNumber"  #'ptr'"pool"  #'struct'"encoded"  #'ptr'"decoded"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil nil nil 16 nil  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil nil nil 16 nil  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
@@ -5655,8 +6121,8 @@ initializeFunction_amqp_decode_properties_inLibrary: cLibrary
   Function_amqp_decode_properties := CCalloutStructs library: cLibrary name: 'amqp_decode_properties'
   result: #'int32'
   args: #(  #'uint16'"class_id"  #'ptr'"pool"  #'struct'"encoded"  #'ptr'"decoded"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil nil nil 16 nil  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil nil nil 16 nil  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
@@ -5664,14 +6130,14 @@ initializeFunction_amqp_decode_table_inLibrary: cLibrary
   Function_amqp_decode_table := CCalloutStructs library: cLibrary name: 'amqp_decode_table'
   result: #'int32'
   args: #(  #'struct'"encoded"  #'ptr'"pool"  #'ptr'"output"  #'ptr'"offset"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil 16 nil nil nil  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil 16 nil nil nil  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_default_connection_info_inLibrary: cLibrary
 
-	Function_amqp_default_connection_info := CCallout 
+	Function_amqp_default_connection_info := CCallout
 		library: cLibrary
 		name: 'amqp_default_connection_info'
 		result: #'void'
@@ -5681,7 +6147,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_destroy_connection_inLibrary: cLibrary
 
-	Function_amqp_destroy_connection := CCallout 
+	Function_amqp_destroy_connection := CCallout
 		library: cLibrary
 		name: 'amqp_destroy_connection'
 		result: #'int32'
@@ -5691,7 +6157,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_destroy_envelope_inLibrary: cLibrary
 
-	Function_amqp_destroy_envelope := CCallout 
+	Function_amqp_destroy_envelope := CCallout
 		library: cLibrary
 		name: 'amqp_destroy_envelope'
 		result: #'void'
@@ -5701,7 +6167,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_destroy_message_inLibrary: cLibrary
 
-	Function_amqp_destroy_message := CCallout 
+	Function_amqp_destroy_message := CCallout
 		library: cLibrary
 		name: 'amqp_destroy_message'
 		result: #'void'
@@ -5713,8 +6179,8 @@ initializeFunction_amqp_encode_method_inLibrary: cLibrary
   Function_amqp_encode_method := CCalloutStructs library: cLibrary name: 'amqp_encode_method'
   result: #'int32'
   args: #(  #'uint32'"methodNumber"  #'ptr'"decoded"  #'struct'"encoded"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil nil nil 16  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil nil nil 16  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
@@ -5722,8 +6188,8 @@ initializeFunction_amqp_encode_properties_inLibrary: cLibrary
   Function_amqp_encode_properties := CCalloutStructs library: cLibrary name: 'amqp_encode_properties'
   result: #'int32'
   args: #(  #'uint16'"class_id"  #'ptr'"decoded"  #'struct'"encoded"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil nil nil 16  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil nil nil 16  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
@@ -5731,14 +6197,14 @@ initializeFunction_amqp_encode_table_inLibrary: cLibrary
   Function_amqp_encode_table := CCalloutStructs library: cLibrary name: 'amqp_encode_table'
   result: #'int32'
   args: #(  #'struct'"encoded"  #'ptr'"input"  #'ptr'"offset"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil 16 nil nil  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil 16 nil nil  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_error_string2_inLibrary: cLibrary
 
-	Function_amqp_error_string2 := CCallout 
+	Function_amqp_error_string2 := CCallout
 		library: cLibrary
 		name: 'amqp_error_string2'
 		result: #'char*'
@@ -5748,7 +6214,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_error_string_inLibrary: cLibrary
 
-	Function_amqp_error_string := CCallout 
+	Function_amqp_error_string := CCallout
 		library: cLibrary
 		name: 'amqp_error_string'
 		result: #'char*'
@@ -5760,8 +6226,8 @@ initializeFunction_amqp_exchange_bind_inLibrary: cLibrary
   Function_amqp_exchange_bind := CCalloutStructs library: cLibrary name: 'amqp_exchange_bind'
   result: #'ptr'
   args: #(  #'ptr'"state"  #'uint16'"channel"  #'struct'"destination"  #'struct'"source"  #'struct'"routing_key"  #'struct'"arguments"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil nil nil 16 16 16 16  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil nil nil 16 16 16 16  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
@@ -5769,8 +6235,8 @@ initializeFunction_amqp_exchange_declare_inLibrary: cLibrary
   Function_amqp_exchange_declare := CCalloutStructs library: cLibrary name: 'amqp_exchange_declare'
   result: #'ptr'
   args: #(  #'ptr'"state"  #'uint16'"channel"  #'struct'"exchange"  #'struct'"type"  #'int32'"passive"  #'int32'"durable"  #'int32'"auto_delete"  #'int32'"internal"  #'struct'"arguments"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil nil nil 16 16 nil nil nil nil 16  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil nil nil 16 16 nil nil nil nil 16  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
@@ -5778,8 +6244,8 @@ initializeFunction_amqp_exchange_delete_inLibrary: cLibrary
   Function_amqp_exchange_delete := CCalloutStructs library: cLibrary name: 'amqp_exchange_delete'
   result: #'ptr'
   args: #(  #'ptr'"state"  #'uint16'"channel"  #'struct'"exchange"  #'int32'"if_unused"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil nil nil 16 nil  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil nil nil 16 nil  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
@@ -5787,14 +6253,14 @@ initializeFunction_amqp_exchange_unbind_inLibrary: cLibrary
   Function_amqp_exchange_unbind := CCalloutStructs library: cLibrary name: 'amqp_exchange_unbind'
   result: #'ptr'
   args: #(  #'ptr'"state"  #'uint16'"channel"  #'struct'"destination"  #'struct'"source"  #'struct'"routing_key"  #'struct'"arguments"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil nil nil 16 16 16 16  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil nil nil 16 16 16 16  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_frames_enqueued_inLibrary: cLibrary
 
-	Function_amqp_frames_enqueued := CCallout 
+	Function_amqp_frames_enqueued := CCallout
 		library: cLibrary
 		name: 'amqp_frames_enqueued'
 		result: #'int32'
@@ -5804,7 +6270,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_get_channel_max_inLibrary: cLibrary
 
-	Function_amqp_get_channel_max := CCallout 
+	Function_amqp_get_channel_max := CCallout
 		library: cLibrary
 		name: 'amqp_get_channel_max'
 		result: #'int32'
@@ -5814,7 +6280,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_get_client_properties_inLibrary: cLibrary
 
-	Function_amqp_get_client_properties := CCallout 
+	Function_amqp_get_client_properties := CCallout
 		library: cLibrary
 		name: 'amqp_get_client_properties'
 		result: #'ptr'
@@ -5824,7 +6290,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_get_frame_max_inLibrary: cLibrary
 
-	Function_amqp_get_frame_max := CCallout 
+	Function_amqp_get_frame_max := CCallout
 		library: cLibrary
 		name: 'amqp_get_frame_max'
 		result: #'int32'
@@ -5834,7 +6300,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_get_handshake_timeout_inLibrary: cLibrary
 
-	Function_amqp_get_handshake_timeout := CCallout 
+	Function_amqp_get_handshake_timeout := CCallout
 		library: cLibrary
 		name: 'amqp_get_handshake_timeout'
 		result: #'ptr'
@@ -5844,7 +6310,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_get_heartbeat_inLibrary: cLibrary
 
-	Function_amqp_get_heartbeat := CCallout 
+	Function_amqp_get_heartbeat := CCallout
 		library: cLibrary
 		name: 'amqp_get_heartbeat'
 		result: #'int32'
@@ -5854,16 +6320,16 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_get_rpc_reply_inLibrary: cLibrary
   Function_amqp_get_rpc_reply := CCalloutStructs library: cLibrary name: 'amqp_get_rpc_reply'
-  result:  #struct 
+  result:  #struct
   args: #(  #'ptr'"state"    )
-	 varArgsAfter: -1 
-	 structSizes: #( 32 nil  ). 
+	 varArgsAfter: -1
+	 structSizes: #( 32 nil  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_get_rpc_timeout_inLibrary: cLibrary
 
-	Function_amqp_get_rpc_timeout := CCallout 
+	Function_amqp_get_rpc_timeout := CCallout
 		library: cLibrary
 		name: 'amqp_get_rpc_timeout'
 		result: #'ptr'
@@ -5873,7 +6339,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_get_server_properties_inLibrary: cLibrary
 
-	Function_amqp_get_server_properties := CCallout 
+	Function_amqp_get_server_properties := CCallout
 		library: cLibrary
 		name: 'amqp_get_server_properties'
 		result: #'ptr'
@@ -5883,7 +6349,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_get_socket_inLibrary: cLibrary
 
-	Function_amqp_get_socket := CCallout 
+	Function_amqp_get_socket := CCallout
 		library: cLibrary
 		name: 'amqp_get_socket'
 		result: #'ptr'
@@ -5893,7 +6359,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_get_sockfd_inLibrary: cLibrary
 
-	Function_amqp_get_sockfd := CCallout 
+	Function_amqp_get_sockfd := CCallout
 		library: cLibrary
 		name: 'amqp_get_sockfd'
 		result: #'int32'
@@ -5905,14 +6371,14 @@ initializeFunction_amqp_handle_input_inLibrary: cLibrary
   Function_amqp_handle_input := CCalloutStructs library: cLibrary name: 'amqp_handle_input'
   result: #'int32'
   args: #(  #'ptr'"state"  #'struct'"received_data"  #'ptr'"decoded_frame"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil nil 16 nil  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil nil 16 nil  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_initialize_ssl_library_inLibrary: cLibrary
 
-	Function_amqp_initialize_ssl_library := CCallout 
+	Function_amqp_initialize_ssl_library := CCallout
 		library: cLibrary
 		name: 'amqp_initialize_ssl_library'
 		result: #'int32'
@@ -5922,25 +6388,25 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_login_inLibrary: cLibrary
   Function_amqp_login := CCalloutStructs library: cLibrary name: 'amqp_login'
-  result:  #struct 
+  result:  #struct
   args: #(  #'ptr'"state"  #'const char*'"vhost"  #'int32'"channel_max"  #'int32'"frame_max"  #'int32'"heartbeat"  #'int32'"sasl_method"    )
 	 varArgsAfter: 6
-	 structSizes: #( 32 nil nil nil nil nil nil  ). 
+	 structSizes: #( 32 nil nil nil nil nil nil  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_login_with_properties_inLibrary: cLibrary
   Function_amqp_login_with_properties := CCalloutStructs library: cLibrary name: 'amqp_login_with_properties'
-  result:  #struct 
+  result:  #struct
   args: #(  #'ptr'"state"  #'const char*'"vhost"  #'int32'"channel_max"  #'int32'"frame_max"  #'int32'"heartbeat"  #'ptr'"properties"  #'int32'"sasl_method"    )
 	 varArgsAfter: 7
-	 structSizes: #( 32 nil nil nil nil nil nil nil  ). 
+	 structSizes: #( 32 nil nil nil nil nil nil nil  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_maybe_release_buffers_inLibrary: cLibrary
 
-	Function_amqp_maybe_release_buffers := CCallout 
+	Function_amqp_maybe_release_buffers := CCallout
 		library: cLibrary
 		name: 'amqp_maybe_release_buffers'
 		result: #'void'
@@ -5950,7 +6416,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_maybe_release_buffers_on_channel_inLibrary: cLibrary
 
-	Function_amqp_maybe_release_buffers_on_channel := CCallout 
+	Function_amqp_maybe_release_buffers_on_channel := CCallout
 		library: cLibrary
 		name: 'amqp_maybe_release_buffers_on_channel'
 		result: #'void'
@@ -5960,7 +6426,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_method_has_content_inLibrary: cLibrary
 
-	Function_amqp_method_has_content := CCallout 
+	Function_amqp_method_has_content := CCallout
 		library: cLibrary
 		name: 'amqp_method_has_content'
 		result: #'int32'
@@ -5970,7 +6436,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_method_name_inLibrary: cLibrary
 
-	Function_amqp_method_name := CCallout 
+	Function_amqp_method_name := CCallout
 		library: cLibrary
 		name: 'amqp_method_name'
 		result: #'char*'
@@ -5980,7 +6446,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_new_connection_inLibrary: cLibrary
 
-	Function_amqp_new_connection := CCallout 
+	Function_amqp_new_connection := CCallout
 		library: cLibrary
 		name: 'amqp_new_connection'
 		result: #'ptr'
@@ -5990,7 +6456,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_open_socket_inLibrary: cLibrary
 
-	Function_amqp_open_socket := CCallout 
+	Function_amqp_open_socket := CCallout
 		library: cLibrary
 		name: 'amqp_open_socket'
 		result: #'int32'
@@ -6000,7 +6466,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_parse_url_inLibrary: cLibrary
 
-	Function_amqp_parse_url := CCallout 
+	Function_amqp_parse_url := CCallout
 		library: cLibrary
 		name: 'amqp_parse_url'
 		result: #'int32'
@@ -6010,7 +6476,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_pool_alloc_bytes_inLibrary: cLibrary
 
-	Function_amqp_pool_alloc_bytes := CCallout 
+	Function_amqp_pool_alloc_bytes := CCallout
 		library: cLibrary
 		name: 'amqp_pool_alloc_bytes'
 		result: #'void'
@@ -6020,7 +6486,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_pool_alloc_inLibrary: cLibrary
 
-	Function_amqp_pool_alloc := CCallout 
+	Function_amqp_pool_alloc := CCallout
 		library: cLibrary
 		name: 'amqp_pool_alloc'
 		result: #'ptr'
@@ -6032,8 +6498,8 @@ initializeFunction_amqp_queue_bind_inLibrary: cLibrary
   Function_amqp_queue_bind := CCalloutStructs library: cLibrary name: 'amqp_queue_bind'
   result: #'ptr'
   args: #(  #'ptr'"state"  #'uint16'"channel"  #'struct'"queue"  #'struct'"exchange"  #'struct'"routing_key"  #'struct'"arguments"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil nil nil 16 16 16 16  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil nil nil 16 16 16 16  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
@@ -6041,8 +6507,8 @@ initializeFunction_amqp_queue_declare_inLibrary: cLibrary
   Function_amqp_queue_declare := CCalloutStructs library: cLibrary name: 'amqp_queue_declare'
   result: #'ptr'
   args: #(  #'ptr'"state"  #'uint16'"channel"  #'struct'"queue"  #'int32'"passive"  #'int32'"durable"  #'int32'"exclusive"  #'int32'"auto_delete"  #'struct'"arguments"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil nil nil 16 nil nil nil nil 16  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil nil nil 16 nil nil nil nil 16  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
@@ -6050,8 +6516,8 @@ initializeFunction_amqp_queue_delete_inLibrary: cLibrary
   Function_amqp_queue_delete := CCalloutStructs library: cLibrary name: 'amqp_queue_delete'
   result: #'ptr'
   args: #(  #'ptr'"state"  #'uint16'"channel"  #'struct'"queue"  #'int32'"if_unused"  #'int32'"if_empty"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil nil nil 16 nil nil  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil nil nil 16 nil nil  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
@@ -6059,8 +6525,8 @@ initializeFunction_amqp_queue_purge_inLibrary: cLibrary
   Function_amqp_queue_purge := CCalloutStructs library: cLibrary name: 'amqp_queue_purge'
   result: #'ptr'
   args: #(  #'ptr'"state"  #'uint16'"channel"  #'struct'"queue"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil nil nil 16  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil nil nil 16  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
@@ -6068,23 +6534,23 @@ initializeFunction_amqp_queue_unbind_inLibrary: cLibrary
   Function_amqp_queue_unbind := CCalloutStructs library: cLibrary name: 'amqp_queue_unbind'
   result: #'ptr'
   args: #(  #'ptr'"state"  #'uint16'"channel"  #'struct'"queue"  #'struct'"exchange"  #'struct'"routing_key"  #'struct'"arguments"    )
-	 varArgsAfter: -1 
-	 structSizes: #( nil nil nil 16 16 16 16  ). 
+	 varArgsAfter: -1
+	 structSizes: #( nil nil nil 16 16 16 16  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_read_message_inLibrary: cLibrary
   Function_amqp_read_message := CCalloutStructs library: cLibrary name: 'amqp_read_message'
-  result:  #struct 
+  result:  #struct
   args: #(  #'ptr'"state"  #'uint16'"channel"  #'ptr'"message"  #'int32'"flags"    )
-	 varArgsAfter: -1 
-	 structSizes: #( 32 nil nil nil nil  ). 
+	 varArgsAfter: -1
+	 structSizes: #( 32 nil nil nil nil  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_release_buffers_inLibrary: cLibrary
 
-	Function_amqp_release_buffers := CCallout 
+	Function_amqp_release_buffers := CCallout
 		library: cLibrary
 		name: 'amqp_release_buffers'
 		result: #'void'
@@ -6094,7 +6560,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_release_buffers_ok_inLibrary: cLibrary
 
-	Function_amqp_release_buffers_ok := CCallout 
+	Function_amqp_release_buffers_ok := CCallout
 		library: cLibrary
 		name: 'amqp_release_buffers_ok'
 		result: #'int32'
@@ -6104,7 +6570,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_send_frame_inLibrary: cLibrary
 
-	Function_amqp_send_frame := CCallout 
+	Function_amqp_send_frame := CCallout
 		library: cLibrary
 		name: 'amqp_send_frame'
 		result: #'int32'
@@ -6114,7 +6580,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_send_header_inLibrary: cLibrary
 
-	Function_amqp_send_header := CCallout 
+	Function_amqp_send_header := CCallout
 		library: cLibrary
 		name: 'amqp_send_header'
 		result: #'int32'
@@ -6124,7 +6590,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_send_method_inLibrary: cLibrary
 
-	Function_amqp_send_method := CCallout 
+	Function_amqp_send_method := CCallout
 		library: cLibrary
 		name: 'amqp_send_method'
 		result: #'int32'
@@ -6134,7 +6600,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_set_handshake_timeout_inLibrary: cLibrary
 
-	Function_amqp_set_handshake_timeout := CCallout 
+	Function_amqp_set_handshake_timeout := CCallout
 		library: cLibrary
 		name: 'amqp_set_handshake_timeout'
 		result: #'int32'
@@ -6144,7 +6610,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_set_initialize_ssl_library_inLibrary: cLibrary
 
-	Function_amqp_set_initialize_ssl_library := CCallout 
+	Function_amqp_set_initialize_ssl_library := CCallout
 		library: cLibrary
 		name: 'amqp_set_initialize_ssl_library'
 		result: #'void'
@@ -6154,7 +6620,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_set_rpc_timeout_inLibrary: cLibrary
 
-	Function_amqp_set_rpc_timeout := CCallout 
+	Function_amqp_set_rpc_timeout := CCallout
 		library: cLibrary
 		name: 'amqp_set_rpc_timeout'
 		result: #'int32'
@@ -6164,7 +6630,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_set_sockfd_inLibrary: cLibrary
 
-	Function_amqp_set_sockfd := CCallout 
+	Function_amqp_set_sockfd := CCallout
 		library: cLibrary
 		name: 'amqp_set_sockfd'
 		result: #'void'
@@ -6174,7 +6640,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_set_ssl_engine_inLibrary: cLibrary
 
-	Function_amqp_set_ssl_engine := CCallout 
+	Function_amqp_set_ssl_engine := CCallout
 		library: cLibrary
 		name: 'amqp_set_ssl_engine'
 		result: #'int32'
@@ -6184,7 +6650,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_simple_rpc_decoded_inLibrary: cLibrary
 
-	Function_amqp_simple_rpc_decoded := CCallout 
+	Function_amqp_simple_rpc_decoded := CCallout
 		library: cLibrary
 		name: 'amqp_simple_rpc_decoded'
 		result: #'ptr'
@@ -6194,16 +6660,16 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_simple_rpc_inLibrary: cLibrary
   Function_amqp_simple_rpc := CCalloutStructs library: cLibrary name: 'amqp_simple_rpc'
-  result:  #struct 
+  result:  #struct
   args: #(  #'ptr'"state"  #'uint16'"channel"  #'uint32'"request_id"  #'ptr'"expected_reply_ids"  #'ptr'"decoded_request_method"    )
-	 varArgsAfter: -1 
-	 structSizes: #( 32 nil nil nil nil nil  ). 
+	 varArgsAfter: -1
+	 structSizes: #( 32 nil nil nil nil nil  ).
 %
 category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_simple_wait_frame_inLibrary: cLibrary
 
-	Function_amqp_simple_wait_frame := CCallout 
+	Function_amqp_simple_wait_frame := CCallout
 		library: cLibrary
 		name: 'amqp_simple_wait_frame'
 		result: #'int32'
@@ -6213,7 +6679,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_simple_wait_frame_noblock_inLibrary: cLibrary
 
-	Function_amqp_simple_wait_frame_noblock := CCallout 
+	Function_amqp_simple_wait_frame_noblock := CCallout
 		library: cLibrary
 		name: 'amqp_simple_wait_frame_noblock'
 		result: #'int32'
@@ -6223,7 +6689,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_simple_wait_method_inLibrary: cLibrary
 
-	Function_amqp_simple_wait_method := CCallout 
+	Function_amqp_simple_wait_method := CCallout
 		library: cLibrary
 		name: 'amqp_simple_wait_method'
 		result: #'int32'
@@ -6233,7 +6699,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_socket_get_sockfd_inLibrary: cLibrary
 
-	Function_amqp_socket_get_sockfd := CCallout 
+	Function_amqp_socket_get_sockfd := CCallout
 		library: cLibrary
 		name: 'amqp_socket_get_sockfd'
 		result: #'int32'
@@ -6243,7 +6709,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_socket_open_inLibrary: cLibrary
 
-	Function_amqp_socket_open := CCallout 
+	Function_amqp_socket_open := CCallout
 		library: cLibrary
 		name: 'amqp_socket_open'
 		result: #'int32'
@@ -6253,7 +6719,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_socket_open_noblock_inLibrary: cLibrary
 
-	Function_amqp_socket_open_noblock := CCallout 
+	Function_amqp_socket_open_noblock := CCallout
 		library: cLibrary
 		name: 'amqp_socket_open_noblock'
 		result: #'int32'
@@ -6263,7 +6729,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_ssl_socket_get_context_inLibrary: cLibrary
 
-	Function_amqp_ssl_socket_get_context := CCallout 
+	Function_amqp_ssl_socket_get_context := CCallout
 		library: cLibrary
 		name: 'amqp_ssl_socket_get_context'
 		result: #'ptr'
@@ -6273,7 +6739,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_ssl_socket_new_inLibrary: cLibrary
 
-	Function_amqp_ssl_socket_new := CCallout 
+	Function_amqp_ssl_socket_new := CCallout
 		library: cLibrary
 		name: 'amqp_ssl_socket_new'
 		result: #'ptr'
@@ -6283,7 +6749,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_ssl_socket_set_cacert_inLibrary: cLibrary
 
-	Function_amqp_ssl_socket_set_cacert := CCallout 
+	Function_amqp_ssl_socket_set_cacert := CCallout
 		library: cLibrary
 		name: 'amqp_ssl_socket_set_cacert'
 		result: #'int32'
@@ -6293,7 +6759,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_ssl_socket_set_key_buffer_inLibrary: cLibrary
 
-	Function_amqp_ssl_socket_set_key_buffer := CCallout 
+	Function_amqp_ssl_socket_set_key_buffer := CCallout
 		library: cLibrary
 		name: 'amqp_ssl_socket_set_key_buffer'
 		result: #'int32'
@@ -6303,7 +6769,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_ssl_socket_set_key_engine_inLibrary: cLibrary
 
-	Function_amqp_ssl_socket_set_key_engine := CCallout 
+	Function_amqp_ssl_socket_set_key_engine := CCallout
 		library: cLibrary
 		name: 'amqp_ssl_socket_set_key_engine'
 		result: #'int32'
@@ -6313,7 +6779,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_ssl_socket_set_key_inLibrary: cLibrary
 
-	Function_amqp_ssl_socket_set_key := CCallout 
+	Function_amqp_ssl_socket_set_key := CCallout
 		library: cLibrary
 		name: 'amqp_ssl_socket_set_key'
 		result: #'int32'
@@ -6323,7 +6789,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_ssl_socket_set_key_passwd_inLibrary: cLibrary
 
-	Function_amqp_ssl_socket_set_key_passwd := CCallout 
+	Function_amqp_ssl_socket_set_key_passwd := CCallout
 		library: cLibrary
 		name: 'amqp_ssl_socket_set_key_passwd'
 		result: #'void'
@@ -6333,7 +6799,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_ssl_socket_set_ssl_versions_inLibrary: cLibrary
 
-	Function_amqp_ssl_socket_set_ssl_versions := CCallout 
+	Function_amqp_ssl_socket_set_ssl_versions := CCallout
 		library: cLibrary
 		name: 'amqp_ssl_socket_set_ssl_versions'
 		result: #'int32'
@@ -6343,7 +6809,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_ssl_socket_set_verify_hostname_inLibrary: cLibrary
 
-	Function_amqp_ssl_socket_set_verify_hostname := CCallout 
+	Function_amqp_ssl_socket_set_verify_hostname := CCallout
 		library: cLibrary
 		name: 'amqp_ssl_socket_set_verify_hostname'
 		result: #'void'
@@ -6353,7 +6819,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_ssl_socket_set_verify_inLibrary: cLibrary
 
-	Function_amqp_ssl_socket_set_verify := CCallout 
+	Function_amqp_ssl_socket_set_verify := CCallout
 		library: cLibrary
 		name: 'amqp_ssl_socket_set_verify'
 		result: #'void'
@@ -6363,7 +6829,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_ssl_socket_set_verify_peer_inLibrary: cLibrary
 
-	Function_amqp_ssl_socket_set_verify_peer := CCallout 
+	Function_amqp_ssl_socket_set_verify_peer := CCallout
 		library: cLibrary
 		name: 'amqp_ssl_socket_set_verify_peer'
 		result: #'void'
@@ -6373,7 +6839,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_table_clone_inLibrary: cLibrary
 
-	Function_amqp_table_clone := CCallout 
+	Function_amqp_table_clone := CCallout
 		library: cLibrary
 		name: 'amqp_table_clone'
 		result: #'int32'
@@ -6383,7 +6849,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_table_entry_cmp_inLibrary: cLibrary
 
-	Function_amqp_table_entry_cmp := CCallout 
+	Function_amqp_table_entry_cmp := CCallout
 		library: cLibrary
 		name: 'amqp_table_entry_cmp'
 		result: #'int32'
@@ -6393,7 +6859,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_tcp_socket_new_inLibrary: cLibrary
 
-	Function_amqp_tcp_socket_new := CCallout 
+	Function_amqp_tcp_socket_new := CCallout
 		library: cLibrary
 		name: 'amqp_tcp_socket_new'
 		result: #'ptr'
@@ -6403,7 +6869,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_tcp_socket_set_sockfd_inLibrary: cLibrary
 
-	Function_amqp_tcp_socket_set_sockfd := CCallout 
+	Function_amqp_tcp_socket_set_sockfd := CCallout
 		library: cLibrary
 		name: 'amqp_tcp_socket_set_sockfd'
 		result: #'void'
@@ -6413,7 +6879,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_tune_connection_inLibrary: cLibrary
 
-	Function_amqp_tune_connection := CCallout 
+	Function_amqp_tune_connection := CCallout
 		library: cLibrary
 		name: 'amqp_tune_connection'
 		result: #'int32'
@@ -6423,7 +6889,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_tx_commit_inLibrary: cLibrary
 
-	Function_amqp_tx_commit := CCallout 
+	Function_amqp_tx_commit := CCallout
 		library: cLibrary
 		name: 'amqp_tx_commit'
 		result: #'ptr'
@@ -6433,7 +6899,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_tx_rollback_inLibrary: cLibrary
 
-	Function_amqp_tx_rollback := CCallout 
+	Function_amqp_tx_rollback := CCallout
 		library: cLibrary
 		name: 'amqp_tx_rollback'
 		result: #'ptr'
@@ -6443,7 +6909,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_tx_select_inLibrary: cLibrary
 
-	Function_amqp_tx_select := CCallout 
+	Function_amqp_tx_select := CCallout
 		library: cLibrary
 		name: 'amqp_tx_select'
 		result: #'ptr'
@@ -6453,7 +6919,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_uninitialize_ssl_library_inLibrary: cLibrary
 
-	Function_amqp_uninitialize_ssl_library := CCallout 
+	Function_amqp_uninitialize_ssl_library := CCallout
 		library: cLibrary
 		name: 'amqp_uninitialize_ssl_library'
 		result: #'int32'
@@ -6463,7 +6929,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_version_inLibrary: cLibrary
 
-	Function_amqp_version := CCallout 
+	Function_amqp_version := CCallout
 		library: cLibrary
 		name: 'amqp_version'
 		result: #'char*'
@@ -6473,7 +6939,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_amqp_version_number_inLibrary: cLibrary
 
-	Function_amqp_version_number := CCallout 
+	Function_amqp_version_number := CCallout
 		library: cLibrary
 		name: 'amqp_version_number'
 		result: #'uint32'
@@ -6483,7 +6949,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_empty_amqp_pool_inLibrary: cLibrary
 
-	Function_empty_amqp_pool := CCallout 
+	Function_empty_amqp_pool := CCallout
 		library: cLibrary
 		name: 'empty_amqp_pool'
 		result: #'void'
@@ -6493,7 +6959,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_init_amqp_pool_inLibrary: cLibrary
 
-	Function_init_amqp_pool := CCallout 
+	Function_init_amqp_pool := CCallout
 		library: cLibrary
 		name: 'init_amqp_pool'
 		result: #'void'
@@ -6503,7 +6969,7 @@ category: 'Initializing - private'
 classmethod: GsLibRabbitMq
 initializeFunction_recycle_amqp_pool_inLibrary: cLibrary
 
-	Function_recycle_amqp_pool := CCallout 
+	Function_recycle_amqp_pool := CCallout
 		library: cLibrary
 		name: 'recycle_amqp_pool'
 		result: #'void'
@@ -6521,7 +6987,7 @@ classmethod: GsLibRabbitMq
 libraryPath: aString
 
 	self libraryPath = aString
-		ifFalse: 
+		ifFalse:
 			[libraryPath := aString.
 			self initializeFunctionsFromLibraryPath].
 	^self
@@ -6549,515 +7015,515 @@ self libraryPath: aLibraryPath .
 ! ------------------- Instance methods for GsLibRabbitMq
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_basic_ack_: state _: channel _: delivery_tag _: multiple 
+amqp_basic_ack_: state _: channel _: delivery_tag _: multiple
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1864
 __attribute__((visibility(""default"")))int amqp_basic_ack(amqp_connection_state_t state,                             amqp_channel_t channel, uint64_t delivery_tag,                             amqp_boolean_t multiple);"
 	"Interpreted as #int32 from #( #'ptr' #'uint16' #'uint64' #'int32' )"
-	^ Function_amqp_basic_ack callWith: { state. channel. delivery_tag. multiple  } 
+	^ Function_amqp_basic_ack callWith: { state. channel. delivery_tag. multiple  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_basic_cancel_: state _: channel _: consumer_tag"struct16bytes" 
+amqp_basic_cancel_: state _: channel _: consumer_tag"struct16bytes"
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 1091
 __attribute__((visibility(""default"")))amqp_basic_cancel_ok_t *    amqp_basic_cancel(amqp_connection_state_t state, amqp_channel_t channel,                      amqp_bytes_t consumer_tag);"
-	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' )" 
-	| res args | 
+	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' )"
+	| res args |
 	  args := {  state . channel . consumer_tag  } .
 	res := Function_amqp_basic_cancel callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_basic_consume_: state _: channel _: queue"struct16bytes" _: consumer_tag"struct16bytes" _: no_local _: no_ack _: exclusive _: arguments"struct16bytes" 
+amqp_basic_consume_: state _: channel _: queue"struct16bytes" _: consumer_tag"struct16bytes" _: no_local _: no_ack _: exclusive _: arguments"struct16bytes"
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 1078
 __attribute__((visibility(""default"")))amqp_basic_consume_ok_t * amqp_basic_consume(    amqp_connection_state_t state, amqp_channel_t channel, amqp_bytes_t queue,    amqp_bytes_t consumer_tag, amqp_boolean_t no_local, amqp_boolean_t no_ack,    amqp_boolean_t exclusive, amqp_table_t arguments);"
-	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'struct' #'int32' #'int32' #'int32' #'struct' )" 
-	| res args | 
+	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'struct' #'int32' #'int32' #'int32' #'struct' )"
+	| res args |
 	  args := {  state . channel . queue . consumer_tag . no_local . no_ack . exclusive . arguments  } .
 	res := Function_amqp_basic_consume callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_basic_get_: result"struct32bytes" _: state _: channel _: queue"struct16bytes" _: no_ack 
+amqp_basic_get_: result"struct32bytes" _: state _: channel _: queue"struct16bytes" _: no_ack
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1885
 __attribute__((visibility(""default"")))amqp_rpc_reply_t amqp_basic_get(amqp_connection_state_t state,                                          amqp_channel_t channel,                                          amqp_bytes_t queue,                                          amqp_boolean_t no_ack);"
-	"Interpreted as #struct from #( #'ptr' #'uint16' #'struct' #'int32' )" 
-	| res args | 
+	"Interpreted as #struct from #( #'ptr' #'uint16' #'struct' #'int32' )"
+	| res args |
 	 res := result"resultStruct".
   args := {  state . channel . queue . no_ack  } .
 	Function_amqp_basic_get callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_basic_nack_: state _: channel _: delivery_tag _: multiple _: requeue 
+amqp_basic_nack_: state _: channel _: delivery_tag _: multiple _: requeue
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1931
 __attribute__((visibility(""default"")))int amqp_basic_nack(amqp_connection_state_t state,                              amqp_channel_t channel, uint64_t delivery_tag,                              amqp_boolean_t multiple, amqp_boolean_t requeue);"
 	"Interpreted as #int32 from #( #'ptr' #'uint16' #'uint64' #'int32' #'int32' )"
-	^ Function_amqp_basic_nack callWith: { state. channel. delivery_tag. multiple. requeue  } 
+	^ Function_amqp_basic_nack callWith: { state. channel. delivery_tag. multiple. requeue  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_basic_publish_: state _: channel _: exchange"struct16bytes" _: routing_key"struct16bytes" _: mandatory _: immediate _: properties _: body"struct16bytes" 
+amqp_basic_publish_: state _: channel _: exchange"struct16bytes" _: routing_key"struct16bytes" _: mandatory _: immediate _: properties _: body"struct16bytes"
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1808
 __attribute__((visibility(""default"")))int amqp_basic_publish(    amqp_connection_state_t state, amqp_channel_t channel,    amqp_bytes_t exchange, amqp_bytes_t routing_key, amqp_boolean_t mandatory,    amqp_boolean_t immediate, struct amqp_basic_properties_t_ const *properties,    amqp_bytes_t body);"
-	"Interpreted as #int32 from #( #'ptr' #'uint16' #'struct' #'struct' #'int32' #'int32' #'ptr' #'struct' )" 
-	| res args | 
+	"Interpreted as #int32 from #( #'ptr' #'uint16' #'struct' #'struct' #'int32' #'int32' #'ptr' #'struct' )"
+	| res args |
 	  args := {  state . channel . exchange . routing_key . mandatory . immediate . properties . body  } .
 	res := Function_amqp_basic_publish callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_basic_qos_: state _: channel _: prefetch_size _: prefetch_count _: global 
+amqp_basic_qos_: state _: channel _: prefetch_size _: prefetch_count _: global
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 1059
 __attribute__((visibility(""default"")))amqp_basic_qos_ok_t * amqp_basic_qos(amqp_connection_state_t state,                                              amqp_channel_t channel,                                              uint32_t prefetch_size,                                              uint16_t prefetch_count,                                              amqp_boolean_t global);"
 	"Interpreted as #ptr from #( #'ptr' #'uint16' #'uint32' #'uint16' #'int32' )"
-	^ Function_amqp_basic_qos callWith: { state. channel. prefetch_size. prefetch_count. global  } 
+	^ Function_amqp_basic_qos callWith: { state. channel. prefetch_size. prefetch_count. global  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_basic_recover_: state _: channel _: requeue 
+amqp_basic_recover_: state _: channel _: requeue
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 1103
 __attribute__((visibility(""default"")))amqp_basic_recover_ok_t *    amqp_basic_recover(amqp_connection_state_t state, amqp_channel_t channel,                       amqp_boolean_t requeue);"
 	"Interpreted as #ptr from #( #'ptr' #'uint16' #'int32' )"
-	^ Function_amqp_basic_recover callWith: { state. channel. requeue  } 
+	^ Function_amqp_basic_recover callWith: { state. channel. requeue  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_basic_reject_: state _: channel _: delivery_tag _: requeue 
+amqp_basic_reject_: state _: channel _: delivery_tag _: requeue
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1907
 __attribute__((visibility(""default"")))int amqp_basic_reject(amqp_connection_state_t state,                                amqp_channel_t channel, uint64_t delivery_tag,                                amqp_boolean_t requeue);"
 	"Interpreted as #int32 from #( #'ptr' #'uint16' #'uint64' #'int32' )"
-	^ Function_amqp_basic_reject callWith: { state. channel. delivery_tag. requeue  } 
+	^ Function_amqp_basic_reject callWith: { state. channel. delivery_tag. requeue  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_bytes_free_: bytes"struct16bytes" 
+amqp_bytes_free_: bytes"struct16bytes"
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 922
 __attribute__((visibility(""default"")))void amqp_bytes_free(amqp_bytes_t bytes);"
-	"Interpreted as #void from #( #'struct' )" 
-	| res args | 
+	"Interpreted as #void from #( #'struct' )"
+	| res args |
 	  args := {  bytes  } .
 	res := Function_amqp_bytes_free callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_bytes_malloc_: result"struct16bytes" _: amount 
+amqp_bytes_malloc_: result"struct16bytes" _: amount
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 905
 __attribute__((visibility(""default"")))amqp_bytes_t amqp_bytes_malloc(size_t amount);"
-	"Interpreted as #struct from #( #'uint64' )" 
-	| res args | 
+	"Interpreted as #struct from #( #'uint64' )"
+	| res args |
 	 res := result"resultStruct".
   args := {  amount  } .
 	Function_amqp_bytes_malloc callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_bytes_malloc_dup_: result"struct16bytes" _: src"struct16bytes" 
+amqp_bytes_malloc_dup_: result"struct16bytes" _: src"struct16bytes"
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 888
 __attribute__((visibility(""default"")))amqp_bytes_t amqp_bytes_malloc_dup(amqp_bytes_t src);"
-	"Interpreted as #struct from #( #'struct' )" 
-	| res args | 
+	"Interpreted as #struct from #( #'struct' )"
+	| res args |
 	 res := result"resultStruct".
   args := {  src  } .
 	Function_amqp_bytes_malloc_dup callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_channel_close_: result"struct32bytes" _: state _: channel _: code 
+amqp_channel_close_: result"struct32bytes" _: state _: channel _: code
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1826
 __attribute__((visibility(""default"")))amqp_rpc_reply_t amqp_channel_close(amqp_connection_state_t state,                                              amqp_channel_t channel, int code);"
-	"Interpreted as #struct from #( #'ptr' #'uint16' #'int32' )" 
-	| res args | 
+	"Interpreted as #struct from #( #'ptr' #'uint16' #'int32' )"
+	| res args |
 	 res := result"resultStruct".
   args := {  state . channel . code  } .
 	Function_amqp_channel_close callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_channel_flow_: state _: channel _: active 
+amqp_channel_flow_: state _: channel _: active
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 906
 __attribute__((visibility(""default"")))amqp_channel_flow_ok_t *    amqp_channel_flow(amqp_connection_state_t state, amqp_channel_t channel,                      amqp_boolean_t active);"
 	"Interpreted as #ptr from #( #'ptr' #'uint16' #'int32' )"
-	^ Function_amqp_channel_flow callWith: { state. channel. active  } 
+	^ Function_amqp_channel_flow callWith: { state. channel. active  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_channel_open_: state _: channel 
+amqp_channel_open_: state _: channel
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 895
 __attribute__((visibility(""default"")))amqp_channel_open_ok_t *    amqp_channel_open(amqp_connection_state_t state, amqp_channel_t channel);"
 	"Interpreted as #ptr from #( #'ptr' #'uint16' )"
-	^ Function_amqp_channel_open callWith: { state. channel  } 
+	^ Function_amqp_channel_open callWith: { state. channel  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_confirm_select_: state _: channel 
+amqp_confirm_select_: state _: channel
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 1144
 __attribute__((visibility(""default"")))amqp_confirm_select_ok_t *    amqp_confirm_select(amqp_connection_state_t state, amqp_channel_t channel);"
 	"Interpreted as #ptr from #( #'ptr' #'uint16' )"
-	^ Function_amqp_confirm_select callWith: { state. channel  } 
+	^ Function_amqp_confirm_select callWith: { state. channel  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_connection_close_: result"struct32bytes" _: state _: code 
+amqp_connection_close_: result"struct32bytes" _: state _: code
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1844
 __attribute__((visibility(""default"")))amqp_rpc_reply_t amqp_connection_close(amqp_connection_state_t state,                                                 int code);"
-	"Interpreted as #struct from #( #'ptr' #'int32' )" 
-	| res args | 
+	"Interpreted as #struct from #( #'ptr' #'int32' )"
+	| res args |
 	 res := result"resultStruct".
   args := {  state . code  } .
 	Function_amqp_connection_close callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_connection_update_secret_: state _: channel _: new_secret"struct16bytes" _: reason"struct16bytes" 
+amqp_connection_update_secret_: state _: channel _: new_secret"struct16bytes" _: reason"struct16bytes"
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 884
 __attribute__((visibility(""default"")))amqp_connection_update_secret_ok_t * amqp_connection_update_secret(    amqp_connection_state_t state, amqp_channel_t channel,    amqp_bytes_t new_secret, amqp_bytes_t reason);"
-	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'struct' )" 
-	| res args | 
+	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'struct' )"
+	| res args |
 	  args := {  state . channel . new_secret . reason  } .
 	res := Function_amqp_connection_update_secret callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_constant_is_hard_error_: constantNumber 
+amqp_constant_is_hard_error_: constantNumber
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 67
 __attribute__((visibility(""default"")))amqp_boolean_t amqp_constant_is_hard_error(int constantNumber);"
 	"Interpreted as #int32 from #( #'int32' )"
-	^ Function_amqp_constant_is_hard_error callWith: { constantNumber  } 
+	^ Function_amqp_constant_is_hard_error callWith: { constantNumber  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_constant_name_: constantNumber 
+amqp_constant_name_: constantNumber
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 55
 __attribute__((visibility(""default"")))char const * amqp_constant_name(int constantNumber);"
 	"Interpreted as #char* from #( #'int32' )"
-	^ Function_amqp_constant_name callWith: { constantNumber  } 
+	^ Function_amqp_constant_name callWith: { constantNumber  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_consume_message_: result"struct32bytes" _: state _: envelope _: timeout _: flags 
+amqp_consume_message_: result"struct32bytes" _: state _: envelope _: timeout _: flags
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2144
 __attribute__((visibility(""default"")))amqp_rpc_reply_t amqp_consume_message(amqp_connection_state_t state,                                                amqp_envelope_t *envelope,                                                const struct timeval *timeout,                                                int flags);"
-	"Interpreted as #struct from #( #'ptr' #'ptr' #'ptr' #'int32' )" 
-	| res args | 
+	"Interpreted as #struct from #( #'ptr' #'ptr' #'ptr' #'int32' )"
+	| res args |
 	 res := result"resultStruct".
   args := {  state . envelope . timeout . flags  } .
 	Function_amqp_consume_message callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_cstring_bytes_: result"struct16bytes" _: cstr 
+amqp_cstring_bytes_: result"struct16bytes" _: cstr
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 869
 __attribute__((visibility(""default"")))amqp_bytes_t amqp_cstring_bytes(char const *cstr);"
-	"Interpreted as #struct from #( #'const char*' )" 
-	| res args | 
+	"Interpreted as #struct from #( #'const char*' )"
+	| res args |
 	 res := result"resultStruct".
   args := {  cstr  } .
 	Function_amqp_cstring_bytes callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_data_in_buffer_: state 
+amqp_data_in_buffer_: state
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1947
 __attribute__((visibility(""default"")))amqp_boolean_t amqp_data_in_buffer(amqp_connection_state_t state);"
 	"Interpreted as #int32 from #( #'ptr' )"
-	^ Function_amqp_data_in_buffer callWith: { state  } 
+	^ Function_amqp_data_in_buffer callWith: { state  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_decode_method_: methodNumber _: pool _: encoded"struct16bytes" _: decoded 
+amqp_decode_method_: methodNumber _: pool _: encoded"struct16bytes" _: decoded
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 102
 __attribute__((visibility(""default"")))int amqp_decode_method(amqp_method_number_t methodNumber,                                 amqp_pool_t *pool, amqp_bytes_t encoded,                                 void **decoded);"
-	"Interpreted as #int32 from #( #'uint32' #'ptr' #'struct' #'ptr' )" 
-	| res args | 
+	"Interpreted as #int32 from #( #'uint32' #'ptr' #'struct' #'ptr' )"
+	| res args |
 	  args := {  methodNumber . pool . encoded . decoded  } .
 	res := Function_amqp_decode_method callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_decode_properties_: class_id _: pool _: encoded"struct16bytes" _: decoded 
+amqp_decode_properties_: class_id _: pool _: encoded"struct16bytes" _: decoded
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 116
 __attribute__((visibility(""default"")))int amqp_decode_properties(uint16_t class_id, amqp_pool_t *pool,                                     amqp_bytes_t encoded, void **decoded);"
-	"Interpreted as #int32 from #( #'uint16' #'ptr' #'struct' #'ptr' )" 
-	| res args | 
+	"Interpreted as #int32 from #( #'uint16' #'ptr' #'struct' #'ptr' )"
+	| res args |
 	  args := {  class_id . pool . encoded . decoded  } .
 	res := Function_amqp_decode_properties callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_decode_table_: encoded"struct16bytes" _: pool _: output _: offset 
+amqp_decode_table_: encoded"struct16bytes" _: pool _: output _: offset
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2001
 __attribute__((visibility(""default"")))int amqp_decode_table(amqp_bytes_t encoded, amqp_pool_t *pool,                                amqp_table_t *output, size_t *offset);"
-	"Interpreted as #int32 from #( #'struct' #'ptr' #'ptr' #'ptr' )" 
-	| res args | 
+	"Interpreted as #int32 from #( #'struct' #'ptr' #'ptr' #'ptr' )"
+	| res args |
 	  args := {  encoded . pool . output . offset  } .
 	res := Function_amqp_decode_table callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_default_connection_info_: parsed 
+amqp_default_connection_info_: parsed
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2193
 __attribute__((visibility(""default"")))void    amqp_default_connection_info(struct amqp_connection_info *parsed);"
 	"Interpreted as #void from #( #'ptr' )"
-	^ Function_amqp_default_connection_info callWith: { parsed  } 
+	^ Function_amqp_default_connection_info callWith: { parsed  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_destroy_connection_: state 
+amqp_destroy_connection_: state
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1076
 __attribute__((visibility(""default"")))int amqp_destroy_connection(amqp_connection_state_t state);"
 	"Interpreted as #int32 from #( #'ptr' )"
-	^ Function_amqp_destroy_connection callWith: { state  } 
+	^ Function_amqp_destroy_connection callWith: { state  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_destroy_envelope_: envelope 
+amqp_destroy_envelope_: envelope
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2158
 __attribute__((visibility(""default"")))void amqp_destroy_envelope(amqp_envelope_t *envelope);"
 	"Interpreted as #void from #( #'ptr' )"
-	^ Function_amqp_destroy_envelope callWith: { envelope  } 
+	^ Function_amqp_destroy_envelope callWith: { envelope  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_destroy_message_: message 
+amqp_destroy_message_: message
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2093
 __attribute__((visibility(""default"")))void amqp_destroy_message(amqp_message_t *message);"
 	"Interpreted as #void from #( #'ptr' )"
-	^ Function_amqp_destroy_message callWith: { message  } 
+	^ Function_amqp_destroy_message callWith: { message  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_encode_method_: methodNumber _: decoded _: encoded"struct16bytes" 
+amqp_encode_method_: methodNumber _: decoded _: encoded"struct16bytes"
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 130
 __attribute__((visibility(""default"")))int amqp_encode_method(amqp_method_number_t methodNumber,                                 void *decoded, amqp_bytes_t encoded);"
-	"Interpreted as #int32 from #( #'uint32' #'ptr' #'struct' )" 
-	| res args | 
+	"Interpreted as #int32 from #( #'uint32' #'ptr' #'struct' )"
+	| res args |
 	  args := {  methodNumber . decoded . encoded  } .
 	res := Function_amqp_encode_method callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_encode_properties_: class_id _: decoded _: encoded"struct16bytes" 
+amqp_encode_properties_: class_id _: decoded _: encoded"struct16bytes"
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 144
 __attribute__((visibility(""default"")))int amqp_encode_properties(uint16_t class_id, void *decoded,                                     amqp_bytes_t encoded);"
-	"Interpreted as #int32 from #( #'uint16' #'ptr' #'struct' )" 
-	| res args | 
+	"Interpreted as #int32 from #( #'uint16' #'ptr' #'struct' )"
+	| res args |
 	  args := {  class_id . decoded . encoded  } .
 	res := Function_amqp_encode_properties callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_encode_table_: encoded"struct16bytes" _: input _: offset 
+amqp_encode_table_: encoded"struct16bytes" _: input _: offset
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2024
 __attribute__((visibility(""default"")))int amqp_encode_table(amqp_bytes_t encoded, amqp_table_t *input,                                size_t *offset);"
-	"Interpreted as #int32 from #( #'struct' #'ptr' #'ptr' )" 
-	| res args | 
+	"Interpreted as #int32 from #( #'struct' #'ptr' #'ptr' )"
+	| res args |
 	  args := {  encoded . input . offset  } .
 	res := Function_amqp_encode_table callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_error_string2_: err 
+amqp_error_string2_: err
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1978
 __attribute__((visibility(""default"")))const char * amqp_error_string2(int err);"
 	"Interpreted as #char* from #( #'int32' )"
-	^ Function_amqp_error_string2 callWith: { err  } 
+	^ Function_amqp_error_string2 callWith: { err  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_error_string_: err 
+amqp_error_string_: err
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1965
 __attribute__((visibility(""default""))) __attribute__ ((__deprecated__)) char * amqp_error_string(int err);"
 	"Interpreted as #char* from #( #'int32' )"
-	^ Function_amqp_error_string callWith: { err  } 
+	^ Function_amqp_error_string callWith: { err  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_exchange_bind_: state _: channel _: destination"struct16bytes" _: source"struct16bytes" _: routing_key"struct16bytes" _: arguments"struct16bytes" 
+amqp_exchange_bind_: state _: channel _: destination"struct16bytes" _: source"struct16bytes" _: routing_key"struct16bytes" _: arguments"struct16bytes"
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 954
 __attribute__((visibility(""default"")))amqp_exchange_bind_ok_t *    amqp_exchange_bind(amqp_connection_state_t state, amqp_channel_t channel,                       amqp_bytes_t destination, amqp_bytes_t source,                       amqp_bytes_t routing_key, amqp_table_t arguments);"
-	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'struct' #'struct' #'struct' )" 
-	| res args | 
+	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'struct' #'struct' #'struct' )"
+	| res args |
 	  args := {  state . channel . destination . source . routing_key . arguments  } .
 	res := Function_amqp_exchange_bind callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_exchange_declare_: state _: channel _: exchange"struct16bytes" _: type"struct16bytes" _: passive _: durable _: auto_delete _: internal _: arguments"struct16bytes" 
+amqp_exchange_declare_: state _: channel _: exchange"struct16bytes" _: type"struct16bytes" _: passive _: durable _: auto_delete _: internal _: arguments"struct16bytes"
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 924
 __attribute__((visibility(""default"")))amqp_exchange_declare_ok_t * amqp_exchange_declare(    amqp_connection_state_t state, amqp_channel_t channel,    amqp_bytes_t exchange, amqp_bytes_t type, amqp_boolean_t passive,    amqp_boolean_t durable, amqp_boolean_t auto_delete, amqp_boolean_t internal,    amqp_table_t arguments);"
-	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'struct' #'int32' #'int32' #'int32' #'int32' #'struct' )" 
-	| res args | 
+	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'struct' #'int32' #'int32' #'int32' #'int32' #'struct' )"
+	| res args |
 	  args := {  state . channel . exchange . type . passive . durable . auto_delete . internal . arguments  } .
 	res := Function_amqp_exchange_declare callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_exchange_delete_: state _: channel _: exchange"struct16bytes" _: if_unused 
+amqp_exchange_delete_: state _: channel _: exchange"struct16bytes" _: if_unused
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 939
 __attribute__((visibility(""default"")))amqp_exchange_delete_ok_t *    amqp_exchange_delete(amqp_connection_state_t state, amqp_channel_t channel,                         amqp_bytes_t exchange, amqp_boolean_t if_unused);"
-	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'int32' )" 
-	| res args | 
+	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'int32' )"
+	| res args |
 	  args := {  state . channel . exchange . if_unused  } .
 	res := Function_amqp_exchange_delete callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_exchange_unbind_: state _: channel _: destination"struct16bytes" _: source"struct16bytes" _: routing_key"struct16bytes" _: arguments"struct16bytes" 
+amqp_exchange_unbind_: state _: channel _: destination"struct16bytes" _: source"struct16bytes" _: routing_key"struct16bytes" _: arguments"struct16bytes"
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 970
 __attribute__((visibility(""default"")))amqp_exchange_unbind_ok_t *    amqp_exchange_unbind(amqp_connection_state_t state, amqp_channel_t channel,                         amqp_bytes_t destination, amqp_bytes_t source,                         amqp_bytes_t routing_key, amqp_table_t arguments);"
-	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'struct' #'struct' #'struct' )" 
-	| res args | 
+	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'struct' #'struct' #'struct' )"
+	| res args |
 	  args := {  state . channel . destination . source . routing_key . arguments  } .
 	res := Function_amqp_exchange_unbind callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_frames_enqueued_: state 
+amqp_frames_enqueued_: state
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1327
 __attribute__((visibility(""default"")))amqp_boolean_t amqp_frames_enqueued(amqp_connection_state_t state);"
 	"Interpreted as #int32 from #( #'ptr' )"
-	^ Function_amqp_frames_enqueued callWith: { state  } 
+	^ Function_amqp_frames_enqueued callWith: { state  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_get_channel_max_: state 
+amqp_get_channel_max_: state
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1028
 __attribute__((visibility(""default"")))int amqp_get_channel_max(amqp_connection_state_t state);"
 	"Interpreted as #int32 from #( #'ptr' )"
-	^ Function_amqp_get_channel_max callWith: { state  } 
+	^ Function_amqp_get_channel_max callWith: { state  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_get_client_properties_: state 
+amqp_get_client_properties_: state
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2323
 __attribute__((visibility(""default"")))amqp_table_t *    amqp_get_client_properties(amqp_connection_state_t state);"
 	"Interpreted as #ptr from #( #'ptr' )"
-	^ Function_amqp_get_client_properties callWith: { state  } 
+	^ Function_amqp_get_client_properties callWith: { state  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_get_frame_max_: state 
+amqp_get_frame_max_: state
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1042
 __attribute__((visibility(""default"")))int amqp_get_frame_max(amqp_connection_state_t state);"
 	"Interpreted as #int32 from #( #'ptr' )"
-	^ Function_amqp_get_frame_max callWith: { state  } 
+	^ Function_amqp_get_frame_max callWith: { state  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_get_handshake_timeout_: state 
+amqp_get_handshake_timeout_: state
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2346
 __attribute__((visibility(""default"")))struct timeval *    amqp_get_handshake_timeout(amqp_connection_state_t state);"
 	"Interpreted as #ptr from #( #'ptr' )"
-	^ Function_amqp_get_handshake_timeout callWith: { state  } 
+	^ Function_amqp_get_handshake_timeout callWith: { state  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_get_heartbeat_: state 
+amqp_get_heartbeat_: state
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1056
 __attribute__((visibility(""default"")))int amqp_get_heartbeat(amqp_connection_state_t state);"
 	"Interpreted as #int32 from #( #'ptr' )"
-	^ Function_amqp_get_heartbeat callWith: { state  } 
+	^ Function_amqp_get_heartbeat callWith: { state  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_get_rpc_reply_: result"struct32bytes" _: state 
+amqp_get_rpc_reply_: result"struct32bytes" _: state
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1629
 __attribute__((visibility(""default"")))amqp_rpc_reply_t amqp_get_rpc_reply(amqp_connection_state_t state);"
-	"Interpreted as #struct from #( #'ptr' )" 
-	| res args | 
+	"Interpreted as #struct from #( #'ptr' )"
+	| res args |
 	 res := result"resultStruct".
   args := {  state  } .
 	Function_amqp_get_rpc_reply callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_get_rpc_timeout_: state 
+amqp_get_rpc_timeout_: state
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2402
 __attribute__((visibility(""default"")))struct timeval * amqp_get_rpc_timeout(amqp_connection_state_t state);"
 	"Interpreted as #ptr from #( #'ptr' )"
-	^ Function_amqp_get_rpc_timeout callWith: { state  } 
+	^ Function_amqp_get_rpc_timeout callWith: { state  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_get_server_properties_: state 
+amqp_get_server_properties_: state
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2307
 __attribute__((visibility(""default"")))amqp_table_t *    amqp_get_server_properties(amqp_connection_state_t state);"
 	"Interpreted as #ptr from #( #'ptr' )"
-	^ Function_amqp_get_server_properties callWith: { state  } 
+	^ Function_amqp_get_server_properties callWith: { state  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_get_socket_: state 
+amqp_get_socket_: state
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2294
 __attribute__((visibility(""default"")))amqp_socket_t * amqp_get_socket(amqp_connection_state_t state);"
 	"Interpreted as #ptr from #( #'ptr' )"
-	^ Function_amqp_get_socket callWith: { state  } 
+	^ Function_amqp_get_socket callWith: { state  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_get_sockfd_: state 
+amqp_get_sockfd_: state
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 957
 __attribute__((visibility(""default"")))int amqp_get_sockfd(amqp_connection_state_t state);"
 	"Interpreted as #int32 from #( #'ptr' )"
-	^ Function_amqp_get_sockfd callWith: { state  } 
+	^ Function_amqp_get_sockfd callWith: { state  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_handle_input_: state _: received_data"struct16bytes" _: decoded_frame 
+amqp_handle_input_: state _: received_data"struct16bytes" _: decoded_frame
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1121
 __attribute__((visibility(""default"")))int amqp_handle_input(amqp_connection_state_t state,                                amqp_bytes_t received_data,                                amqp_frame_t *decoded_frame);"
-	"Interpreted as #int32 from #( #'ptr' #'struct' #'ptr' )" 
-	| res args | 
+	"Interpreted as #int32 from #( #'ptr' #'struct' #'ptr' )"
+	| res args |
 	  args := {  state . received_data . decoded_frame  } .
 	res := Function_amqp_handle_input callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
@@ -7065,69 +7531,69 @@ amqp_initialize_ssl_library
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/ssl_socketh line 247
 __attribute__((visibility(""default"")))int amqp_initialize_ssl_library(void);"
 	"Interpreted as #int32 from #( )"
-	^ Function_amqp_initialize_ssl_library callWith: {  } 
+	^ Function_amqp_initialize_ssl_library callWith: {  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_login_: result"struct32bytes" _: state _: vhost _: channel_max _: frame_max _: heartbeat _: sasl_method 
+amqp_login_: result"struct32bytes" _: state _: vhost _: channel_max _: frame_max _: heartbeat _: sasl_method
 	 varArgs: vaArray "pairs of type, arg"
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1689
 __attribute__((visibility(""default"")))amqp_rpc_reply_t amqp_login(amqp_connection_state_t state,                                      char const *vhost, int channel_max,                                      int frame_max, int heartbeat,                                      amqp_sasl_method_enum sasl_method, ...);"
-	"Interpreted as #struct from #( #'ptr' #'const char*' #'int32' #'int32' #'int32' #'int32'  ...varArgs  )" 
-	| res args | 
+	"Interpreted as #struct from #( #'ptr' #'const char*' #'int32' #'int32' #'int32' #'int32'  ...varArgs  )"
+	| res args |
 	 res := result"resultStruct".
   args := {  state . vhost . channel_max . frame_max . heartbeat . sasl_method  } .
 	vaArray ifNotNil:[ args addAll: vaArray ].
 	Function_amqp_login callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_login_with_properties_: result"struct32bytes" _: state _: vhost _: channel_max _: frame_max _: heartbeat _: properties _: sasl_method 
+amqp_login_with_properties_: result"struct32bytes" _: state _: vhost _: channel_max _: frame_max _: heartbeat _: properties _: sasl_method
 	 varArgs: vaArray "pairs of type, arg"
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1755
 __attribute__((visibility(""default"")))amqp_rpc_reply_t amqp_login_with_properties(    amqp_connection_state_t state, char const *vhost, int channel_max,    int frame_max, int heartbeat, const amqp_table_t *properties,    amqp_sasl_method_enum sasl_method, ...);"
-	"Interpreted as #struct from #( #'ptr' #'const char*' #'int32' #'int32' #'int32' #'ptr' #'int32'  ...varArgs  )" 
-	| res args | 
+	"Interpreted as #struct from #( #'ptr' #'const char*' #'int32' #'int32' #'int32' #'ptr' #'int32'  ...varArgs  )"
+	| res args |
 	 res := result"resultStruct".
   args := {  state . vhost . channel_max . frame_max . heartbeat . properties . sasl_method  } .
 	vaArray ifNotNil:[ args addAll: vaArray ].
 	Function_amqp_login_with_properties callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_maybe_release_buffers_: state 
+amqp_maybe_release_buffers_: state
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1190
 __attribute__((visibility(""default"")))void amqp_maybe_release_buffers(amqp_connection_state_t state);"
 	"Interpreted as #void from #( #'ptr' )"
-	^ Function_amqp_maybe_release_buffers callWith: { state  } 
+	^ Function_amqp_maybe_release_buffers callWith: { state  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_maybe_release_buffers_on_channel_: state _: channel 
+amqp_maybe_release_buffers_on_channel_: state _: channel
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1213
 __attribute__((visibility(""default"")))void amqp_maybe_release_buffers_on_channel(    amqp_connection_state_t state, amqp_channel_t channel);"
 	"Interpreted as #void from #( #'ptr' #'uint16' )"
-	^ Function_amqp_maybe_release_buffers_on_channel callWith: { state. channel  } 
+	^ Function_amqp_maybe_release_buffers_on_channel callWith: { state. channel  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_method_has_content_: methodNumber 
+amqp_method_has_content_: methodNumber
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 89
 __attribute__((visibility(""default"")))amqp_boolean_t    amqp_method_has_content(amqp_method_number_t methodNumber);"
 	"Interpreted as #int32 from #( #'uint32' )"
-	^ Function_amqp_method_has_content callWith: { methodNumber  } 
+	^ Function_amqp_method_has_content callWith: { methodNumber  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_method_name_: methodNumber 
+amqp_method_name_: methodNumber
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 77
 __attribute__((visibility(""default"")))char const * amqp_method_name(amqp_method_number_t methodNumber);"
 	"Interpreted as #char* from #( #'uint32' )"
-	^ Function_amqp_method_name callWith: { methodNumber  } 
+	^ Function_amqp_method_name callWith: { methodNumber  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
@@ -7135,413 +7601,413 @@ amqp_new_connection
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqph line 937
 __attribute__((visibility(""default"")))amqp_connection_state_t amqp_new_connection(void);"
 	"Interpreted as #ptr from #( )"
-	^ Function_amqp_new_connection callWith: {  } 
+	^ Function_amqp_new_connection callWith: {  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_open_socket_: hostname _: portnumber 
+amqp_open_socket_: hostname _: portnumber
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1284
 __attribute__((visibility(""default"")))int amqp_open_socket(char const *hostname, int portnumber);"
 	"Interpreted as #int32 from #( #'const char*' #'int32' )"
-	^ Function_amqp_open_socket callWith: { hostname. portnumber  } 
+	^ Function_amqp_open_socket callWith: { hostname. portnumber  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_parse_url_: url _: parsed 
+amqp_parse_url_: url _: parsed
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2223
 __attribute__((visibility(""default"")))int amqp_parse_url(char *url, struct amqp_connection_info *parsed);"
 	"Interpreted as #int32 from #( #'ptr' #'ptr' )"
-	^ Function_amqp_parse_url callWith: { url. parsed  } 
+	^ Function_amqp_parse_url callWith: { url. parsed  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_pool_alloc_: pool _: amount 
+amqp_pool_alloc_: pool _: amount
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 825
 __attribute__((visibility(""default"")))void * amqp_pool_alloc(amqp_pool_t *pool, size_t amount);"
 	"Interpreted as #ptr from #( #'ptr' #'uint64' )"
-	^ Function_amqp_pool_alloc callWith: { pool. amount  } 
+	^ Function_amqp_pool_alloc callWith: { pool. amount  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_pool_alloc_bytes_: pool _: amount _: output 
+amqp_pool_alloc_bytes_: pool _: amount _: output
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 847
 __attribute__((visibility(""default"")))void amqp_pool_alloc_bytes(amqp_pool_t *pool, size_t amount,                                     amqp_bytes_t *output);"
 	"Interpreted as #void from #( #'ptr' #'uint64' #'ptr' )"
-	^ Function_amqp_pool_alloc_bytes callWith: { pool. amount. output  } 
+	^ Function_amqp_pool_alloc_bytes callWith: { pool. amount. output  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_queue_bind_: state _: channel _: queue"struct16bytes" _: exchange"struct16bytes" _: routing_key"struct16bytes" _: arguments"struct16bytes" 
+amqp_queue_bind_: state _: channel _: queue"struct16bytes" _: exchange"struct16bytes" _: routing_key"struct16bytes" _: arguments"struct16bytes"
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 1004
 __attribute__((visibility(""default"")))amqp_queue_bind_ok_t * amqp_queue_bind(    amqp_connection_state_t state, amqp_channel_t channel, amqp_bytes_t queue,    amqp_bytes_t exchange, amqp_bytes_t routing_key, amqp_table_t arguments);"
-	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'struct' #'struct' #'struct' )" 
-	| res args | 
+	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'struct' #'struct' #'struct' )"
+	| res args |
 	  args := {  state . channel . queue . exchange . routing_key . arguments  } .
 	res := Function_amqp_queue_bind callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_queue_declare_: state _: channel _: queue"struct16bytes" _: passive _: durable _: exclusive _: auto_delete _: arguments"struct16bytes" 
+amqp_queue_declare_: state _: channel _: queue"struct16bytes" _: passive _: durable _: exclusive _: auto_delete _: arguments"struct16bytes"
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 988
 __attribute__((visibility(""default"")))amqp_queue_declare_ok_t * amqp_queue_declare(    amqp_connection_state_t state, amqp_channel_t channel, amqp_bytes_t queue,    amqp_boolean_t passive, amqp_boolean_t durable, amqp_boolean_t exclusive,    amqp_boolean_t auto_delete, amqp_table_t arguments);"
-	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'int32' #'int32' #'int32' #'int32' #'struct' )" 
-	| res args | 
+	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'int32' #'int32' #'int32' #'int32' #'struct' )"
+	| res args |
 	  args := {  state . channel . queue . passive . durable . exclusive . auto_delete . arguments  } .
 	res := Function_amqp_queue_declare callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_queue_delete_: state _: channel _: queue"struct16bytes" _: if_unused _: if_empty 
+amqp_queue_delete_: state _: channel _: queue"struct16bytes" _: if_unused _: if_empty
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 1030
 __attribute__((visibility(""default"")))amqp_queue_delete_ok_t * amqp_queue_delete(    amqp_connection_state_t state, amqp_channel_t channel, amqp_bytes_t queue,    amqp_boolean_t if_unused, amqp_boolean_t if_empty);"
-	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'int32' #'int32' )" 
-	| res args | 
+	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'int32' #'int32' )"
+	| res args |
 	  args := {  state . channel . queue . if_unused . if_empty  } .
 	res := Function_amqp_queue_delete callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_queue_purge_: state _: channel _: queue"struct16bytes" 
+amqp_queue_purge_: state _: channel _: queue"struct16bytes"
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 1016
 __attribute__((visibility(""default"")))amqp_queue_purge_ok_t * amqp_queue_purge(amqp_connection_state_t state,                                                  amqp_channel_t channel,                                                  amqp_bytes_t queue);"
-	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' )" 
-	| res args | 
+	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' )"
+	| res args |
 	  args := {  state . channel . queue  } .
 	res := Function_amqp_queue_purge callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_queue_unbind_: state _: channel _: queue"struct16bytes" _: exchange"struct16bytes" _: routing_key"struct16bytes" _: arguments"struct16bytes" 
+amqp_queue_unbind_: state _: channel _: queue"struct16bytes" _: exchange"struct16bytes" _: routing_key"struct16bytes" _: arguments"struct16bytes"
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 1045
 __attribute__((visibility(""default"")))amqp_queue_unbind_ok_t * amqp_queue_unbind(    amqp_connection_state_t state, amqp_channel_t channel, amqp_bytes_t queue,    amqp_bytes_t exchange, amqp_bytes_t routing_key, amqp_table_t arguments);"
-	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'struct' #'struct' #'struct' )" 
-	| res args | 
+	"Interpreted as #ptr from #( #'ptr' #'uint16' #'struct' #'struct' #'struct' #'struct' )"
+	| res args |
 	  args := {  state . channel . queue . exchange . routing_key . arguments  } .
 	res := Function_amqp_queue_unbind callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_read_message_: result"struct32bytes" _: state _: channel _: message _: flags 
+amqp_read_message_: result"struct32bytes" _: state _: channel _: message _: flags
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2080
 __attribute__((visibility(""default"")))amqp_rpc_reply_t amqp_read_message(amqp_connection_state_t state,                                             amqp_channel_t channel,                                             amqp_message_t *message,                                             int flags);"
-	"Interpreted as #struct from #( #'ptr' #'uint16' #'ptr' #'int32' )" 
-	| res args | 
+	"Interpreted as #struct from #( #'ptr' #'uint16' #'ptr' #'int32' )"
+	| res args |
 	 res := result"resultStruct".
   args := {  state . channel . message . flags  } .
 	Function_amqp_read_message callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_release_buffers_: state 
+amqp_release_buffers_: state
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1170
 __attribute__((visibility(""default"")))void amqp_release_buffers(amqp_connection_state_t state);"
 	"Interpreted as #void from #( #'ptr' )"
-	^ Function_amqp_release_buffers callWith: { state  } 
+	^ Function_amqp_release_buffers callWith: { state  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_release_buffers_ok_: state 
+amqp_release_buffers_ok_: state
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1143
 __attribute__((visibility(""default"")))amqp_boolean_t amqp_release_buffers_ok(amqp_connection_state_t state);"
 	"Interpreted as #int32 from #( #'ptr' )"
-	^ Function_amqp_release_buffers_ok callWith: { state  } 
+	^ Function_amqp_release_buffers_ok callWith: { state  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_send_frame_: state _: frame 
+amqp_send_frame_: state _: frame
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1238
 __attribute__((visibility(""default"")))int amqp_send_frame(amqp_connection_state_t state,                              amqp_frame_t const *frame);"
 	"Interpreted as #int32 from #( #'ptr' #'ptr' )"
-	^ Function_amqp_send_frame callWith: { state. frame  } 
+	^ Function_amqp_send_frame callWith: { state. frame  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_send_header_: state 
+amqp_send_header_: state
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1308
 __attribute__((visibility(""default"")))int amqp_send_header(amqp_connection_state_t state);"
 	"Interpreted as #int32 from #( #'ptr' )"
-	^ Function_amqp_send_header callWith: { state  } 
+	^ Function_amqp_send_header callWith: { state  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_send_method_: state _: channel _: id _: decoded 
+amqp_send_method_: state _: channel _: id _: decoded
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1526
 __attribute__((visibility(""default"")))int amqp_send_method(amqp_connection_state_t state,                               amqp_channel_t channel, amqp_method_number_t id,                               void *decoded);"
 	"Interpreted as #int32 from #( #'ptr' #'uint16' #'uint32' #'ptr' )"
-	^ Function_amqp_send_method callWith: { state. channel. id. decoded  } 
+	^ Function_amqp_send_method callWith: { state. channel. id. decoded  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_set_handshake_timeout_: state _: timeout 
+amqp_set_handshake_timeout_: state _: timeout
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2373
 __attribute__((visibility(""default"")))int amqp_set_handshake_timeout(amqp_connection_state_t state,                                         const struct timeval *timeout);"
 	"Interpreted as #int32 from #( #'ptr' #'ptr' )"
-	^ Function_amqp_set_handshake_timeout callWith: { state. timeout  } 
+	^ Function_amqp_set_handshake_timeout callWith: { state. timeout  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_set_initialize_ssl_library_: do_initialize 
+amqp_set_initialize_ssl_library_: do_initialize
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/ssl_socket.h line 229
 __attribute__((visibility(""default"")))void amqp_set_initialize_ssl_library(amqp_boolean_t do_initialize);"
 	"Interpreted as #void from #( #'int32' )"
-	^ Function_amqp_set_initialize_ssl_library callWith: { do_initialize  } 
+	^ Function_amqp_set_initialize_ssl_library callWith: { do_initialize  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_set_rpc_timeout_: state _: timeout 
+amqp_set_rpc_timeout_: state _: timeout
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2431
 __attribute__((visibility(""default"")))int amqp_set_rpc_timeout(amqp_connection_state_t state,                                   const struct timeval *timeout);"
 	"Interpreted as #int32 from #( #'ptr' #'ptr' )"
-	^ Function_amqp_set_rpc_timeout callWith: { state. timeout  } 
+	^ Function_amqp_set_rpc_timeout callWith: { state. timeout  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_set_sockfd_: state _: sockfd 
+amqp_set_sockfd_: state _: sockfd
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 977
 __attribute__((visibility(""default""))) __attribute__ ((__deprecated__)) void    amqp_set_sockfd(amqp_connection_state_t state, int sockfd);"
 	"Interpreted as #void from #( #'ptr' #'int32' )"
-	^ Function_amqp_set_sockfd callWith: { state. sockfd  } 
+	^ Function_amqp_set_sockfd callWith: { state. sockfd  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_set_ssl_engine_: engine 
+amqp_set_ssl_engine_: engine
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/ssl_socket.h line 263
 __attribute__((visibility(""default"")))int amqp_set_ssl_engine(const char *engine);"
 	"Interpreted as #int32 from #( #'const char*' )"
-	^ Function_amqp_set_ssl_engine callWith: { engine  } 
+	^ Function_amqp_set_ssl_engine callWith: { engine  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_simple_rpc_: result"struct32bytes" _: state _: channel _: request_id _: expected_reply_ids _: decoded_request_method 
+amqp_simple_rpc_: result"struct32bytes" _: state _: channel _: request_id _: expected_reply_ids _: decoded_request_method
 
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1563
 __attribute__((visibility(""default"")))amqp_rpc_reply_t amqp_simple_rpc(    amqp_connection_state_t state, amqp_channel_t channel,    amqp_method_number_t request_id, amqp_method_number_t *expected_reply_ids,    void *decoded_request_method);"
-	"Interpreted as #struct from #( #'ptr' #'uint16' #'uint32' #'ptr' #'ptr' )" 
-	| res args | 
+	"Interpreted as #struct from #( #'ptr' #'uint16' #'uint32' #'ptr' #'ptr' )"
+	| res args |
 	 res := result"resultStruct".
   args := {  state . channel . request_id . expected_reply_ids . decoded_request_method  } .
 	Function_amqp_simple_rpc callWith: args structResult: res errno: nil.
-	 ^ res . 
+	 ^ res .
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_simple_rpc_decoded_: state _: channel _: request_id _: reply_id _: decoded_request_method 
+amqp_simple_rpc_decoded_: state _: channel _: request_id _: reply_id _: decoded_request_method
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1583
 __attribute__((visibility(""default"")))void * amqp_simple_rpc_decoded(amqp_connection_state_t state,                                        amqp_channel_t channel,                                        amqp_method_number_t request_id,                                        amqp_method_number_t reply_id,                                        void *decoded_request_method);"
 	"Interpreted as #ptr from #( #'ptr' #'uint16' #'uint32' #'uint32' #'ptr' )"
-	^ Function_amqp_simple_rpc_decoded callWith: { state. channel. request_id. reply_id. decoded_request_method  } 
+	^ Function_amqp_simple_rpc_decoded callWith: { state. channel. request_id. reply_id. decoded_request_method  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_simple_wait_frame_: state _: decoded_frame 
+amqp_simple_wait_frame_: state _: decoded_frame
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1381
 __attribute__((visibility(""default"")))int amqp_simple_wait_frame(amqp_connection_state_t state,                                     amqp_frame_t *decoded_frame);"
 	"Interpreted as #int32 from #( #'ptr' #'ptr' )"
-	^ Function_amqp_simple_wait_frame callWith: { state. decoded_frame  } 
+	^ Function_amqp_simple_wait_frame callWith: { state. decoded_frame  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_simple_wait_frame_noblock_: state _: decoded_frame _: tv 
+amqp_simple_wait_frame_noblock_: state _: decoded_frame _: tv
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1448
 __attribute__((visibility(""default"")))int amqp_simple_wait_frame_noblock(amqp_connection_state_t state,                                             amqp_frame_t *decoded_frame,                                             const struct timeval *tv);"
 	"Interpreted as #int32 from #( #'ptr' #'ptr' #'ptr' )"
-	^ Function_amqp_simple_wait_frame_noblock callWith: { state. decoded_frame. tv  } 
+	^ Function_amqp_simple_wait_frame_noblock callWith: { state. decoded_frame. tv  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_simple_wait_method_: state _: expected_channel _: expected_method _: output 
+amqp_simple_wait_method_: state _: expected_channel _: expected_method _: output
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1494
 __attribute__((visibility(""default"")))int amqp_simple_wait_method(amqp_connection_state_t state,                                      amqp_channel_t expected_channel,                                      amqp_method_number_t expected_method,                                      amqp_method_t *output);"
 	"Interpreted as #int32 from #( #'ptr' #'uint16' #'uint32' #'ptr' )"
-	^ Function_amqp_simple_wait_method callWith: { state. expected_channel. expected_method. output  } 
+	^ Function_amqp_simple_wait_method callWith: { state. expected_channel. expected_method. output  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_socket_get_sockfd_: selfArg 
+amqp_socket_get_sockfd_: selfArg
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2283
 __attribute__((visibility(""default"")))int amqp_socket_get_sockfd(amqp_socket_t *self);"
 	"Interpreted as #int32 from #( #'ptr' )"
-	^ Function_amqp_socket_get_sockfd callWith: { selfArg  } 
+	^ Function_amqp_socket_get_sockfd callWith: { selfArg  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_socket_open_: selfArg _: host _: port 
+amqp_socket_open_: selfArg _: host _: port
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2244
 __attribute__((visibility(""default"")))int amqp_socket_open(amqp_socket_t *self, const char *host, int port);"
 	"Interpreted as #int32 from #( #'ptr' #'const char*' #'int32' )"
-	^ Function_amqp_socket_open callWith: { selfArg. host. port  } 
+	^ Function_amqp_socket_open callWith: { selfArg. host. port  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_socket_open_noblock_: selfArg _: host _: port _: timeout 
+amqp_socket_open_noblock_: selfArg _: host _: port _: timeout
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2265
 __attribute__((visibility(""default"")))int amqp_socket_open_noblock(amqp_socket_t *self, const char *host,                                       int port, const struct timeval *timeout);"
 	"Interpreted as #int32 from #( #'ptr' #'const char*' #'int32' #'ptr' )"
-	^ Function_amqp_socket_open_noblock callWith: { selfArg. host. port. timeout  } 
+	^ Function_amqp_socket_open_noblock callWith: { selfArg. host. port. timeout  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_ssl_socket_get_context_: selfArg 
+amqp_ssl_socket_get_context_: selfArg
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/ssl_socket.h line 49
 __attribute__((visibility(""default"")))void * amqp_ssl_socket_get_context(amqp_socket_t *self);"
 	"Interpreted as #ptr from #( #'ptr' )"
-	^ Function_amqp_ssl_socket_get_context callWith: { selfArg  } 
+	^ Function_amqp_ssl_socket_get_context callWith: { selfArg  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_ssl_socket_new_: state 
+amqp_ssl_socket_new_: state
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/ssl_socket.h line 36
 __attribute__((visibility(""default"")))amqp_socket_t * amqp_ssl_socket_new(amqp_connection_state_t state);"
 	"Interpreted as #ptr from #( #'ptr' )"
-	^ Function_amqp_ssl_socket_new callWith: { state  } 
+	^ Function_amqp_ssl_socket_new callWith: { state  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_ssl_socket_set_cacert_: selfArg _: cacert 
+amqp_ssl_socket_set_cacert_: selfArg _: cacert
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/ssl_socket.h line 63
 __attribute__((visibility(""default"")))int amqp_ssl_socket_set_cacert(amqp_socket_t *self,                                         const char *cacert);"
 	"Interpreted as #int32 from #( #'ptr' #'const char*' )"
-	^ Function_amqp_ssl_socket_set_cacert callWith: { selfArg. cacert  } 
+	^ Function_amqp_ssl_socket_set_cacert callWith: { selfArg. cacert  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_ssl_socket_set_key_: selfArg _: cert _: key 
+amqp_ssl_socket_set_key_: selfArg _: cert _: key
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/ssl_socket.h line 91
 __attribute__((visibility(""default"")))int amqp_ssl_socket_set_key(amqp_socket_t *self, const char *cert,                                      const char *key);"
 	"Interpreted as #int32 from #( #'ptr' #'const char*' #'const char*' )"
-	^ Function_amqp_ssl_socket_set_key callWith: { selfArg. cert. key  } 
+	^ Function_amqp_ssl_socket_set_key callWith: { selfArg. cert. key  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_ssl_socket_set_key_buffer_: selfArg _: cert _: key _: n 
+amqp_ssl_socket_set_key_buffer_: selfArg _: cert _: key _: n
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/ssl_socket.h line 126
 __attribute__((visibility(""default"")))int amqp_ssl_socket_set_key_buffer(amqp_socket_t *self,                                             const char *cert, const void *key,                                             size_t n);"
 	"Interpreted as #int32 from #( #'ptr' #'const char*' #'ptr' #'uint64' )"
-	^ Function_amqp_ssl_socket_set_key_buffer callWith: { selfArg. cert. key. n  } 
+	^ Function_amqp_ssl_socket_set_key_buffer callWith: { selfArg. cert. key. n  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_ssl_socket_set_key_engine_: selfArg _: cert _: key 
+amqp_ssl_socket_set_key_engine_: selfArg _: cert _: key
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/ssl_socket.h line 109
 __attribute__((visibility(""default"")))int amqp_ssl_socket_set_key_engine(amqp_socket_t *self,                                             const char *cert, const char *key);"
 	"Interpreted as #int32 from #( #'ptr' #'const char*' #'const char*' )"
-	^ Function_amqp_ssl_socket_set_key_engine callWith: { selfArg. cert. key  } 
+	^ Function_amqp_ssl_socket_set_key_engine callWith: { selfArg. cert. key  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_ssl_socket_set_key_passwd_: selfArg _: passwd 
+amqp_ssl_socket_set_key_passwd_: selfArg _: passwd
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/ssl_socket.h line 75
 __attribute__((visibility(""default"")))void amqp_ssl_socket_set_key_passwd(amqp_socket_t *self,                                              const char *passwd);"
 	"Interpreted as #void from #( #'ptr' #'const char*' )"
-	^ Function_amqp_ssl_socket_set_key_passwd callWith: { selfArg. passwd  } 
+	^ Function_amqp_ssl_socket_set_key_passwd callWith: { selfArg. passwd  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_ssl_socket_set_ssl_versions_: selfArg _: min _: max 
+amqp_ssl_socket_set_ssl_versions_: selfArg _: min _: max
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/ssl_socket.h line 201
 __attribute__((visibility(""default"")))int amqp_ssl_socket_set_ssl_versions(amqp_socket_t *self,                                               amqp_tls_version_t min,                                               amqp_tls_version_t max);"
 	"Interpreted as #int32 from #( #'ptr' #'int32' #'int32' )"
-	^ Function_amqp_ssl_socket_set_ssl_versions callWith: { selfArg. min. max  } 
+	^ Function_amqp_ssl_socket_set_ssl_versions callWith: { selfArg. min. max  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_ssl_socket_set_verify_: selfArg _: verify 
+amqp_ssl_socket_set_verify_: selfArg _: verify
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/ssl_socket.h line 146
 __attribute__((visibility(""default""))) __attribute__ ((__deprecated__)) void    amqp_ssl_socket_set_verify(amqp_socket_t *self, amqp_boolean_t verify);"
 	"Interpreted as #void from #( #'ptr' #'int32' )"
-	^ Function_amqp_ssl_socket_set_verify callWith: { selfArg. verify  } 
+	^ Function_amqp_ssl_socket_set_verify callWith: { selfArg. verify  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_ssl_socket_set_verify_hostname_: selfArg _: verify 
+amqp_ssl_socket_set_verify_hostname_: selfArg _: verify
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/ssl_socket.h line 173
 __attribute__((visibility(""default"")))void amqp_ssl_socket_set_verify_hostname(amqp_socket_t *self,                                                   amqp_boolean_t verify);"
 	"Interpreted as #void from #( #'ptr' #'int32' )"
-	^ Function_amqp_ssl_socket_set_verify_hostname callWith: { selfArg. verify  } 
+	^ Function_amqp_ssl_socket_set_verify_hostname callWith: { selfArg. verify  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_ssl_socket_set_verify_peer_: selfArg _: verify 
+amqp_ssl_socket_set_verify_peer_: selfArg _: verify
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/ssl_socket.h line 160
 __attribute__((visibility(""default"")))void amqp_ssl_socket_set_verify_peer(amqp_socket_t *self,                                               amqp_boolean_t verify);"
 	"Interpreted as #void from #( #'ptr' #'int32' )"
-	^ Function_amqp_ssl_socket_set_verify_peer callWith: { selfArg. verify  } 
+	^ Function_amqp_ssl_socket_set_verify_peer callWith: { selfArg. verify  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_table_clone_: original _: clone _: pool 
+amqp_table_clone_: original _: clone _: pool
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 2046
 __attribute__((visibility(""default"")))int amqp_table_clone(const amqp_table_t *original,                               amqp_table_t *clone, amqp_pool_t *pool);"
 	"Interpreted as #int32 from #( #'ptr' #'ptr' #'ptr' )"
-	^ Function_amqp_table_clone callWith: { original. clone. pool  } 
+	^ Function_amqp_table_clone callWith: { original. clone. pool  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_table_entry_cmp_: entry1 _: entry2 
+amqp_table_entry_cmp_: entry1 _: entry2
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1254
 __attribute__((visibility(""default"")))int amqp_table_entry_cmp(void const *entry1, void const *entry2);"
 	"Interpreted as #int32 from #( #'ptr' #'ptr' )"
-	^ Function_amqp_table_entry_cmp callWith: { entry1. entry2  } 
+	^ Function_amqp_table_entry_cmp callWith: { entry1. entry2  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_tcp_socket_new_: state 
+amqp_tcp_socket_new_: state
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/tcp_socket.h line 27
 __attribute__((visibility(""default"")))amqp_socket_t * amqp_tcp_socket_new(amqp_connection_state_t state);"
 	"Interpreted as #ptr from #( #'ptr' )"
-	^ Function_amqp_tcp_socket_new callWith: { state  } 
+	^ Function_amqp_tcp_socket_new callWith: { state  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_tcp_socket_set_sockfd_: selfArg _: sockfd 
+amqp_tcp_socket_set_sockfd_: selfArg _: sockfd
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/tcp_socket.h line 42
 __attribute__((visibility(""default"")))void amqp_tcp_socket_set_sockfd(amqp_socket_t *self, int sockfd);"
 	"Interpreted as #void from #( #'ptr' #'int32' )"
-	^ Function_amqp_tcp_socket_set_sockfd callWith: { selfArg. sockfd  } 
+	^ Function_amqp_tcp_socket_set_sockfd callWith: { selfArg. sockfd  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_tune_connection_: state _: channel_max _: frame_max _: heartbeat 
+amqp_tune_connection_: state _: channel_max _: frame_max _: heartbeat
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 1012
 __attribute__((visibility(""default"")))int amqp_tune_connection(amqp_connection_state_t state,                                   int channel_max, int frame_max,                                   int heartbeat);"
 	"Interpreted as #int32 from #( #'ptr' #'int32' #'int32' #'int32' )"
-	^ Function_amqp_tune_connection callWith: { state. channel_max. frame_max. heartbeat  } 
+	^ Function_amqp_tune_connection callWith: { state. channel_max. frame_max. heartbeat  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_tx_commit_: state _: channel 
+amqp_tx_commit_: state _: channel
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 1124
 __attribute__((visibility(""default"")))amqp_tx_commit_ok_t * amqp_tx_commit(amqp_connection_state_t state,                                              amqp_channel_t channel);"
 	"Interpreted as #ptr from #( #'ptr' #'uint16' )"
-	^ Function_amqp_tx_commit callWith: { state. channel  } 
+	^ Function_amqp_tx_commit callWith: { state. channel  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_tx_rollback_: state _: channel 
+amqp_tx_rollback_: state _: channel
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 1134
 __attribute__((visibility(""default"")))amqp_tx_rollback_ok_t * amqp_tx_rollback(amqp_connection_state_t state,                                                  amqp_channel_t channel);"
 	"Interpreted as #ptr from #( #'ptr' #'uint16' )"
-	^ Function_amqp_tx_rollback callWith: { state. channel  } 
+	^ Function_amqp_tx_rollback callWith: { state. channel  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-amqp_tx_select_: state _: channel 
+amqp_tx_select_: state _: channel
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/framing.h line 1114
 __attribute__((visibility(""default"")))amqp_tx_select_ok_t * amqp_tx_select(amqp_connection_state_t state,                                              amqp_channel_t channel);"
 	"Interpreted as #ptr from #( #'ptr' #'uint16' )"
-	^ Function_amqp_tx_select callWith: { state. channel  } 
+	^ Function_amqp_tx_select callWith: { state. channel  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
@@ -7549,7 +8015,7 @@ amqp_uninitialize_ssl_library
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/ssl_socketh line 273
 __attribute__((visibility(""default"")))int amqp_uninitialize_ssl_library(void);"
 	"Interpreted as #int32 from #( )"
-	^ Function_amqp_uninitialize_ssl_library callWith: {  } 
+	^ Function_amqp_uninitialize_ssl_library callWith: {  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
@@ -7557,7 +8023,7 @@ amqp_version
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqph line 213
 __attribute__((visibility(""default"")))char const * amqp_version(void);"
 	"Interpreted as #char* from #( )"
-	^ Function_amqp_version callWith: {  } 
+	^ Function_amqp_version callWith: {  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
@@ -7565,23 +8031,23 @@ amqp_version_number
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqph line 199
 __attribute__((visibility(""default"")))uint32_t amqp_version_number(void);"
 	"Interpreted as #uint32 from #( )"
-	^ Function_amqp_version_number callWith: {  } 
+	^ Function_amqp_version_number callWith: {  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-empty_amqp_pool_: pool 
+empty_amqp_pool_: pool
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 806
 __attribute__((visibility(""default"")))void empty_amqp_pool(amqp_pool_t *pool);"
 	"Interpreted as #void from #( #'ptr' )"
-	^ Function_empty_amqp_pool callWith: { pool  } 
+	^ Function_empty_amqp_pool callWith: { pool  }
 %
 category: 'Functions'
 method: GsLibRabbitMq
-init_amqp_pool_: pool _: pagesize 
+init_amqp_pool_: pool _: pagesize
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 771
 __attribute__((visibility(""default"")))void init_amqp_pool(amqp_pool_t *pool, size_t pagesize);"
 	"Interpreted as #void from #( #'ptr' #'uint64' )"
-	^ Function_init_amqp_pool callWith: { pool. pagesize  } 
+	^ Function_init_amqp_pool callWith: { pool. pagesize  }
 %
 category: 'Converting'
 method: GsLibRabbitMq
@@ -7594,11 +8060,11 @@ methodNumberToString: anInt
 %
 category: 'Functions'
 method: GsLibRabbitMq
-recycle_amqp_pool_: pool 
+recycle_amqp_pool_: pool
 	"/moop3/users/normg/rabbitmq_inst/include/rabbitmq-c/amqp.h line 794
 __attribute__((visibility(""default"")))void recycle_amqp_pool(amqp_pool_t *pool);"
 	"Interpreted as #void from #( #'ptr' )"
-	^ Function_recycle_amqp_pool callWith: { pool  } 
+	^ Function_recycle_amqp_pool callWith: { pool  }
 %
 ! ------------------- Remove existing behavior from GsAmqpMessage
 removeAllMethods GsAmqpMessage
@@ -7689,9 +8155,9 @@ initializeFromC
 
 	self bodyClass ifNil:[ self bodyClass: self class defaultBodyClass ].
 	^self destroyed
-		ifTrue: 
+		ifTrue:
 			[self error: 'Attempt to initialize from C an already destroyed message']
-		ifFalse: 
+		ifFalse:
 			[self
 				properties: (GsAmqpBasicProperties fromCPointer: self);
 				body: (self byteObjectFromAmqpBytesAtOffset: 200 class: self bodyClass);
@@ -7733,9 +8199,9 @@ fromBytes: byteObj
 
 	^(byteObj size == 0) "Handle both empty byteObj and nil"
 		ifTrue: [self emptyBytes]
-		ifFalse: 
+		ifFalse:
 			[| cba res |
-			cba := CByteArray withAll: byteObj nullTerminate: false.	
+			cba := CByteArray withAll: byteObj nullTerminate: false.
 			(res := self new)
 				bytes: cba;
 				len: cba size.
@@ -7753,7 +8219,7 @@ fromStringEncodeAsUtf8: byteObj
 
 	^(byteObj size == 0) "Handle both empty byteObj and nil"
 		ifTrue: [self emptyBytes]
-		ifFalse: 
+		ifFalse:
 			[| cba res |
 			cba := CByteArray gcMalloc: byteObj size.
 			cba encodeUTF8From: byteObj into: 0 allowCodePointZero: false.
@@ -7780,7 +8246,7 @@ sizeInC
 category: 'Accessing'
 method: GsAmqpBytes
 bytes
-	   
+
 "Return nil if the receiver references a NULL string. Othwerwise answer a CByteArray"
 	^self
 		pointerAt: 8
@@ -7809,7 +8275,7 @@ convertToByteArray
 	| length |
 	^(length := self len) == 0
 		ifTrue: [String new]
-		ifFalse: 
+		ifFalse:
 			[self byteArrayFromCharStarAt: 8 numBytes: length]
 %
 category: 'Converting'
@@ -7819,13 +8285,13 @@ convertToString
 	| length |
 	^(length := self len) == 0
 		ifTrue: [String new]
-		ifFalse: 
+		ifFalse:
 			[self stringFromCharStarAt: 8 numBytes: length]
 %
 category: 'Initialization'
 method: GsAmqpBytes
 initialize: aCByteArray
-  | sz | 
+  | sz |
   sz := self size min: aCByteArray size .
   self copyBytesFrom: aCByteArray from: 1 to: sz into: 0 allowCodePointZero: true .
 %
@@ -7921,461 +8387,6 @@ category: 'Updating'
 method: GsAmqpBasicDeliveryPayload
 routingKey: newValue
 	routingKey := newValue
-%
-! ------------------- Remove existing behavior from GsAmqpBasicProperties
-removeAllMethods GsAmqpBasicProperties
-removeAllClassMethods GsAmqpBasicProperties
-! ------------------- Class methods for GsAmqpBasicProperties
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_APP_ID_FLAG
-
-	^8
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_CLUSTER_ID_FLAG
-
-	^4
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_CONTENT_ENCODING_FLAG
-
-	^16384
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_CONTENT_TYPE_FLAG
-
-	^32768
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_CORRELATION_ID_FLAG
-
-	^1024
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_DELIVERY_MODE_FLAG
-
-	^4096
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_EXPIRATION_FLAG
-
-	^256
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_HEADERS_FLAG
-
-	^8192
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_MESSAGE_ID_FLAG
-
-	^128
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_PRIORITY_FLAG
-
-	^2048
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_REPLY_TO_FLAG
-
-	^512
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_TIMESTAMP_FLAG
-
-	^64
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_TYPE_FLAG
-
-	^32
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_USER_ID_FLAG
-
-	^16
-%
-category: 'Constants'
-classmethod: GsAmqpBasicProperties
-AMQP_DELIVERY_NONPERSISTENT
-
-^ 1
-%
-category: 'Constants'
-classmethod: GsAmqpBasicProperties
-AMQP_DELIVERY_PERSISTENT
-
-^ 2
-%
-category: 'Constants'
-classmethod: GsAmqpBasicProperties
-sizeInC
-
-^ 200
-%
-! ------------------- Instance methods for GsAmqpBasicProperties
-category: 'Accessing'
-method: GsAmqpBasicProperties
-appId
-	^appId
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-appId: newValue
-
-	appId := self newValueForString: newValue .
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_APP_ID_FLAG
-		newValue: self appId
-		offset: 168
-%
-category: 'C Memory'
-method: GsAmqpBasicProperties
-clearAmqpBytesAtOffset: offset
-
-self memset: 0 from: offset to: (offset + GsAmqpBytes lastZeroBasedOffset)
-%
-category: 'Flags'
-method: GsAmqpBasicProperties
-clearFlag: aSymbol
-
-self flags: (self flags bitAnd: (self class perform: aSymbol) bitInvert).
-^ self uint32At: 0 put: self flags ; yourself
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-clusterId
-	^clusterId
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-clusterId: newValue
-
-	clusterId := self newValueForString: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CLUSTER_ID_FLAG
-		newValue: self clusterId
-		offset: 184
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-contentEncoding
-	^contentEncoding
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-contentEncoding: newValue
-
-	contentEncoding := self newValueForString: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CONTENT_ENCODING_FLAG
-		newValue: self contentEncoding
-		offset: 24
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-contentType
-	^contentType
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-contentType: newValue
-
-	contentType := self newValueForString: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CONTENT_TYPE_FLAG
-		newValue: self contentType
-		offset: 8
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-correlationId
-	^correlationId
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-correlationId: newValue
-
-	correlationId := self newValueForString: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CORELATION_ID_FLAG
-		newValue: self correlationId
-		offset: 64
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-deliveryMode
-	^deliveryMode
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-deliveryMode: newValue
-
-	| flagName |
-	flagName := #AMQP_BASIC_DELIVERY_MODE_FLAG.
-	newValue _validateMin: 1 max: 2.
-	deliveryMode := newValue.
-	self uint8At: 56 put: newValue.
-	^ newValue == 0
-		ifTrue: [self clearFlag: flagName]
-		ifFalse: [self setFlag: flagName].
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-expiration
-	^expiration
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-expiration: newValue
-
-	expiration := self newValueForString: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_EXPIRATION_FLAG
-		newValue: self expiration
-		offset: 96
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-flags
-	^flags
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-flags: newValue
-
-	newValue _validateMin: 0 max: 16rFFFFFFFF.
-	flags := newValue
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-headers
-	^headers
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-headers: aGsAmqpTable
-
-	| flagName |
-	headers := aGsAmqpTable.
-	flagName := #AMQP_BASIC_HEADERS_FLAG.
-	aGsAmqpTable
-		ifNil: 
-			[self
-				clearFlag: flagName;
-				uint32At: 40 put: 0;
-				uint64At: 48 put: 0]
-		ifNotNil: 
-			[self
-				setFlag: flagName;
-				uint32At: 40 put: aGsAmqpTable numEntries;
-				uint64At: 48 put: aGsAmqpTable entriesAddress]
-%
-category: 'Initialization'
-method: GsAmqpBasicProperties
-initialize
-
-	^self
-		flags: 0
-		"deliveryMode: self class AMQP_DELIVERY_PERSISTENT"
-%
-category: 'Initialization'
-method: GsAmqpBasicProperties
-initializeFromC
-
-	self flags: (self uint32At: 0).
-	(self testFlag: #AMQP_BASIC_CONTENT_TYPE_FLAG)
-		ifTrue: [self contentType: (self stringFromAmqpBytesAtOffset: 8)].
-	(self testFlag: #AMQP_BASIC_CONTENT_ENCODING_FLAG)
-		ifTrue: [self contentEncoding: (self stringFromAmqpBytesAtOffset: 24)].
-	(self testFlag: #AMQP_BASIC_HEADERS_FLAG)
-		ifTrue: [self headers: (GsAmqpTable fromCPointer: self atOffset: 40) ].
-	(self testFlag: #AMQP_BASIC_DELIVERY_MODE_FLAG)
-		ifTrue: [self deliveryMode: (self uint8At: 56)].
-	(self testFlag: #AMQP_BASIC_PRIORITY_FLAG)
-		ifTrue: [self priority: (self uint8At: 57)].
-	(self testFlag: #AMQP_BASIC_CORRELATION_ID_FLAG)
-		ifTrue: [self correlationId: (self stringFromAmqpBytesAtOffset: 64)].
-	(self testFlag: #AMQP_BASIC_REPLY_TO_FLAG)
-		ifTrue: [self replyTo: (self stringFromAmqpBytesAtOffset: 80)].
-	(self testFlag: #AMQP_BASIC_EXPIRATION_FLAG)
-		ifTrue: [self expiration: (self stringFromAmqpBytesAtOffset: 96)].
-	(self testFlag: #AMQP_BASIC_MESSAGE_ID_FLAG)
-		ifTrue: [self messageId: (self stringFromAmqpBytesAtOffset: 112)].
-	(self testFlag: #AMQP_BASIC_TIMESTAMP_FLAG)
-		ifTrue: [self timestamp: (self uint64At: 128)].
-	(self testFlag: #AMQP_BASIC_TYPE_FLAG)
-		ifTrue: [self type: (self stringFromAmqpBytesAtOffset: 136)].
-	(self testFlag: #AMQP_BASIC_USER_ID_FLAG)
-		ifTrue: [self userId: (self stringFromAmqpBytesAtOffset: 152)].
-	(self testFlag: #AMQP_BASIC_APP_ID_FLAG)
-		ifTrue: [self appId: (self stringFromAmqpBytesAtOffset: 168)].
-	(self testFlag: #AMQP_BASIC_CLUSTER_ID_FLAG)
-		ifTrue: [self clusterId: (self stringFromAmqpBytesAtOffset: 184)].
-	^self
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-messageId
-	^messageId
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-messageId: newValue
-
-	messageId := self newValueForString: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_MESSAGE_ID_FLAG
-		newValue: self messageId
-		offset: 112
-%
-category: 'Private'
-method: GsAmqpBasicProperties
-newValueForString: aString
-
-	^aString ifNil: [nil] ifNotNil: [GsAmqpBytes fromString: aString]
-%
-category: 'Flags'
-method: GsAmqpBasicProperties
-postUpdateAmqpBytesWithBitFlag: aSymbol newValue: value offset: offset
-
-	value
-		ifNil: 
-			[self
-				clearFlag: aSymbol;
-				clearAmqpBytesAtOffset: offset]
-		ifNotNil: 
-			[self
-				setFlag: aSymbol;
-				storeAmqpBytes: value atOffset: offset].
-	^self
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-priority
-	^priority
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-priority: newValue
-
-	| flagName |
-	flagName := #AMQP_BASIC_PRIORITY_FLAG.
-	newValue _validateMin: 0 max: 9.
-	priority := newValue.
-	self uint8At: 57 put: newValue.
-	^ newValue == 0
-		ifTrue: [self clearFlag: flagName]
-		ifFalse: [self setFlag: flagName].
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-replyTo
-	^replyTo
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-replyTo: newValue
-
-	replyTo := self newValueForString: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_REPLY_TO_FLAG
-		newValue: self replyTo
-		offset: 80
-%
-category: 'Delivery'
-method: GsAmqpBasicProperties
-setDeliveryNonPersistent
-	^ self delivery: self class AMQP_DELIVERY_NONPERSISTENT
-%
-category: 'Delivery'
-method: GsAmqpBasicProperties
-setDeliveryPersistent
-	^ self delivery: self class AMQP_DELIVERY_PERSISTENT
-%
-category: 'Flags'
-method: GsAmqpBasicProperties
-setFlag: aSymbol
-
-self flags: (self flags bitOr: (self class perform: aSymbol)).
-^ self uint32At: 0 put: self flags ; yourself
-%
-category: 'C Memory'
-method: GsAmqpBasicProperties
-storeAmqpBytes: appIdBytes atOffset: offset
-
-	^self
-		uint64At: offset put: appIdBytes len;
-		uint64At: (offset + 8) put: appIdBytes bytesAddress;
-		yourself
-%
-category: 'Flags'
-method: GsAmqpBasicProperties
-testFlag: aSymbol
-	"Returns true if the flag is set, false if not"
-
-	^0 ~~ (self flags bitAnd: (self class perform: aSymbol))
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-timestamp
-	^timestamp
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-timestamp: newValue
-
-	| flagName |
-	flagName := #AMQP_BASIC_TIMESTAMP_FLAG.
-	timestamp := newValue.
-	self uint64At: 128 put: newValue.
-	^ newValue == 0
-		ifTrue: [self clearFlag: flagName]
-		ifFalse: [self setFlag: flagName].
-
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-type
-	^type
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-type: newValue
-	type := self newValueForString: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_TYPE_FLAG
-		newValue: self type
-		offset: 136
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-userId
-	^userId
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-userId: newValue
-	userId := self newValueForString: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_USER_ID_FLAG
-		newValue: self type
-		offset: 152
 %
 ! ------------------- Remove existing behavior from GsAmqpMethod
 removeAllMethods GsAmqpMethod
@@ -8477,14 +8488,14 @@ decodeMethodObject
 			" | close |
 			close := GsAmqpConnectionClose fromMemoryReferenceIn: self atOffset: 8.
 			^(GsRabbitMqError newFromConnectionClose: close) signal "
-		].	
+		].
 	self isChannelClose
 		ifTrue: "broker closed the connection, raise an exception"
 			[ GsAmqpChannelClose fromMemoryReferenceIn: self atOffset: 8.
 			"| close |
 			close := GsAmqpChannelClose fromMemoryReferenceIn: self atOffset: 8.
 			^(GsRabbitMqError newFromChannelClose: close) signal"
-		].	
+		].
 	^self error: 'Unexpected method object'
 %
 category: 'Testing'
@@ -8709,9 +8720,9 @@ initializeFromC
 
 	self initializeMessageBodyClass.
 	^ self destroyed
-		ifTrue: 
+		ifTrue:
 			[self error: 'Attempt to initialize from C an already destroyed envelope']
-		ifFalse: 
+		ifFalse:
 			[self
 				channel: (self uint32At: 0);
 				consumerTag: (self stringFromAmqpBytesAtOffset: 8);
@@ -8852,9 +8863,9 @@ removeAllClassMethods GsAmqpQueue
 ! ------------------- Class methods for GsAmqpQueue
 category: 'Instance Creation'
 classmethod: GsAmqpQueue
-declareWithConnection: conn durable: durable exclusive: exclusive autoDelete: autoDelete 
+declareWithConnection: conn durable: durable exclusive: exclusive autoDelete: autoDelete
 
-^ self declareWithConnection: conn name: nil channel: nil durable: durable exclusive: exclusive autoDelete: autoDelete 
+^ self declareWithConnection: conn name: nil channel: nil durable: durable exclusive: exclusive autoDelete: autoDelete
 %
 category: 'Instance Creation'
 classmethod: GsAmqpQueue
@@ -9122,7 +9133,7 @@ responsibility to check the queue for any outstanding messages after calling thi
 
 	| tag |
 	(tag := self consumerTag)
-		ifNotNil: 
+		ifNotNil:
 			[self connection stopConsumingQueueOnChannel: self channel
 				consumerTag: tag.
 			self consumerTag: nil].
@@ -9285,10 +9296,10 @@ initializeFromC
 		channel: (self uint16At: 2).
 	self isFrameHeader
 		ifTrue: [self initializeFrameHeaderFromC]
-		ifFalse: 
+		ifFalse:
 			[self isFrameMethod
 				ifTrue: [self initializeFrameMethodFromC]
-				ifFalse: 
+				ifFalse:
 					[self isFrameBody
 						ifTrue: [self initializeFrameBodyFromC]
 						ifFalse: [self error: 'Unknown frame kind ']]]
