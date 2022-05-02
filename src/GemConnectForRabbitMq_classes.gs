@@ -1,5 +1,20 @@
 fileformat utf8
 set compile_env: 0
+! ------------------- Class definition for GsAmqpConnection
+expectvalue /Class
+doit
+Object subclass: 'GsAmqpConnection'
+  instVarNames: #( library connection socket
+                    openChannels highestOpenChannel replyObject host
+                    port loggedIn connected)
+  classVars: #()
+  classInstVars: #()
+  poolDictionaries: #()
+  inDictionary: GemConnectForRabbitMq
+  options: #()
+
+%
+set compile_env: 0
 ! ------------------- Class definition for GsAmqpEntity
 expectvalue /Class
 doit
@@ -27,13 +42,25 @@ CByteArray subclass: 'GsAmqpCStruct'
 
 %
 set compile_env: 0
-! ------------------- Class definition for GsAmqpConnection
+! ------------------- Class definition for GsAmqpExample
 expectvalue /Class
 doit
-Object subclass: 'GsAmqpConnection'
-  instVarNames: #( library connection socket
-                    openChannels highestOpenChannel replyObject host
-                    port loggedIn connected)
+Object subclass: 'GsAmqpExample'
+  instVarNames: #()
+  classVars: #( amqpUserId badMessages caCertPath certPath debugEnabled hostname loginTimeoutMs messages password port privateKey privateKeyPassphrase randomString tlsPort)
+  classInstVars: #()
+  poolDictionaries: #()
+  inDictionary: GemConnectForRabbitMq
+  options: #()
+
+%
+set compile_env: 0
+! ------------------- Class definition for GsAmqpTlsConnection
+expectvalue /Class
+doit
+GsAmqpConnection subclass: 'GsAmqpTlsConnection'
+  instVarNames: #( verifyPeer verifyHostname caCertPath
+                    certPath privateKey)
   classVars: #()
   classInstVars: #()
   poolDictionaries: #()
@@ -42,14 +69,25 @@ Object subclass: 'GsAmqpConnection'
 
 %
 set compile_env: 0
-! ------------------- Class definition for GsAmqpBasicProperties
+! ------------------- Class definition for GsAmqpRpcReply
 expectvalue /Class
 doit
-GsAmqpCStruct subclass: 'GsAmqpBasicProperties'
-  instVarNames: #( flags contentType contentEncoding
-                    headers deliveryMode priority correlationId
-                    replyTo expiration messageId timestamp
-                    type amqpUserId appId clusterId)
+GsAmqpCStruct subclass: 'GsAmqpRpcReply'
+  instVarNames: #( connection replyType methodNumber
+                    libraryError method)
+  classVars: #()
+  classInstVars: #()
+  poolDictionaries: #()
+  inDictionary: GemConnectForRabbitMq
+  options: #()
+
+%
+set compile_env: 0
+! ------------------- Class definition for GsAmqpExchange
+expectvalue /Class
+doit
+GsAmqpEntity subclass: 'GsAmqpExchange'
+  instVarNames: #( type)
   classVars: #()
   classInstVars: #()
   poolDictionaries: #()
@@ -71,11 +109,14 @@ GsAmqpCStruct subclass: 'GsAmqpTable'
 
 %
 set compile_env: 0
-! ------------------- Class definition for GsAmqpExchange
+! ------------------- Class definition for GsAmqpBasicProperties
 expectvalue /Class
 doit
-GsAmqpEntity subclass: 'GsAmqpExchange'
-  instVarNames: #( type)
+GsAmqpCStruct subclass: 'GsAmqpBasicProperties'
+  instVarNames: #( flags contentType contentEncoding
+                    headers deliveryMode priority correlationId
+                    replyTo expiration messageId timestamp
+                    type amqpUserId appId clusterId)
   classVars: #()
   classInstVars: #()
   poolDictionaries: #()
@@ -103,47 +144,6 @@ doit
 GsAmqpCStruct subclass: 'GsAmqpFieldValue'
   instVarNames: #( kind value)
   classVars: #()
-  classInstVars: #()
-  poolDictionaries: #()
-  inDictionary: GemConnectForRabbitMq
-  options: #()
-
-%
-set compile_env: 0
-! ------------------- Class definition for GsAmqpRpcReply
-expectvalue /Class
-doit
-GsAmqpCStruct subclass: 'GsAmqpRpcReply'
-  instVarNames: #( connection replyType methodNumber
-                    libraryError method)
-  classVars: #()
-  classInstVars: #()
-  poolDictionaries: #()
-  inDictionary: GemConnectForRabbitMq
-  options: #()
-
-%
-set compile_env: 0
-! ------------------- Class definition for GsAmqpTlsConnection
-expectvalue /Class
-doit
-GsAmqpConnection subclass: 'GsAmqpTlsConnection'
-  instVarNames: #( verifyPeer verifyHostname caCertPath
-                    certPath privateKey)
-  classVars: #()
-  classInstVars: #()
-  poolDictionaries: #()
-  inDictionary: GemConnectForRabbitMq
-  options: #()
-
-%
-set compile_env: 0
-! ------------------- Class definition for GsAmqpExample
-expectvalue /Class
-doit
-Object subclass: 'GsAmqpExample'
-  instVarNames: #()
-  classVars: #( amqpUserId badMessages caCertPath certPath debugEnabled hostname loginTimeoutMs messages password port privateKey privateKeyPassphrase randomString tlsPort)
   classInstVars: #()
   poolDictionaries: #()
   inDictionary: GemConnectForRabbitMq

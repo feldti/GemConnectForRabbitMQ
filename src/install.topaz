@@ -14,7 +14,7 @@ true
 expectvalue true
 run
 | rabbitLib envVar |
-envVar := 'RABITTMQ_LIB'.
+envVar := 'RABBITMQ_LIB'.
 "Check we have an env var pointing to the rabbitmq shared library"
 (rabbitLib := System gemEnvironmentVariable: envVar)
   ifNil:[ Object halt: 'Env var ', envVar, ' must be set' ].
@@ -56,7 +56,7 @@ errorcount
 expectvalue true
 run
 | envVar rabbitLib |
-envVar := 'RABITTMQ_LIB'.
+envVar := 'RABBITMQ_LIB'.
 "Check we have an env var pointing to the rabbitmq shared library"
 (rabbitLib := System gemEnvironmentVariable: envVar)
   ifNil:[ Object halt: 'Env var ', envVar, ' must be set' ].

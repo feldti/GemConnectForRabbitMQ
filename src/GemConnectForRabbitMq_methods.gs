@@ -1,281 +1,4 @@
 fileformat utf8
-! ------------------- Remove existing behavior from GsAmqpEntity
-removeAllMethods GsAmqpEntity
-removeAllClassMethods GsAmqpEntity
-! ------------------- Class methods for GsAmqpEntity
-! ------------------- Instance methods for GsAmqpEntity
-category: 'Accessing'
-method: GsAmqpEntity
-autoDelete
-	^autoDelete
-%
-category: 'Updating'
-method: GsAmqpEntity
-autoDelete: newValue
-	autoDelete := newValue
-%
-category: 'Accessing'
-method: GsAmqpEntity
-channel
-	^channel
-%
-category: 'Updating'
-method: GsAmqpEntity
-channel: newValue
-	channel := newValue
-%
-category: 'Accessing'
-method: GsAmqpEntity
-connection
-	^connection
-%
-category: 'Updating'
-method: GsAmqpEntity
-connection: newValue
-	connection := newValue
-%
-category: 'Accessing'
-method: GsAmqpEntity
-durable
-	^durable
-%
-category: 'Updating'
-method: GsAmqpEntity
-durable: newValue
-	durable := newValue
-%
-category: 'Accessing'
-method: GsAmqpEntity
-name
-	^name
-%
-category: 'Updating'
-method: GsAmqpEntity
-name: newValue
-	name := newValue
-%
-! ------------------- Remove existing behavior from GsAmqpCStruct
-removeAllMethods GsAmqpCStruct
-removeAllClassMethods GsAmqpCStruct
-! ------------------- Class methods for GsAmqpCStruct
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromCPointer: aCPointer
-
-"NOT auto freed"
-^ self fromCPointer: aCPointer atOffset: 0 initializeFromC: true
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromCPointer: aCByteArray atOffset: offset
-
-"NOT auto freed"
-
-
-^ self fromCPointer: aCByteArray atOffset: offset initializeFromC: true
-
-
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromCPointer: aCByteArray atOffset: offset initializeFromC: doInitFromC
-
-"NOT auto freed"
-
-	| res |
-	res := self on: aCByteArray atOffset: offset .
-	doInitFromC ifTrue: [res initializeFromC].
-	^res
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromMemoryReferenceIn: aCByteArray atOffset: offset
-
-	^self
-		fromMemoryReferenceIn: aCByteArray
-		atOffset: offset
-		initializeFromC: true
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromMemoryReferenceIn: aCByteArray atOffset: offset initializeFromC: doInitFromC
-
-	^self
-		fromMemoryReferenceIn: aCByteArray
-		atOffset: offset
-		sizeInBytes: self sizeInC
-		initializeFromC: doInitFromC
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromMemoryReferenceIn: aCByteArray atOffset: offset sizeInBytes: bytes
-
-	^self
-		fromMemoryReferenceIn: aCByteArray
-		atOffset: offset
-		sizeInBytes: bytes
-		initializeFromC: true
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromMemoryReferenceIn: aCByteArray atOffset: offset sizeInBytes: bytes initializeFromC: doInitFromC
-
-
-"NOT auto freed"
-
-	| res cPointer |
-
-	cPointer := CPointer forAddress: (aCByteArray uint64At: offset).
-	res := self fromCPointer: cPointer numBytes: bytes.
-	doInitFromC ifTrue: [res initializeFromC].
-	^res
-%
-category: 'Constants'
-classmethod: GsAmqpCStruct
-lastZeroBasedOffset
-
-^self sizeInC - 1
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-new
-
-| result |
-result := self gcMalloc: self sizeInC.
-result initialize.
-^ result
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-new: aSize
-
-"Use new instead "
-^ self shouldNotImplement: #new:
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-on: aCByteArray
-
-	^self on: aCByteArray atOffset: 0
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-on: aCByteArray atOffset: offset
-
-	| res |
-	res := self
-				fromRegionOf: aCByteArray
-				offset: offset
-				numBytes: self sizeInC.
-	^ res initialize ;
-		derivedFrom: aCByteArray;
-	yourself
-%
-category: 'Subclass Methods'
-classmethod: GsAmqpCStruct
-sizeInC
-
-^self subclassResponsibility: #sizeInC
-%
-! ------------------- Instance methods for GsAmqpCStruct
-category: 'Accessing Strings'
-method: GsAmqpCStruct
-byteArrayFromAmqpBytesAtOffset: anOffset
-
-"Receiver contains a amqp_bytes_t struct at offset anOffset. Return a ByteArray containing the bytes that it holds."
-
-	| size |
-	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
-		ifNil: [nil]
-		ifNotNil: [self byteArrayFromCharStarAt: anOffset + 8 numBytes: size]
-%
-category: 'Accessing Strings'
-method: GsAmqpCStruct
-byteObjectFromAmqpBytesAtOffset: anOffset class: aByteClass
-	"Receiver contains a amqp_bytes_t struct at offset anOffset. Return the string that it holds."
-
-	^ (aByteClass isSubclassOf: String)
-		ifTrue: [self stringFromAmqpBytesAtOffset: anOffset]
-		ifFalse:
-			[(aByteClass isSubclassOf: ByteArray)
-				ifTrue: [self byteArrayFromAmqpBytesAtOffset: anOffset]
-				ifFalse: [self error: 'Unexpected byte class']]
-%
-category: 'Accessing Memory'
-method: GsAmqpCStruct
-cPointerForOffset: offset
-
-^CPointer _allocate _initFrom: self offset: offset
-%
-category: 'Subclass Methods'
-method: GsAmqpCStruct
-flushValuesToC
-
-^self subclassResponsibility: #flushValuesToC
-%
-category: 'Accessing Strings'
-method: GsAmqpCStruct
-getSizeOfAmqpBytesAtOffset: anOffset
-
-	| size |
-	size := self uint64At: anOffset.
-	^size == 0
-		ifTrue: [nil]
-		ifFalse:
-			[size > 16r20000
-				ifTrue:
-					[self
-						error: 'ByteArray larger than 128K detected. Possible bad memory reference']
-				ifFalse: [size]]
-%
-category: 'Initialization'
-method: GsAmqpCStruct
-initializeFromC
-
-"Subclasses may overload this method to initialize instance variables from C state at instance creation time."
-
-^ self
-%
-category: 'Accessing Strings'
-method: GsAmqpCStruct
-stringFromAmqpBytesAtOffset: anOffset
-	"Receiver contains a amqp_bytes_t struct at offset anOffset. Return the string that it holds."
-
-	| size |
-	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
-		ifNil: [nil]
-		ifNotNil: [self stringFromCharStarAt: anOffset + 8 numBytes: size]
-%
-category: 'Accessing Strings'
-method: GsAmqpCStruct
-utf16FromAmqpBytesAtOffset: anOffset
-
-"Receiver contains a amqp_bytes_t struct at offset anOffset. Return a Utf8 containing the bytes that it holds."
-
-	| size |
-	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
-		ifNil: [nil]
-		ifNotNil: [self utf16FromCharStarAt: anOffset + 8 numBytes: size]
-%
-category: 'Accessing Strings'
-method: GsAmqpCStruct
-utf8FromAmqpBytesAtOffset: anOffset
-
-"Receiver contains a amqp_bytes_t struct at offset anOffset. Return a Utf8 containing the bytes that it holds."
-
-	| size |
-	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
-		ifNil: [nil]
-		ifNotNil: [self utf8FromCharStarAt: anOffset + 8 numBytes: size]
-%
-category: 'Updating'
-method: GsAmqpCStruct
-zeroMemory
-
-	^self
-		memset: 0 from: 0 to: -1;
-		yourself
-%
 ! ------------------- Remove existing behavior from GsAmqpConnection
 removeAllMethods GsAmqpConnection
 removeAllClassMethods GsAmqpConnection
@@ -1294,1591 +1017,302 @@ _loginWithUserId: uid password: pw
 		ifTrue:[ self setLoggedIn ]
 		ifFalse:[ self reinitializeAfterLoginFailure . reply raiseExceptionForOperation: 'amqp_login']
 %
-! ------------------- Remove existing behavior from GsAmqpBasicProperties
-removeAllMethods GsAmqpBasicProperties
-removeAllClassMethods GsAmqpBasicProperties
-! ------------------- Class methods for GsAmqpBasicProperties
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_APP_ID_FLAG
-
-	^8
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_CLUSTER_ID_FLAG
-
-	^4
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_CONTENT_ENCODING_FLAG
-
-	^16384
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_CONTENT_TYPE_FLAG
-
-	^32768
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_CORRELATION_ID_FLAG
-
-	^1024
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_DELIVERY_MODE_FLAG
-
-	^4096
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_EXPIRATION_FLAG
-
-	^256
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_HEADERS_FLAG
-
-	^8192
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_MESSAGE_ID_FLAG
-
-	^128
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_PRIORITY_FLAG
-
-	^2048
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_REPLY_TO_FLAG
-
-	^512
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_TIMESTAMP_FLAG
-
-	^64
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_TYPE_FLAG
-
-	^32
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_USER_ID_FLAG
-
-	^16
-%
-category: 'Constants'
-classmethod: GsAmqpBasicProperties
-AMQP_DELIVERY_NONPERSISTENT
-
-^ 1
-%
-category: 'Constants'
-classmethod: GsAmqpBasicProperties
-AMQP_DELIVERY_PERSISTENT
-
-^ 2
-%
-category: 'Constants'
-classmethod: GsAmqpBasicProperties
-sizeInC
-
-^ 200
-%
-! ------------------- Instance methods for GsAmqpBasicProperties
+! ------------------- Remove existing behavior from GsAmqpEntity
+removeAllMethods GsAmqpEntity
+removeAllClassMethods GsAmqpEntity
+! ------------------- Class methods for GsAmqpEntity
+! ------------------- Instance methods for GsAmqpEntity
 category: 'Accessing'
-method: GsAmqpBasicProperties
-amqpUserId
-
-^ amqpUserId
+method: GsAmqpEntity
+autoDelete
+	^autoDelete
 %
 category: 'Updating'
-method: GsAmqpBasicProperties
-amqpUserId: newValue
-	amqpUserId := self newValueForString: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_USER_ID_FLAG
-		newValue: self amqpUserId
-		offset: 152
+method: GsAmqpEntity
+autoDelete: newValue
+	autoDelete := newValue
 %
 category: 'Accessing'
-method: GsAmqpBasicProperties
-appId
-	^appId
+method: GsAmqpEntity
+channel
+	^channel
 %
 category: 'Updating'
-method: GsAmqpBasicProperties
-appId: newValue
-
-	appId := self newValueForString: newValue .
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_APP_ID_FLAG
-		newValue: self appId
-		offset: 168
-%
-category: 'C Memory'
-method: GsAmqpBasicProperties
-clearAmqpBytesAtOffset: offset
-
-self memset: 0 from: offset to: (offset + GsAmqpBytes lastZeroBasedOffset)
-%
-category: 'Flags'
-method: GsAmqpBasicProperties
-clearFlag: aSymbol
-
-self flags: (self flags bitAnd: (self class perform: aSymbol) bitInvert).
-^ self uint32At: 0 put: self flags ; yourself
+method: GsAmqpEntity
+channel: newValue
+	channel := newValue
 %
 category: 'Accessing'
-method: GsAmqpBasicProperties
-clusterId
-	^clusterId
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-clusterId: newValue
-
-	clusterId := self newValueForString: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CLUSTER_ID_FLAG
-		newValue: self clusterId
-		offset: 184
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-contentEncoding
-	^contentEncoding
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-contentEncoding: newValue
-
-	contentEncoding := self newValueForString: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CONTENT_ENCODING_FLAG
-		newValue: self contentEncoding
-		offset: 24
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-contentType
-	^contentType
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-contentType: newValue
-
-	contentType := self newValueForString: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CONTENT_TYPE_FLAG
-		newValue: self contentType
-		offset: 8
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-correlationId
-	^correlationId
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-correlationId: newValue
-
-	correlationId := self newValueForString: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CORELATION_ID_FLAG
-		newValue: self correlationId
-		offset: 64
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-deliveryMode
-	^deliveryMode
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-deliveryMode: newValue
-
-	| flagName |
-	flagName := #AMQP_BASIC_DELIVERY_MODE_FLAG.
-	newValue _validateMin: 1 max: 2.
-	deliveryMode := newValue.
-	self uint8At: 56 put: newValue.
-	^ newValue == 0
-		ifTrue: [self clearFlag: flagName]
-		ifFalse: [self setFlag: flagName].
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-expiration
-	^expiration
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-expiration: newValue
-
-	expiration := self newValueForString: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_EXPIRATION_FLAG
-		newValue: self expiration
-		offset: 96
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-flags
-	^flags
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-flags: newValue
-
-	newValue _validateMin: 0 max: 16rFFFFFFFF.
-	flags := newValue
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-headers
-	^headers
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-headers: aGsAmqpTable
-
-	| flagName |
-	headers := aGsAmqpTable.
-	flagName := #AMQP_BASIC_HEADERS_FLAG.
-	aGsAmqpTable
-		ifNil:
-			[self
-				clearFlag: flagName;
-				uint32At: 40 put: 0;
-				uint64At: 48 put: 0]
-		ifNotNil:
-			[self
-				setFlag: flagName;
-				uint32At: 40 put: aGsAmqpTable numEntries;
-				uint64At: 48 put: aGsAmqpTable entriesAddress]
-%
-category: 'Initialization'
-method: GsAmqpBasicProperties
-initialize
-
-	^self
-		flags: 0 ;
-		deliveryMode: self class AMQP_DELIVERY_PERSISTENT ;
-		yourself 
-%
-category: 'Initialization'
-method: GsAmqpBasicProperties
-initializeFromC
-
-	self flags: (self uint32At: 0).
-	(self testFlag: #AMQP_BASIC_CONTENT_TYPE_FLAG)
-		ifTrue: [self contentType: (self stringFromAmqpBytesAtOffset: 8)].
-	(self testFlag: #AMQP_BASIC_CONTENT_ENCODING_FLAG)
-		ifTrue: [self contentEncoding: (self stringFromAmqpBytesAtOffset: 24)].
-	(self testFlag: #AMQP_BASIC_HEADERS_FLAG)
-		ifTrue: [self headers: (GsAmqpTable fromCPointer: self atOffset: 40) ].
-	(self testFlag: #AMQP_BASIC_DELIVERY_MODE_FLAG)
-		ifTrue: [self deliveryMode: (self uint8At: 56)].
-	(self testFlag: #AMQP_BASIC_PRIORITY_FLAG)
-		ifTrue: [self priority: (self uint8At: 57)].
-	(self testFlag: #AMQP_BASIC_CORRELATION_ID_FLAG)
-		ifTrue: [self correlationId: (self stringFromAmqpBytesAtOffset: 64)].
-	(self testFlag: #AMQP_BASIC_REPLY_TO_FLAG)
-		ifTrue: [self replyTo: (self stringFromAmqpBytesAtOffset: 80)].
-	(self testFlag: #AMQP_BASIC_EXPIRATION_FLAG)
-		ifTrue: [self expiration: (self stringFromAmqpBytesAtOffset: 96)].
-	(self testFlag: #AMQP_BASIC_MESSAGE_ID_FLAG)
-		ifTrue: [self messageId: (self stringFromAmqpBytesAtOffset: 112)].
-	(self testFlag: #AMQP_BASIC_TIMESTAMP_FLAG)
-		ifTrue: [self timestamp: (self uint64At: 128)].
-	(self testFlag: #AMQP_BASIC_TYPE_FLAG)
-		ifTrue: [self type: (self stringFromAmqpBytesAtOffset: 136)].
-	(self testFlag: #AMQP_BASIC_USER_ID_FLAG)
-		ifTrue: [self amqpUserId: (self stringFromAmqpBytesAtOffset: 152)].
-	(self testFlag: #AMQP_BASIC_APP_ID_FLAG)
-		ifTrue: [self appId: (self stringFromAmqpBytesAtOffset: 168)].
-	(self testFlag: #AMQP_BASIC_CLUSTER_ID_FLAG)
-		ifTrue: [self clusterId: (self stringFromAmqpBytesAtOffset: 184)].
-	^self
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-messageId
-	^messageId
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-messageId: newValue
-
-	messageId := self newValueForString: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_MESSAGE_ID_FLAG
-		newValue: self messageId
-		offset: 112
-%
-category: 'Private'
-method: GsAmqpBasicProperties
-newValueForString: aString
-
-	^aString ifNil: [nil] ifNotNil: [GsAmqpBytes fromString: aString]
-%
-category: 'Flags'
-method: GsAmqpBasicProperties
-postUpdateAmqpBytesWithBitFlag: aSymbol newValue: value offset: offset
-
-	value
-		ifNil:
-			[self
-				clearFlag: aSymbol;
-				clearAmqpBytesAtOffset: offset]
-		ifNotNil:
-			[self
-				setFlag: aSymbol;
-				storeAmqpBytes: value atOffset: offset].
-	^self
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-priority
-	^priority
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-priority: newValue
-
-	| flagName |
-	flagName := #AMQP_BASIC_PRIORITY_FLAG.
-	newValue _validateMin: 0 max: 9.
-	priority := newValue.
-	self uint8At: 57 put: newValue.
-	^ newValue == 0
-		ifTrue: [self clearFlag: flagName]
-		ifFalse: [self setFlag: flagName].
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-replyTo
-	^replyTo
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-replyTo: newValue
-
-	replyTo := self newValueForString: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_REPLY_TO_FLAG
-		newValue: self replyTo
-		offset: 80
-%
-category: 'Delivery'
-method: GsAmqpBasicProperties
-setDeliveryNonPersistent
-	^ self delivery: self class AMQP_DELIVERY_NONPERSISTENT
-%
-category: 'Delivery'
-method: GsAmqpBasicProperties
-setDeliveryPersistent
-	^ self delivery: self class AMQP_DELIVERY_PERSISTENT
-%
-category: 'Flags'
-method: GsAmqpBasicProperties
-setFlag: aSymbol
-
-self flags: (self flags bitOr: (self class perform: aSymbol)).
-^ self uint32At: 0 put: self flags ; yourself
-%
-category: 'C Memory'
-method: GsAmqpBasicProperties
-storeAmqpBytes: appIdBytes atOffset: offset
-
-	^self
-		uint64At: offset put: appIdBytes len;
-		uint64At: (offset + 8) put: appIdBytes bytesAddress;
-		yourself
-%
-category: 'Flags'
-method: GsAmqpBasicProperties
-testFlag: aSymbol
-	"Returns true if the flag is set, false if not"
-
-	^0 ~~ (self flags bitAnd: (self class perform: aSymbol))
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-timestamp
-	^timestamp
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-timestamp: newValue
-
-	| flagName |
-	flagName := #AMQP_BASIC_TIMESTAMP_FLAG.
-	timestamp := newValue.
-	self uint64At: 128 put: newValue.
-	^ newValue == 0
-		ifTrue: [self clearFlag: flagName]
-		ifFalse: [self setFlag: flagName].
-
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-type
-	^type
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-type: newValue
-	type := self newValueForString: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_TYPE_FLAG
-		newValue: self type
-		offset: 136
-%
-! ------------------- Remove existing behavior from GsAmqpTable
-removeAllMethods GsAmqpTable
-removeAllClassMethods GsAmqpTable
-! ------------------- Class methods for GsAmqpTable
-category: 'Instance Creation'
-classmethod: GsAmqpTable
-emptyTable
-
-^ self new
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTable
-newFromArrayOfPairs: array
-
-^(self new) initialize ; buildFromArrayOfPairs: array ; yourself
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTable
-newFromDictionary: aDictionary
-
-^(self new) initialize ; buildFromDictionary: aDictionary ; yourself
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTable
-newFromKeys: keyArray values: valueArray
-
-	^(self new)
-		initialize;
-		buildFromKeys: keyArray values: valueArray;
-		yourself
-%
-category: 'Constants'
-classmethod: GsAmqpTable
-sizeInC
-
-^ 16
-%
-! ------------------- Instance methods for GsAmqpTable
-category: 'Building'
-method: GsAmqpTable
-buildFromArrayOfPairs: array
-
-	^self
-		setEntries: (GsAmqpTableEntryArray newFromArrayOfPairs: array);
-		yourself
-%
-category: 'Building'
-method: GsAmqpTable
-buildFromDictionary: dict
-
-	^self
-		setEntries: (GsAmqpTableEntryArray newFromDictionary: dict);
-		yourself
-%
-category: 'Building'
-method: GsAmqpTable
-buildFromKeys: keyArray values: valueArray
-
-	^self
-		setEntries: (GsAmqpTableEntryArray newFromKeys: keyArray values: valueArray);
-		yourself
-%
-category: 'Accessing'
-method: GsAmqpTable
-entries
-	^entries
-%
-category: 'Updating'
-method: GsAmqpTable
-entries: newValue
-	entries := newValue
-%
-category: 'Accessing'
-method: GsAmqpTable
-entriesAddress
-
-^ self uint64At: 8
-%
-category: 'Initialization'
-method: GsAmqpTable
-initializeFromC
-
-^ self numEntries: (self int32At: 0) ;
-	entries: (GsAmqpTableEntryArray fromMemoryReferenceIn: self atOffset: 8 elements: self numEntries)
-	yourself.
-
-%
-category: 'Accessing'
-method: GsAmqpTable
-numEntries
-	^numEntries
-%
-category: 'Updating'
-method: GsAmqpTable
-numEntries: newValue
-	numEntries := newValue
-%
-category: 'Updating'
-method: GsAmqpTable
-setEntries: newValue
-
-	newValue
-		ifNil:
-			[entries := nil.
-			numEntries := 0.
-			self zeroMemory]
-		ifNotNil:
-			[newValue _validateClass: GsAmqpTableEntryArray.
-			entries := newValue.
-			self
-				uint32At: 0 put: (numEntries := newValue numElements);
-				uint64At: 8 put: newValue memoryAddress].
-	^self
-%
-! ------------------- Remove existing behavior from GsAmqpExchange
-removeAllMethods GsAmqpExchange
-removeAllClassMethods GsAmqpExchange
-! ------------------- Class methods for GsAmqpExchange
-category: 'Instance Creation'
-classmethod: GsAmqpExchange
-declareWithConnection: conn name: exchgName type: type channel: channelIdArg durable: durable autoDelete: autoDelete
-
-	|  result channelId |
-	channelId := channelIdArg
-				ifNil: [conn openNextChannel]
-				ifNotNil: [channelIdArg].
-	conn
-				declareExchangeNamed: exchgName
-				channel: channelId
-				type: type
-				durable: durable
-				autoDelete: autoDelete .
-
-	result := self new.
-	^result
-		connection: conn;
-		type: type;
-		channel: channelId;
-		name: exchgName;
-		durable: durable;
-		autoDelete: autoDelete;
-		 yourself
-%
-! ------------------- Instance methods for GsAmqpExchange
-category: 'Deleting'
-method: GsAmqpExchange
-deleteForceIfInUse: forceIfInUse
-
-"Deletes the receiver from the broker. If forceIfInUse is true, the exchange is deleted even if queues are still bound to it.
-If forceIfInUse is false, the exchange is only deleted if there are no queues bound, otherwise an exception is raised."
-
-	^self connection
-		deleteExchangeNamed: self name
-		channel: self channel
-		forceIfInUse:  forceIfInUse
-%
-category: 'Deleting'
-method: GsAmqpExchange
-deleteIfUnused
-
-
-^ self deleteForceIfInUse: false
-%
-category: 'Subclass Methods'
-method: GsAmqpExchange
-exchangKind
-
-^self subclassResponsibility: #exchangKind
-%
-category: 'Deleting'
-method: GsAmqpExchange
-forceDelete
-
-^ self deleteForceIfInUse: true
-%
-category: 'Publishing'
-method: GsAmqpExchange
-publishMessage: msg routingKey: routingKey mandatory: mandatory properties: props
-
-	self connection
-		publishMessage: msg
-		channel: self channel
-		exchange: self name
-		routingKey: routingKey
-		mandatory: mandatory
-		properties: props .
-	^ self
-%
-category: 'Accessing'
-method: GsAmqpExchange
-type
-	^type
-%
-category: 'Updating'
-method: GsAmqpExchange
-type: newValue
-	type := newValue
-%
-! ------------------- Remove existing behavior from GsAmqpTableEntryArray
-removeAllMethods GsAmqpTableEntryArray
-removeAllClassMethods GsAmqpTableEntryArray
-! ------------------- Class methods for GsAmqpTableEntryArray
-category: 'Constants'
-classmethod: GsAmqpTableEntryArray
-elementsToBytes: elements
-
-^ self sizeOfElement * elements
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTableEntryArray
-fromMemoryReferenceIn: aCByteArray atOffset: offset elements: numElements
-
-"Does not allocate new memory. References existing memory at an address contained in aCByteArray at the given offset."
-
-	^(self
-		fromMemoryReferenceIn: aCByteArray
-		atOffset: offset
-		sizeInBytes: (self elementsToBytes: numElements)
-		initializeFromC: false)
-		elements: (Array new: numElements);
-		initializeFromC;
-		yourself
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTableEntryArray
-new
-
-"Use new: instead "
-^ self shouldNotImplement: #new
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTableEntryArray
-new: numElements
-
-	| bytes result |
-	bytes := numElements * self sizeOfElement .
-	result := self gcMalloc: bytes.
-	^result
-		initialize;
-		elements: (Array new: numElements);
-		yourself
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTableEntryArray
-newFromArrayOfPairs: array
-
-	| size |
-	(size := array size) even
-		ifFalse: [self error: 'array of pairs size must be even'].
-	^(self new: size // 2)
-		initialize;
-		buildFromArrayOfPairs: array;
-		yourself
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTableEntryArray
-newFromDictionary: dict
-
-	^(self new: dict size)
-		initialize;
-		buildFromDictionary: dict;
-		yourself
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTableEntryArray
-newFromKeys: keyArray values: valueArray
-
-	| size |
-	(size := keyArray size) == valueArray size
-		ifFalse: [self error: 'size of arrays for keys and values must match'].
-	^(self new: size)
-		initialize;
-		buildFromKeys: keyArray values: valueArray;
-		yourself
-%
-category: 'Constants'
-classmethod: GsAmqpTableEntryArray
-sizeOfElement
-
-^ GsAmqpTableEntry sizeInC
-%
-! ------------------- Instance methods for GsAmqpTableEntryArray
-category: 'Adding'
-method: GsAmqpTableEntryArray
-add: anElement
-
-^ self shouldNotImplement: #add:
-%
-category: 'Adding'
-method: GsAmqpTableEntryArray
-addAll: aCollection
-
-^ self shouldNotImplement: #addAll:
-%
-category: 'Accessing'
-method: GsAmqpTableEntryArray
-at: index
-
-^self elements at: index
-%
-category: 'Updating'
-method: GsAmqpTableEntryArray
-at: oneBasedIdx put: obj
-
-	| offset  |
-
-"Don't allow the elements array to grow"
-	oneBasedIdx > elements size
-		ifTrue: [self _errorIndexOutOfRange: oneBasedIdx].
-"Store reference to obj to protect from GC"
-	self elements at: oneBasedIdx put: obj.
-"Compute C offset in receiver"
-	offset := self offsetForElementIndex: oneBasedIdx.
-	obj
-		ifNil:
-			[self "Clear C memory"
-				memset: 0
-				from: offset
-				to: (self sizeOfElement - 1)]
-		ifNotNil:
-			[obj _validateClass: GsAmqpTableEntry.
-			self "Copy element to C memory"
-				copyBytesFrom: obj
-				from: 1
-				to: self sizeOfElement
-				into: offset]
-%
-category: 'Building'
-method: GsAmqpTableEntryArray
-buildFromArrayOfPairs: array
-
-	| index |
-	index := 0.
-	1 to: array size
-		by: 2
-		do:
-			[:n |
-			index := index + 1.
-			self at: index
-				put: (GsAmqpTableEntry newForKey: (array at: n) value: (array at: n + 1))].
-	^self
-%
-category: 'Building'
-method: GsAmqpTableEntryArray
-buildFromDictionary: dict
-
-| index |
-index := 0.
-dict keysAndValuesDo:[:k :v|
-	index := index + 1.
-	self at: index put: (GsAmqpTableEntry newForKey: k value: v).
-].
-%
-category: 'Building'
-method: GsAmqpTableEntryArray
-buildFromKeys: keysArray values: valuesArray
-
-	| index |
-	index := 0.
-	1 to: keysArray size
-		do:
-			[:n |
-			index := index + 1.
-			self at: index
-				put: (GsAmqpTableEntry newForKey: (keysArray at: n)
-						value: (valuesArray at: n))].
-	^self
-%
-category: 'Accessing'
-method: GsAmqpTableEntryArray
-elements
-	^elements
-%
-category: 'Updating'
-method: GsAmqpTableEntryArray
-elements: newValue
-	elements := newValue
-%
-category: 'Initializing'
-method: GsAmqpTableEntryArray
-initializeFromC
-
-1 to: self elements size do:[:n|
-	self elements at: n put: (GsAmqpTableEntry fromCPointer: self atOffset: (self offsetForElementIndex: n)) ].
-^ self
-%
-category: 'Accessing'
-method: GsAmqpTableEntryArray
-numElements
-
-^ elements size
-%
-category: 'Converting'
-method: GsAmqpTableEntryArray
-offsetForElementIndex: oneBasedIndex
-
-^ (oneBasedIndex - 1) * self sizeOfElement
-%
-category: 'Constants'
-method: GsAmqpTableEntryArray
-sizeOfElement
-
-^ self class sizeOfElement
-%
-! ------------------- Remove existing behavior from GsAmqpFieldValue
-removeAllMethods GsAmqpFieldValue
-removeAllClassMethods GsAmqpFieldValue
-! ------------------- Class methods for GsAmqpFieldValue
-category: 'Converting'
-classmethod: GsAmqpFieldValue
-amqpFieldKindForObject: obj
-
-	^obj _isInteger
-		ifTrue: [self AMQP_FIELD_KIND_I64]
-		ifFalse:
-			[ | cls |
-			cls := obj class.
-			cls == Boolean
-				ifTrue: [self AMQP_FIELD_KIND_BOOLEAN]
-				ifFalse:
-					[cls isBytes
-						ifTrue: [self AMQP_FIELD_KIND_UTF8]
-						ifFalse: [self error: 'Invalid object']]]
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_ARRAY
-
-^ $A asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_BOOLEAN
-
-^ $t asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_BYTES
-
-^ $x asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_DECIMAL
-
-^ $D asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_F32
-
-^ $f asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_F64
-
-^ $d asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_I16
-
-^ $s asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_I32
-
-^ $I asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_I64
-
-^ $l asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_I8
-
-^ $b asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_TABLE
-
-^ $F asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_TIMESTAMP
-
-^ $T asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_U16
-
-^ $u asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_U32
-
-^ $i asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_U64
-
-^ $L asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_U8
-
-^ $B asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_UTF8
-
-^ $S asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_VOID
-
-^ $V asInteger
-%
-category: 'Instance Creation'
-classmethod: GsAmqpFieldValue
-newForObject: anObject
-
-"anObject must be a Boolean, SmallInteger or String"
-
-^ (self new)
-	 initialize ;
-	setValue: anObject ;
-	yourself
-%
-category: 'Constants'
-classmethod: GsAmqpFieldValue
-sizeInC
-
-^ 24
-%
-! ------------------- Instance methods for GsAmqpFieldValue
-category: 'Initialization'
-method: GsAmqpFieldValue
-initializeFromC
-
-	self kind: (self uint8At: 0).
-	self value: (self valueIsBoolean
-				ifTrue: [0 ~~ self uint32At: 8]
-				ifFalse:
-					[self valueIsString
-						ifTrue:
-							[| amqpBytes |
-							amqpBytes := GsAmqpBytes fromCPointer: self atOffset: 8.
-							Association newWithKey: amqpBytes convertToString value: amqpBytes]
-						ifFalse:
-							[self valueIsInteger
-								ifTrue: [self int64At: 8]
-								ifFalse: [self error: 'Unsupported value kind ' , self kind asString]]]).
-	^self
-%
-category: 'Accessing'
-method: GsAmqpFieldValue
-kind
-	^kind
-%
-category: 'Updating'
-method: GsAmqpFieldValue
-kind: newValue
-	kind := newValue
-%
-category: 'Updating'
-method: GsAmqpFieldValue
-setValue: aValue
-
-"Currently only Booleans, Integers and Strings are supported for values"
-	value := aValue. "Reference the incoming arg. We may override this later"
-	aValue
-		ifNil: [self memset: 0 from: 0 to: -1]
-		ifNotNil:
-			[aValue _isInteger
-				ifTrue: [self storeInteger: aValue]
-				ifFalse:
-					[aValue class == Boolean
-						ifTrue: [self storeBoolean: aValue]
-						ifFalse: [self storeStringAsUtf8: aValue]]].
-	^self
-%
-category: 'Updating'
-method: GsAmqpFieldValue
-storeBoolean: aBoolean
-
-^ self uint8At: 0 put: (kind := self class AMQP_FIELD_KIND_BOOLEAN) ;
-	uint64At: 8 put: aBoolean asBit ;
-	yourself
-%
-category: 'Updating'
-method: GsAmqpFieldValue
-storeInteger: anInt
-
-^ self uint8At: 0 put: (kind := self class AMQP_FIELD_KIND_I64) ;
-	int64At: 8 put: anInt ;
-	yourself
-%
-category: 'Updating'
-method: GsAmqpFieldValue
-storeStringAsUtf8: aString
-
-"Create a new GsAmqpBytes object. We must reference it so it does not get garbage collected."
-| amqpBytes |
-value := Association newWithKey: aString value: (amqpBytes := GsAmqpBytes fromStringEncodeAsUtf8: aString).
-^ self uint8At: 0 put: (kind := self class AMQP_FIELD_KIND_UTF8) ;
-	uint64At: 8 put: amqpBytes len ;
-	uint64At: 16 put: amqpBytes bytesAddress ;
-	yourself
-%
-category: 'Accessing'
-method: GsAmqpFieldValue
-value
-	^value
-%
-category: 'Updating'
-method: GsAmqpFieldValue
-value: newValue
-	value := newValue
-%
-category: 'Testing'
-method: GsAmqpFieldValue
-valueIsBoolean
-
-| myKind |
-myKind := self kind.
-myKind _validateClass: SmallInteger.
-^ myKind == self class AMQP_FIELD_KIND_BOOLEAN
-%
-category: 'Testing'
-method: GsAmqpFieldValue
-valueIsInteger
-
-| myKind |
-myKind := self kind.
-myKind _validateClass: SmallInteger.
-"Hard code values for performance"
-(myKind == 66 or:[ myKind == 73 ]) ifTrue:[ ^ true ].
-(myKind == 76 or:[ myKind == 98 ]) ifTrue:[ ^ true ].
-(myKind == 105 or:[ myKind == 108 ]) ifTrue:[ ^ true ].
-(myKind == 115 or:[ myKind == 117 ]) ifTrue:[ ^ true ].
-^ false
-
-%
-category: 'Testing'
-method: GsAmqpFieldValue
-valueIsString
-
-| myKind |
-myKind := self kind.
-myKind _validateClass: SmallInteger.
-^ myKind == self class AMQP_FIELD_KIND_UTF8
-%
-! ------------------- Remove existing behavior from GsAmqpRpcReply
-removeAllMethods GsAmqpRpcReply
-removeAllClassMethods GsAmqpRpcReply
-! ------------------- Class methods for GsAmqpRpcReply
-category: 'Constants'
-classmethod: GsAmqpRpcReply
-AMQP_RESPONSE_LIBRARY_EXCEPTION
-
-"library error, an error occurred in the library, examine the library_error"
-^ 2
-%
-category: 'Constants'
-classmethod: GsAmqpRpcReply
-AMQP_RESPONSE_NONE
-
-"the library got an EOF from the socket"
-
-^ 0
-%
-category: 'Constants'
-classmethod: GsAmqpRpcReply
-AMQP_RESPONSE_NORMAL
-
-"response normal, the RPC completed successfully"
-^ 1
-%
-category: 'Constants'
-classmethod: GsAmqpRpcReply
-AMQP_RESPONSE_SERVER_EXCEPTION
-"server exception, the broker returned an error, check replay"
-
-^ 3
-%
-category: 'Constants'
-classmethod: GsAmqpRpcReply
-AMQP_STATUS_SOCKET_CLOSED
-
-^ -16r11
-%
-category: 'Constants'
-classmethod: GsAmqpRpcReply
-AMQP_STATUS_TIMEOUT
-
-^ -16rD
-%
-category: 'Instance Creation'
-classmethod: GsAmqpRpcReply
-new
-
-^ self shouldNotImplement: #new
-%
-category: 'Instance Creation'
-classmethod: GsAmqpRpcReply
-new: aSize
-
-^ self shouldNotImplement: #new:
-%
-category: 'Instance Creation'
-classmethod: GsAmqpRpcReply
-newWithConnection: conn
-
-	^(self gcMalloc: self sizeInC)
-		connection:  conn;
-		yourself
-%
-category: 'Constants'
-classmethod: GsAmqpRpcReply
-sizeInC
-
-^ 32
-%
-category: 'Constants'
-classmethod: GsAmqpRpcReply
-unknownLibraryErrorCode
-
-"AMQP does not have this code but needs it"
-
-^ - 65535
-%
-! ------------------- Instance methods for GsAmqpRpcReply
-category: 'Reusing'
-method: GsAmqpRpcReply
-clearForReuse
-
-"Clear the object so it can be reused for a new C call. Do not clear the library inst var"
-
-	^ self
-		memset: 0 from: 0 to: -1; "Clear C memory"
-		replyType: 0 ;
-		methodNumber: 0 ;
-		libraryError: 0 ;
-		method:  nil ;
-		yourself
-%
-category: 'Accessing'
-method: GsAmqpRpcReply
+method: GsAmqpEntity
 connection
 	^connection
 %
 category: 'Updating'
-method: GsAmqpRpcReply
+method: GsAmqpEntity
 connection: newValue
 	connection := newValue
 %
-category: 'Initialization'
-method: GsAmqpRpcReply
-initializeFromC
-
-"Initialize the inst vars from the C memory. Only to be called after C memory has been initialized"
-
-replyType := self int32At: 0.
-methodNumber := self int32At: 8.
-libraryError := self int32At: 24.
-self isServerException
-  ifTrue:[ self method: (GsAmqpMethod fromRpcReply: self)  ].
-^ self
-%
-category: 'Testing'
-method: GsAmqpRpcReply
-isFailure
-
-^ self isSuccess not
-%
-category: 'Testing'
-method: GsAmqpRpcReply
-isLibraryException
-
-^self replyType == self class AMQP_RESPONSE_LIBRARY_EXCEPTION
-%
-category: 'Testing'
-method: GsAmqpRpcReply
-isServerException
-
-^self replyType == self class AMQP_RESPONSE_SERVER_EXCEPTION
-%
-category: 'Testing'
-method: GsAmqpRpcReply
-isSocketEof
-
-^self replyType == self class AMQP_RESPONSE_NONE
-%
-category: 'Testing'
-method: GsAmqpRpcReply
-isSuccess
-
-^self replyType == self class AMQP_RESPONSE_NORMAL
-%
-category: 'Testing'
-method: GsAmqpRpcReply
-isTimeout
-
-^ self isLibraryException and:[ self libraryError == self class AMQP_STATUS_TIMEOUT ]
-%
-category: 'Error Handling'
-method: GsAmqpRpcReply
-lastErrorString
-
-"Answer a String describing the last library error code or nil if no library error has occurred.
-Note: The library returns the string '(unknown error)' in the event that the error code is unknown."
-
-	^self libraryError == 0
-		ifTrue: [nil]
-		ifFalse: [self connection library amqp_error_string2_:  self libraryError]
-%
 category: 'Accessing'
-method: GsAmqpRpcReply
-libraryError
-	^libraryError
+method: GsAmqpEntity
+durable
+	^durable
 %
 category: 'Updating'
-method: GsAmqpRpcReply
-libraryError: newValue
-	libraryError := newValue
+method: GsAmqpEntity
+durable: newValue
+	durable := newValue
 %
 category: 'Accessing'
-method: GsAmqpRpcReply
-libraryErrorNotNoError
-	^libraryError == 0 ifTrue:[ self class unknownLibraryErrorCode ] ifFalse:[ libraryError ]
-%
-category: 'Accessing'
-method: GsAmqpRpcReply
-method
-	^method
+method: GsAmqpEntity
+name
+	^name
 %
 category: 'Updating'
-method: GsAmqpRpcReply
-method: newValue
-	method := newValue
+method: GsAmqpEntity
+name: newValue
+	name := newValue
 %
-category: 'Accessing'
-method: GsAmqpRpcReply
-methodNumber
-	^methodNumber
+! ------------------- Remove existing behavior from GsAmqpCStruct
+removeAllMethods GsAmqpCStruct
+removeAllClassMethods GsAmqpCStruct
+! ------------------- Class methods for GsAmqpCStruct
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromCPointer: aCPointer
+
+"NOT auto freed"
+^ self fromCPointer: aCPointer atOffset: 0 initializeFromC: true
 %
-category: 'Updating'
-method: GsAmqpRpcReply
-methodNumber: newValue
-	methodNumber := newValue
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromCPointer: aCByteArray atOffset: offset
+
+"NOT auto freed"
+
+
+^ self fromCPointer: aCByteArray atOffset: offset initializeFromC: true
+
+
 %
-category: 'Error Handling'
-method: GsAmqpRpcReply
-raiseExceptionForOperation: aString
-	^ (GsRabbitMqError newFromRpcReply: self forOperation: aString) signal
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromCPointer: aCByteArray atOffset: offset initializeFromC: doInitFromC
+
+"NOT auto freed"
+
+	| res |
+	res := self on: aCByteArray atOffset: offset .
+	doInitFromC ifTrue: [res initializeFromC].
+	^res
 %
-category: 'Accessing'
-method: GsAmqpRpcReply
-replyType
-	^replyType
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromMemoryReferenceIn: aCByteArray atOffset: offset
+
+	^self
+		fromMemoryReferenceIn: aCByteArray
+		atOffset: offset
+		initializeFromC: true
 %
-category: 'Updating'
-method: GsAmqpRpcReply
-replyType: newValue
-	replyType := newValue
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromMemoryReferenceIn: aCByteArray atOffset: offset initializeFromC: doInitFromC
+
+	^self
+		fromMemoryReferenceIn: aCByteArray
+		atOffset: offset
+		sizeInBytes: self sizeInC
+		initializeFromC: doInitFromC
 %
-! ------------------- Remove existing behavior from GsAmqpTlsConnection
-removeAllMethods GsAmqpTlsConnection
-removeAllClassMethods GsAmqpTlsConnection
-! ------------------- Class methods for GsAmqpTlsConnection
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromMemoryReferenceIn: aCByteArray atOffset: offset sizeInBytes: bytes
+
+	^self
+		fromMemoryReferenceIn: aCByteArray
+		atOffset: offset
+		sizeInBytes: bytes
+		initializeFromC: true
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromMemoryReferenceIn: aCByteArray atOffset: offset sizeInBytes: bytes initializeFromC: doInitFromC
+
+
+"NOT auto freed"
+
+	| res cPointer |
+
+	cPointer := CPointer forAddress: (aCByteArray uint64At: offset).
+	res := self fromCPointer: cPointer numBytes: bytes.
+	doInitFromC ifTrue: [res initializeFromC].
+	^res
+%
 category: 'Constants'
-classmethod: GsAmqpTlsConnection
-defaultPort
+classmethod: GsAmqpCStruct
+lastZeroBasedOffset
 
-^ 5671
+^self sizeInC - 1
 %
 category: 'Instance Creation'
-classmethod: GsAmqpTlsConnection
-newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyObj: aGsTlsPrivateKey
+classmethod: GsAmqpCStruct
+new
 
-
-	| result |
-	aGsTlsPrivateKey _validateClass: GsTlsPrivateKey .
-	result := self newOnHost: hostOrIp port: aPort.
-	^result
-		caCertPath: caCertPath;
-		certPath: certPath;
-		privateKey: aGsTlsPrivateKey;
-		yourself
+| result |
+result := self gcMalloc: self sizeInC.
+result initialize.
+^ result
 %
 category: 'Instance Creation'
-classmethod: GsAmqpTlsConnection
-newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyPath: keyPath
+classmethod: GsAmqpCStruct
+new: aSize
 
-"Use this method only if the private key file referenced by keyPath does not have a passphrase."
-
-	| result |
-	result := self newOnHost: hostOrIp port: aPort.
-	^result
-		caCertPath: caCertPath;
-		certPath: certPath;
-		privateKey: keyPath;
-		yourself
+"Use new instead "
+^ self shouldNotImplement: #new:
 %
 category: 'Instance Creation'
-classmethod: GsAmqpTlsConnection
-newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyPath: keyPath keyPassphrase: passPhrase
+classmethod: GsAmqpCStruct
+on: aCByteArray
 
-"Use this method if the private key file requires a passphrase."
-
-	"Note: amqp_ssl_socket_set_key_passwd() does not appear to work.
-As a workaround, we decrypt and load the private key using GsTlsPrivateKey, then pass the PEM string to RabbitMQ."
-
-	| aGsTlsPrivateKey |
-	aGsTlsPrivateKey := GsTlsPrivateKey newFromPemFile: keyPath
-				withPassphrase: passPhrase.
-	^self
-		newOnHost: hostOrIp
-		port: aPort
-		caCertPath: caCertPath
-		certPath: certPath
-		keyObj: aGsTlsPrivateKey
+	^self on: aCByteArray atOffset: 0
 %
 category: 'Instance Creation'
-classmethod: GsAmqpTlsConnection
-newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyString: keyString keyPassphrase: passPhrase
+classmethod: GsAmqpCStruct
+on: aCByteArray atOffset: offset
 
-"Use this method when you have a private key in the form of a PEM string. pass phrase must be the pass phrase for the private key or nil
-if the key requires no pass phrase."
-
-"Note: amqp_ssl_socket_set_key_passwd() does not appear to work.
-As a workaround, we decrypt and load the private key using GsTlsPrivateKey, then pass the PEM string to RabbitMQ."
-
-	|  aGsTlsPrivateKey |
-	aGsTlsPrivateKey := GsTlsPrivateKey newFromPemString: keyString withPassphrase: passPhrase .
-	^ self newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyObj: aGsTlsPrivateKey
-%
-! ------------------- Instance methods for GsAmqpTlsConnection
-category: 'Accessing'
-method: GsAmqpTlsConnection
-caCertPath
-	^caCertPath
-%
-category: 'Updating'
-method: GsAmqpTlsConnection
-caCertPath: newValue
-	caCertPath := newValue
-%
-category: 'Accessing'
-method: GsAmqpTlsConnection
-certPath
-	^certPath
-%
-category: 'Updating'
-method: GsAmqpTlsConnection
-certPath: newValue
-	certPath := newValue
-%
-category: 'Initialization'
-method: GsAmqpTlsConnection
-initialize
-
-	super initialize.
-	^self
-		verifyPeer: false;
-		verifyHostname: false;
-		yourself
-%
-category: 'Initialization'
-method: GsAmqpTlsConnection
-newSocket
-
-self validateConnection.
-^ self library amqp_ssl_socket_new_:  self connection
-%
-category: 'Accessing'
-method: GsAmqpTlsConnection
-privateKey
-	^privateKey
-%
-category: 'Updating'
-method: GsAmqpTlsConnection
-privateKey: newValue
-	privateKey := newValue
-%
-category: 'Private'
-method: GsAmqpTlsConnection
-setCaCert
-
-| rc |
-self validateCaCertPath; validateSocket .
-rc := self library amqp_ssl_socket_set_cacert_: self socket _: self caCertPath.
-^ rc == 0
-	ifTrue:[ self ]
-	ifFalse:[ GsRabbitMqError signalWithErrorCode: rc library: self library ]
-%
-category: 'Private'
-method: GsAmqpTlsConnection
-setCertAndKey
-
-	| rc |
-	self validateCertPath ; validatePrivateKey .
-	(self privateKey isKindOf: GsTlsPrivateKey)
-		ifTrue: [^self setCertAndKeyFromPemString].
-	self validateSocket .
-	rc := self library
-		amqp_ssl_socket_set_key_: self socket
-		_: self certPath
-		_: self privateKey.
-	^rc == 0
-		ifTrue: [self]
-		ifFalse: [GsRabbitMqError signalWithErrorCode: rc library: self library]
-%
-category: 'Private'
-method: GsAmqpTlsConnection
-setCertAndKeyFromPemString
-"privateKey is a GsTlsPrivateKey"
-	| rc pem cba key |
-	self validateSocket ; validatePrivateKey ; validateCertPath .
-	(key := self privateKey) _validateClass: GsTlsPrivateKey .
-	pem := key asPemString.
-	cba := CByteArray withAll: pem.
-	rc := self library
-				amqp_ssl_socket_set_key_buffer_: self socket
-				_: self certPath
-				_: cba
-				_: pem size.
-"Workaround for Issue 723: amqp_ssl_socket_set_key_buffer returns 1 on success instead of AMQP_STATUS_OK (0)
-accept rc ==1 as Success.  See: https://github.com/alanxz/rabbitmq-c/issues/723"
-	^(rc == 1 or:[ rc == 0])
-		ifTrue: [self]
-		ifFalse: [GsRabbitMqError signalWithErrorCode: rc library: self library]
-%
-category: 'Private'
-method: GsAmqpTlsConnection
-setSocketOptions
-
-
-^ self setCaCert ;
-	setCertAndKey ;
-	setVerifyPeer ;
-	setVerifyHostname ;
+	| res |
+	res := self
+				fromRegionOf: aCByteArray
+				offset: offset
+				numBytes: self sizeInC.
+	^ res initialize ;
+		derivedFrom: aCByteArray;
 	yourself
 %
-category: 'Private'
-method: GsAmqpTlsConnection
-setVerifyHostname
+category: 'Subclass Methods'
+classmethod: GsAmqpCStruct
+sizeInC
 
-| val |
-self validateSocket .
-(val := self verifyHostname) _validateClass: Boolean .
-self library amqp_ssl_socket_set_verify_hostname_: self socket _: val asBit .
-^ self
+^self subclassResponsibility: #sizeInC
 %
-category: 'Private'
-method: GsAmqpTlsConnection
-setVerifyPeer
+! ------------------- Instance methods for GsAmqpCStruct
+category: 'Accessing Memory'
+method: GsAmqpCStruct
+booleanAtOffset: anOffset
 
-| val |
-self validateSocket .
-(val := self verifyPeer) _validateClass: Boolean .
-self library amqp_ssl_socket_set_verify_peer_: self socket _: val asBit.
-^ self
-%
-category: 'Validation'
-method: GsAmqpTlsConnection
-validateCaCertPath
+"C memory of receiver at offset anOffset contains 32-bit 0x1 or 0x0. Translate to a Smalltalk true  or false"
 
-	| obj |
-	(obj := self caCertPath)
-		ifNil: [self error: 'path to CA cert has not been set']
-		ifNotNil: [obj _validateClass: String].
-	^self
+^ 0 ~~ (self uint32At: anOffset)
 %
-category: 'Validation'
-method: GsAmqpTlsConnection
-validateCertPath
+category: 'Accessing Strings'
+method: GsAmqpCStruct
+byteArrayFromAmqpBytesAtOffset: anOffset
 
-	| obj |
-	(obj := self certPath)
-		ifNil: [self error: 'path to cert has not been set']
-		ifNotNil: [obj _validateClass: String].
-	^self
-%
-category: 'Validation'
-method: GsAmqpTlsConnection
-validatePrivateKey
+"Receiver contains a amqp_bytes_t struct at offset anOffset. Return a ByteArray containing the bytes that it holds."
 
-	| obj |
-	(obj := self privateKey)
-		ifNil: [self error: 'private key has not been set']
-		ifNotNil: [obj _validateClasses: { String . GsTlsPrivateKey } ].
-	^self
+	| size |
+	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
+		ifNil: [nil]
+		ifNotNil: [self byteArrayFromCharStarAt: anOffset + 8 numBytes: size]
 %
-category: 'Accessing'
-method: GsAmqpTlsConnection
-verifyHostname
-	^verifyHostname
+category: 'Accessing Strings'
+method: GsAmqpCStruct
+byteObjectFromAmqpBytesAtOffset: anOffset class: aByteClass
+	"Receiver contains a amqp_bytes_t struct at offset anOffset. Return the string that it holds."
+
+	^ (aByteClass isSubclassOf: String)
+		ifTrue: [self stringFromAmqpBytesAtOffset: anOffset]
+		ifFalse:
+			[(aByteClass isSubclassOf: ByteArray)
+				ifTrue: [self byteArrayFromAmqpBytesAtOffset: anOffset]
+				ifFalse: [self error: 'Unexpected byte class']]
 %
 category: 'Updating'
-method: GsAmqpTlsConnection
-verifyHostname: newValue
-	verifyHostname := newValue
+method: GsAmqpCStruct
+clearAmqpBytesAtOffset: offset
+
+	^self
+		uint64At: offset put: 0; "length"
+		uint64At: (offset + 8) put: 0 ; "char *"
+		yourself
 %
-category: 'Accessing'
-method: GsAmqpTlsConnection
-verifyPeer
-	^verifyPeer
+category: 'Accessing Memory'
+method: GsAmqpCStruct
+cPointerForOffset: offset
+
+^CPointer _allocate _initFrom: self offset: offset
+%
+category: 'Accessing Strings'
+method: GsAmqpCStruct
+getSizeOfAmqpBytesAtOffset: anOffset
+
+	| size |
+	size := self uint64At: anOffset.
+	^size == 0
+		ifTrue: [nil]
+		ifFalse:
+			[size > 16r20000
+				ifTrue:
+					[self
+						error: 'ByteArray larger than 128K detected. Possible bad memory reference']
+				ifFalse: [size]]
+%
+category: 'Subclass Methods'
+method: GsAmqpCStruct
+initializeFromC
+
+"Subclasses may overload this method to initialize instance variables from C state at instance creation time."
+
+^ self
 %
 category: 'Updating'
-method: GsAmqpTlsConnection
-verifyPeer: newValue
-	verifyPeer := newValue
+method: GsAmqpCStruct
+storeAmqpBytes: amqpBytes atOffset: offset
+
+	^self
+		uint64At: offset put: amqpBytes len;
+		uint64At: (offset + 8) put: amqpBytes bytesAddress;
+		yourself
+%
+category: 'Accessing Strings'
+method: GsAmqpCStruct
+stringFromAmqpBytesAtOffset: anOffset
+	"Receiver contains a amqp_bytes_t struct at offset anOffset. Return the string that it holds."
+
+	| size |
+	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
+		ifNil: [nil]
+		ifNotNil: [self stringFromCharStarAt: anOffset + 8 numBytes: size]
+%
+category: 'Accessing Strings'
+method: GsAmqpCStruct
+utf16FromAmqpBytesAtOffset: anOffset
+
+"Receiver contains a amqp_bytes_t struct at offset anOffset. Return a Utf8 containing the bytes that it holds."
+
+	| size |
+	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
+		ifNil: [nil]
+		ifNotNil: [self utf16FromCharStarAt: anOffset + 8 numBytes: size]
+%
+category: 'Accessing Strings'
+method: GsAmqpCStruct
+utf8FromAmqpBytesAtOffset: anOffset
+
+"Receiver contains a amqp_bytes_t struct at offset anOffset. Return a Utf8 containing the bytes that it holds."
+
+	| size |
+	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
+		ifNil: [nil]
+		ifNotNil: [self utf8FromCharStarAt: anOffset + 8 numBytes: size]
+%
+category: 'Updating'
+method: GsAmqpCStruct
+zeroMemory
+
+	^self
+		memset: 0 from: 0 to: -1;
+		yourself
 %
 ! ------------------- Remove existing behavior from GsAmqpExample
 removeAllMethods GsAmqpExample
@@ -4528,6 +2962,1582 @@ waitForConsumerTimeMs
 ^ 60000
 %
 ! ------------------- Instance methods for GsAmqpExample
+! ------------------- Remove existing behavior from GsAmqpTlsConnection
+removeAllMethods GsAmqpTlsConnection
+removeAllClassMethods GsAmqpTlsConnection
+! ------------------- Class methods for GsAmqpTlsConnection
+category: 'Constants'
+classmethod: GsAmqpTlsConnection
+defaultPort
+
+^ 5671
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTlsConnection
+newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyObj: aGsTlsPrivateKey
+
+
+	| result |
+	aGsTlsPrivateKey _validateClass: GsTlsPrivateKey .
+	result := self newOnHost: hostOrIp port: aPort.
+	^result
+		caCertPath: caCertPath;
+		certPath: certPath;
+		privateKey: aGsTlsPrivateKey;
+		yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTlsConnection
+newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyPath: keyPath
+
+"Use this method only if the private key file referenced by keyPath does not have a passphrase."
+
+	| result |
+	result := self newOnHost: hostOrIp port: aPort.
+	^result
+		caCertPath: caCertPath;
+		certPath: certPath;
+		privateKey: keyPath;
+		yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTlsConnection
+newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyPath: keyPath keyPassphrase: passPhrase
+
+"Use this method if the private key file requires a passphrase."
+
+	"Note: amqp_ssl_socket_set_key_passwd() does not appear to work.
+As a workaround, we decrypt and load the private key using GsTlsPrivateKey, then pass the PEM string to RabbitMQ."
+
+	| aGsTlsPrivateKey |
+	aGsTlsPrivateKey := GsTlsPrivateKey newFromPemFile: keyPath
+				withPassphrase: passPhrase.
+	^self
+		newOnHost: hostOrIp
+		port: aPort
+		caCertPath: caCertPath
+		certPath: certPath
+		keyObj: aGsTlsPrivateKey
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTlsConnection
+newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyString: keyString keyPassphrase: passPhrase
+
+"Use this method when you have a private key in the form of a PEM string. pass phrase must be the pass phrase for the private key or nil
+if the key requires no pass phrase."
+
+"Note: amqp_ssl_socket_set_key_passwd() does not appear to work.
+As a workaround, we decrypt and load the private key using GsTlsPrivateKey, then pass the PEM string to RabbitMQ."
+
+	|  aGsTlsPrivateKey |
+	aGsTlsPrivateKey := GsTlsPrivateKey newFromPemString: keyString withPassphrase: passPhrase .
+	^ self newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyObj: aGsTlsPrivateKey
+%
+! ------------------- Instance methods for GsAmqpTlsConnection
+category: 'Accessing'
+method: GsAmqpTlsConnection
+caCertPath
+	^caCertPath
+%
+category: 'Updating'
+method: GsAmqpTlsConnection
+caCertPath: newValue
+	caCertPath := newValue
+%
+category: 'Accessing'
+method: GsAmqpTlsConnection
+certPath
+	^certPath
+%
+category: 'Updating'
+method: GsAmqpTlsConnection
+certPath: newValue
+	certPath := newValue
+%
+category: 'Initialization'
+method: GsAmqpTlsConnection
+initialize
+
+	super initialize.
+	^self
+		verifyPeer: false;
+		verifyHostname: false;
+		yourself
+%
+category: 'Initialization'
+method: GsAmqpTlsConnection
+newSocket
+
+self validateConnection.
+^ self library amqp_ssl_socket_new_:  self connection
+%
+category: 'Accessing'
+method: GsAmqpTlsConnection
+privateKey
+	^privateKey
+%
+category: 'Updating'
+method: GsAmqpTlsConnection
+privateKey: newValue
+	privateKey := newValue
+%
+category: 'Private'
+method: GsAmqpTlsConnection
+setCaCert
+
+| rc |
+self validateCaCertPath; validateSocket .
+rc := self library amqp_ssl_socket_set_cacert_: self socket _: self caCertPath.
+^ rc == 0
+	ifTrue:[ self ]
+	ifFalse:[ GsRabbitMqError signalWithErrorCode: rc library: self library ]
+%
+category: 'Private'
+method: GsAmqpTlsConnection
+setCertAndKey
+
+	| rc |
+	self validateCertPath ; validatePrivateKey .
+	(self privateKey isKindOf: GsTlsPrivateKey)
+		ifTrue: [^self setCertAndKeyFromPemString].
+	self validateSocket .
+	rc := self library
+		amqp_ssl_socket_set_key_: self socket
+		_: self certPath
+		_: self privateKey.
+	^rc == 0
+		ifTrue: [self]
+		ifFalse: [GsRabbitMqError signalWithErrorCode: rc library: self library]
+%
+category: 'Private'
+method: GsAmqpTlsConnection
+setCertAndKeyFromPemString
+"privateKey is a GsTlsPrivateKey"
+	| rc pem cba key |
+	self validateSocket ; validatePrivateKey ; validateCertPath .
+	(key := self privateKey) _validateClass: GsTlsPrivateKey .
+	pem := key asPemString.
+	cba := CByteArray withAll: pem.
+	rc := self library
+				amqp_ssl_socket_set_key_buffer_: self socket
+				_: self certPath
+				_: cba
+				_: pem size.
+"Workaround for Issue 723: amqp_ssl_socket_set_key_buffer returns 1 on success instead of AMQP_STATUS_OK (0)
+accept rc ==1 as Success.  See: https://github.com/alanxz/rabbitmq-c/issues/723"
+	^(rc == 1 or:[ rc == 0])
+		ifTrue: [self]
+		ifFalse: [GsRabbitMqError signalWithErrorCode: rc library: self library]
+%
+category: 'Private'
+method: GsAmqpTlsConnection
+setSocketOptions
+
+
+^ self setCaCert ;
+	setCertAndKey ;
+	setVerifyPeer ;
+	setVerifyHostname ;
+	yourself
+%
+category: 'Private'
+method: GsAmqpTlsConnection
+setVerifyHostname
+
+| val |
+self validateSocket .
+(val := self verifyHostname) _validateClass: Boolean .
+self library amqp_ssl_socket_set_verify_hostname_: self socket _: val asBit .
+^ self
+%
+category: 'Private'
+method: GsAmqpTlsConnection
+setVerifyPeer
+
+| val |
+self validateSocket .
+(val := self verifyPeer) _validateClass: Boolean .
+self library amqp_ssl_socket_set_verify_peer_: self socket _: val asBit.
+^ self
+%
+category: 'Validation'
+method: GsAmqpTlsConnection
+validateCaCertPath
+
+	| obj |
+	(obj := self caCertPath)
+		ifNil: [self error: 'path to CA cert has not been set']
+		ifNotNil: [obj _validateClass: String].
+	^self
+%
+category: 'Validation'
+method: GsAmqpTlsConnection
+validateCertPath
+
+	| obj |
+	(obj := self certPath)
+		ifNil: [self error: 'path to cert has not been set']
+		ifNotNil: [obj _validateClass: String].
+	^self
+%
+category: 'Validation'
+method: GsAmqpTlsConnection
+validatePrivateKey
+
+	| obj |
+	(obj := self privateKey)
+		ifNil: [self error: 'private key has not been set']
+		ifNotNil: [obj _validateClasses: { String . GsTlsPrivateKey } ].
+	^self
+%
+category: 'Accessing'
+method: GsAmqpTlsConnection
+verifyHostname
+	^verifyHostname
+%
+category: 'Updating'
+method: GsAmqpTlsConnection
+verifyHostname: newValue
+	verifyHostname := newValue
+%
+category: 'Accessing'
+method: GsAmqpTlsConnection
+verifyPeer
+	^verifyPeer
+%
+category: 'Updating'
+method: GsAmqpTlsConnection
+verifyPeer: newValue
+	verifyPeer := newValue
+%
+! ------------------- Remove existing behavior from GsAmqpRpcReply
+removeAllMethods GsAmqpRpcReply
+removeAllClassMethods GsAmqpRpcReply
+! ------------------- Class methods for GsAmqpRpcReply
+category: 'Constants'
+classmethod: GsAmqpRpcReply
+AMQP_RESPONSE_LIBRARY_EXCEPTION
+
+"library error, an error occurred in the library, examine the library_error"
+^ 2
+%
+category: 'Constants'
+classmethod: GsAmqpRpcReply
+AMQP_RESPONSE_NONE
+
+"the library got an EOF from the socket"
+
+^ 0
+%
+category: 'Constants'
+classmethod: GsAmqpRpcReply
+AMQP_RESPONSE_NORMAL
+
+"response normal, the RPC completed successfully"
+^ 1
+%
+category: 'Constants'
+classmethod: GsAmqpRpcReply
+AMQP_RESPONSE_SERVER_EXCEPTION
+"server exception, the broker returned an error, check replay"
+
+^ 3
+%
+category: 'Constants'
+classmethod: GsAmqpRpcReply
+AMQP_STATUS_SOCKET_CLOSED
+
+^ -16r11
+%
+category: 'Constants'
+classmethod: GsAmqpRpcReply
+AMQP_STATUS_TIMEOUT
+
+^ -16rD
+%
+category: 'Instance Creation'
+classmethod: GsAmqpRpcReply
+new
+
+^ self shouldNotImplement: #new
+%
+category: 'Instance Creation'
+classmethod: GsAmqpRpcReply
+new: aSize
+
+^ self shouldNotImplement: #new:
+%
+category: 'Instance Creation'
+classmethod: GsAmqpRpcReply
+newWithConnection: conn
+
+	^(self gcMalloc: self sizeInC)
+		connection:  conn;
+		yourself
+%
+category: 'Constants'
+classmethod: GsAmqpRpcReply
+sizeInC
+
+^ 32
+%
+category: 'Constants'
+classmethod: GsAmqpRpcReply
+unknownLibraryErrorCode
+
+"AMQP does not have this code but needs it"
+
+^ - 65535
+%
+! ------------------- Instance methods for GsAmqpRpcReply
+category: 'Reusing'
+method: GsAmqpRpcReply
+clearForReuse
+
+"Clear the object so it can be reused for a new C call. Do not clear the library inst var"
+
+	^ self
+		memset: 0 from: 0 to: -1; "Clear C memory"
+		replyType: 0 ;
+		methodNumber: 0 ;
+		libraryError: 0 ;
+		method:  nil ;
+		yourself
+%
+category: 'Accessing'
+method: GsAmqpRpcReply
+connection
+	^connection
+%
+category: 'Updating'
+method: GsAmqpRpcReply
+connection: newValue
+	connection := newValue
+%
+category: 'Initialization'
+method: GsAmqpRpcReply
+initializeFromC
+
+"Initialize the inst vars from the C memory. Only to be called after C memory has been initialized"
+
+replyType := self int32At: 0.
+methodNumber := self int32At: 8.
+libraryError := self int32At: 24.
+self isServerException
+  ifTrue:[ self method: (GsAmqpMethod fromRpcReply: self)  ].
+^ self
+%
+category: 'Testing'
+method: GsAmqpRpcReply
+isFailure
+
+^ self isSuccess not
+%
+category: 'Testing'
+method: GsAmqpRpcReply
+isLibraryException
+
+^self replyType == self class AMQP_RESPONSE_LIBRARY_EXCEPTION
+%
+category: 'Testing'
+method: GsAmqpRpcReply
+isServerException
+
+^self replyType == self class AMQP_RESPONSE_SERVER_EXCEPTION
+%
+category: 'Testing'
+method: GsAmqpRpcReply
+isSocketEof
+
+^self replyType == self class AMQP_RESPONSE_NONE
+%
+category: 'Testing'
+method: GsAmqpRpcReply
+isSuccess
+
+^self replyType == self class AMQP_RESPONSE_NORMAL
+%
+category: 'Testing'
+method: GsAmqpRpcReply
+isTimeout
+
+^ self isLibraryException and:[ self libraryError == self class AMQP_STATUS_TIMEOUT ]
+%
+category: 'Error Handling'
+method: GsAmqpRpcReply
+lastErrorString
+
+"Answer a String describing the last library error code or nil if no library error has occurred.
+Note: The library returns the string '(unknown error)' in the event that the error code is unknown."
+
+	^self libraryError == 0
+		ifTrue: [nil]
+		ifFalse: [self connection library amqp_error_string2_:  self libraryError]
+%
+category: 'Accessing'
+method: GsAmqpRpcReply
+libraryError
+	^libraryError
+%
+category: 'Updating'
+method: GsAmqpRpcReply
+libraryError: newValue
+	libraryError := newValue
+%
+category: 'Accessing'
+method: GsAmqpRpcReply
+libraryErrorNotNoError
+	^libraryError == 0 ifTrue:[ self class unknownLibraryErrorCode ] ifFalse:[ libraryError ]
+%
+category: 'Accessing'
+method: GsAmqpRpcReply
+method
+	^method
+%
+category: 'Updating'
+method: GsAmqpRpcReply
+method: newValue
+	method := newValue
+%
+category: 'Accessing'
+method: GsAmqpRpcReply
+methodNumber
+	^methodNumber
+%
+category: 'Updating'
+method: GsAmqpRpcReply
+methodNumber: newValue
+	methodNumber := newValue
+%
+category: 'Error Handling'
+method: GsAmqpRpcReply
+raiseExceptionForOperation: aString
+	^ (GsRabbitMqError newFromRpcReply: self forOperation: aString) signal
+%
+category: 'Accessing'
+method: GsAmqpRpcReply
+replyType
+	^replyType
+%
+category: 'Updating'
+method: GsAmqpRpcReply
+replyType: newValue
+	replyType := newValue
+%
+! ------------------- Remove existing behavior from GsAmqpExchange
+removeAllMethods GsAmqpExchange
+removeAllClassMethods GsAmqpExchange
+! ------------------- Class methods for GsAmqpExchange
+category: 'Instance Creation'
+classmethod: GsAmqpExchange
+declareWithConnection: conn name: exchgName type: type channel: channelIdArg durable: durable autoDelete: autoDelete
+
+	|  result channelId |
+	channelId := channelIdArg
+				ifNil: [conn openNextChannel]
+				ifNotNil: [channelIdArg].
+	conn
+				declareExchangeNamed: exchgName
+				channel: channelId
+				type: type
+				durable: durable
+				autoDelete: autoDelete .
+
+	result := self new.
+	^result
+		connection: conn;
+		type: type;
+		channel: channelId;
+		name: exchgName;
+		durable: durable;
+		autoDelete: autoDelete;
+		 yourself
+%
+! ------------------- Instance methods for GsAmqpExchange
+category: 'Deleting'
+method: GsAmqpExchange
+deleteForceIfInUse: forceIfInUse
+
+"Deletes the receiver from the broker. If forceIfInUse is true, the exchange is deleted even if queues are still bound to it.
+If forceIfInUse is false, the exchange is only deleted if there are no queues bound, otherwise an exception is raised."
+
+	^self connection
+		deleteExchangeNamed: self name
+		channel: self channel
+		forceIfInUse:  forceIfInUse
+%
+category: 'Deleting'
+method: GsAmqpExchange
+deleteIfUnused
+
+
+^ self deleteForceIfInUse: false
+%
+category: 'Subclass Methods'
+method: GsAmqpExchange
+exchangKind
+
+^self subclassResponsibility: #exchangKind
+%
+category: 'Deleting'
+method: GsAmqpExchange
+forceDelete
+
+^ self deleteForceIfInUse: true
+%
+category: 'Publishing'
+method: GsAmqpExchange
+publishMessage: msg routingKey: routingKey mandatory: mandatory properties: props
+
+	self connection
+		publishMessage: msg
+		channel: self channel
+		exchange: self name
+		routingKey: routingKey
+		mandatory: mandatory
+		properties: props .
+	^ self
+%
+category: 'Accessing'
+method: GsAmqpExchange
+type
+	^type
+%
+category: 'Updating'
+method: GsAmqpExchange
+type: newValue
+	type := newValue
+%
+! ------------------- Remove existing behavior from GsAmqpTable
+removeAllMethods GsAmqpTable
+removeAllClassMethods GsAmqpTable
+! ------------------- Class methods for GsAmqpTable
+category: 'Instance Creation'
+classmethod: GsAmqpTable
+emptyTable
+
+^ self new
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTable
+newFromArrayOfPairs: array
+
+^(self new) initialize ; buildFromArrayOfPairs: array ; yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTable
+newFromDictionary: aDictionary
+
+^(self new) initialize ; buildFromDictionary: aDictionary ; yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTable
+newFromKeys: keyArray values: valueArray
+
+	^(self new)
+		initialize;
+		buildFromKeys: keyArray values: valueArray;
+		yourself
+%
+category: 'Constants'
+classmethod: GsAmqpTable
+sizeInC
+
+^ 16
+%
+! ------------------- Instance methods for GsAmqpTable
+category: 'Building'
+method: GsAmqpTable
+buildFromArrayOfPairs: array
+
+	^self
+		setEntries: (GsAmqpTableEntryArray newFromArrayOfPairs: array);
+		yourself
+%
+category: 'Building'
+method: GsAmqpTable
+buildFromDictionary: dict
+
+	^self
+		setEntries: (GsAmqpTableEntryArray newFromDictionary: dict);
+		yourself
+%
+category: 'Building'
+method: GsAmqpTable
+buildFromKeys: keyArray values: valueArray
+
+	^self
+		setEntries: (GsAmqpTableEntryArray newFromKeys: keyArray values: valueArray);
+		yourself
+%
+category: 'Accessing'
+method: GsAmqpTable
+entries
+	^entries
+%
+category: 'Private'
+method: GsAmqpTable
+entries: newValue
+	entries := newValue
+%
+category: 'Accessing'
+method: GsAmqpTable
+entriesAddress
+
+^ self uint64At: 8
+%
+category: 'Initialization'
+method: GsAmqpTable
+initializeFromC
+
+
+
+	^ self numEntries: (self int32At: 0) ;
+		entries: (GsAmqpTableEntryArray fromMemoryReferenceIn: self atOffset: 8 elements: self numEntries) ;
+		yourself
+%
+category: 'Accessing'
+method: GsAmqpTable
+numEntries
+	^numEntries
+%
+category: 'Private'
+method: GsAmqpTable
+numEntries: newValue
+	numEntries := newValue
+%
+category: 'Updating'
+method: GsAmqpTable
+setEntries: aGsAmqpTableEntryArrayOrNil
+
+	aGsAmqpTableEntryArrayOrNil
+		ifNil:
+			[self entries: nil ;
+				numEntries: 0 ;
+				 zeroMemory]
+		ifNotNil:
+			[ | numElements |
+			aGsAmqpTableEntryArrayOrNil _validateClass: GsAmqpTableEntryArray.
+			numElements := aGsAmqpTableEntryArrayOrNil numElements.
+			self entries: aGsAmqpTableEntryArrayOrNil;
+				numEntries: numElements ;
+				uint32At: 0 put: numElements ;
+				uint64At: 8 put: aGsAmqpTableEntryArrayOrNil memoryAddress].
+	^self
+%
+! ------------------- Remove existing behavior from GsAmqpBasicProperties
+removeAllMethods GsAmqpBasicProperties
+removeAllClassMethods GsAmqpBasicProperties
+! ------------------- Class methods for GsAmqpBasicProperties
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_APP_ID_FLAG
+
+	^8
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_CLUSTER_ID_FLAG
+
+	^4
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_CONTENT_ENCODING_FLAG
+
+	^16384
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_CONTENT_TYPE_FLAG
+
+	^32768
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_CORRELATION_ID_FLAG
+
+	^1024
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_DELIVERY_MODE_FLAG
+
+	^4096
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_EXPIRATION_FLAG
+
+	^256
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_HEADERS_FLAG
+
+	^8192
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_MESSAGE_ID_FLAG
+
+	^128
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_PRIORITY_FLAG
+
+	^2048
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_REPLY_TO_FLAG
+
+	^512
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_TIMESTAMP_FLAG
+
+	^64
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_TYPE_FLAG
+
+	^32
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_USER_ID_FLAG
+
+	^16
+%
+category: 'Constants'
+classmethod: GsAmqpBasicProperties
+AMQP_DELIVERY_NONPERSISTENT
+
+^ 1
+%
+category: 'Constants'
+classmethod: GsAmqpBasicProperties
+AMQP_DELIVERY_PERSISTENT
+
+^ 2
+%
+category: 'Constants'
+classmethod: GsAmqpBasicProperties
+sizeInC
+
+^ 200
+%
+! ------------------- Instance methods for GsAmqpBasicProperties
+category: 'Accessing'
+method: GsAmqpBasicProperties
+amqpUserId
+
+^ amqpUserId
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+amqpUserId: newValue
+	amqpUserId := GsAmqpBytes fromStringOrNil: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_USER_ID_FLAG
+		newValue: self amqpUserId
+		offset: 152
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+appId
+	^appId
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+appId: newValue
+
+	appId := GsAmqpBytes fromStringOrNil: newValue .
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_APP_ID_FLAG
+		newValue: self appId
+		offset: 168
+%
+category: 'Flags'
+method: GsAmqpBasicProperties
+clearFlag: aSymbol
+
+self flags: (self flags bitAnd: (self class perform: aSymbol) bitInvert).
+^ self uint32At: 0 put: self flags ; yourself
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+clusterId
+	^clusterId
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+clusterId: newValue
+
+	clusterId := GsAmqpBytes fromStringOrNil: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CLUSTER_ID_FLAG
+		newValue: self clusterId
+		offset: 184
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+contentEncoding
+	^contentEncoding
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+contentEncoding: newValue
+
+	contentEncoding := GsAmqpBytes fromStringOrNil: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CONTENT_ENCODING_FLAG
+		newValue: self contentEncoding
+		offset: 24
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+contentType
+	^contentType
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+contentType: newValue
+
+	contentType := GsAmqpBytes fromStringOrNil: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CONTENT_TYPE_FLAG
+		newValue: self contentType
+		offset: 8
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+correlationId
+	^correlationId
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+correlationId: newValue
+
+	correlationId := GsAmqpBytes fromStringOrNil: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CORELATION_ID_FLAG
+		newValue: self correlationId
+		offset: 64
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+deliveryMode
+	^deliveryMode
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+deliveryMode: newValue
+
+	| flagName |
+	flagName := #AMQP_BASIC_DELIVERY_MODE_FLAG.
+	newValue _validateMin: 0 max: 2.
+	deliveryMode := newValue.
+	self uint8At: 56 put: newValue.
+	^ newValue == 0
+		ifTrue: [self clearFlag: flagName]
+		ifFalse: [self setFlag: flagName].
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+expiration
+	^expiration
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+expiration: newValue
+
+	expiration := GsAmqpBytes fromStringOrNil: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_EXPIRATION_FLAG
+		newValue: self expiration
+		offset: 96
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+flags
+	^flags
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+flags: newValue
+
+	newValue _validateMin: 0 max: 16rFFFFFFFF.
+	flags := newValue
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+headers
+	^headers
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+headers: aGsAmqpTable
+
+	| flagName |
+	headers := aGsAmqpTable.
+	flagName := #AMQP_BASIC_HEADERS_FLAG.
+	aGsAmqpTable
+		ifNil:
+			[self
+				clearFlag: flagName;
+				uint32At: 40 put: 0;
+				uint64At: 48 put: 0]
+		ifNotNil:
+			[self
+				setFlag: flagName;
+				uint32At: 40 put: aGsAmqpTable numEntries;
+				uint64At: 48 put: aGsAmqpTable entriesAddress]
+%
+category: 'Initialization'
+method: GsAmqpBasicProperties
+initialize
+
+	^self
+		flags: 0 ;
+		setDeliveryPersistent ;
+		yourself
+%
+category: 'Initialization'
+method: GsAmqpBasicProperties
+initializeFromC
+
+"Do NOT user setter methods here (except for #flags:) as we are populating Smalltalk state from C state.
+Setter methods update both C state and ST state, which is not what we want when initializing from C."
+
+	self flags: (self uint32At: 0). "Must be first so that #testFlag: is correct"
+	(self testFlag: #AMQP_BASIC_CONTENT_TYPE_FLAG)
+		ifTrue: [contentType := self stringFromAmqpBytesAtOffset: 8].
+	(self testFlag: #AMQP_BASIC_CONTENT_ENCODING_FLAG)
+		ifTrue: [contentEncoding := self stringFromAmqpBytesAtOffset: 24].
+	(self testFlag: #AMQP_BASIC_HEADERS_FLAG)
+		ifTrue: [headers := GsAmqpTable fromCPointer: self atOffset: 40 ].
+	(self testFlag: #AMQP_BASIC_DELIVERY_MODE_FLAG)
+		ifTrue: [deliveryMode := self uint8At: 56].
+	(self testFlag: #AMQP_BASIC_PRIORITY_FLAG)
+		ifTrue: [priority := self uint8At: 57].
+	(self testFlag: #AMQP_BASIC_CORRELATION_ID_FLAG)
+		ifTrue: [correlationId := self stringFromAmqpBytesAtOffset: 64].
+	(self testFlag: #AMQP_BASIC_REPLY_TO_FLAG)
+		ifTrue: [replyTo := self stringFromAmqpBytesAtOffset: 80].
+	(self testFlag: #AMQP_BASIC_EXPIRATION_FLAG)
+		ifTrue: [expiration := self stringFromAmqpBytesAtOffset: 96].
+	(self testFlag: #AMQP_BASIC_MESSAGE_ID_FLAG)
+		ifTrue: [messageId := self stringFromAmqpBytesAtOffset: 112].
+	(self testFlag: #AMQP_BASIC_TIMESTAMP_FLAG)
+		ifTrue: [timestamp := self uint64At: 128].
+	(self testFlag: #AMQP_BASIC_TYPE_FLAG)
+		ifTrue: [type := self stringFromAmqpBytesAtOffset: 136].
+	(self testFlag: #AMQP_BASIC_USER_ID_FLAG)
+		ifTrue: [amqpUserId := self stringFromAmqpBytesAtOffset: 152].
+	(self testFlag: #AMQP_BASIC_APP_ID_FLAG)
+		ifTrue: [appId := self stringFromAmqpBytesAtOffset: 168].
+	(self testFlag: #AMQP_BASIC_CLUSTER_ID_FLAG)
+		ifTrue: [clusterId := self stringFromAmqpBytesAtOffset: 184].
+	^self
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+messageId
+	^messageId
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+messageId: newValue
+
+	messageId := GsAmqpBytes fromStringOrNil: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_MESSAGE_ID_FLAG
+		newValue: self messageId
+		offset: 112
+%
+category: 'Private'
+method: GsAmqpBasicProperties
+postUpdateAmqpBytesWithBitFlag: aSymbol newValue: value offset: offset
+	"Method called when a store of a string or nil is done on the receiver and the stored string does NOT come from the C state.
+Update the appropriate flag and store the AmqpBytes data in the C state. Return the receiver."
+
+	value
+		ifNil: 
+			[self
+				clearFlag: aSymbol;
+				clearAmqpBytesAtOffset: offset]
+		ifNotNil: 
+			[value _validateClass: GsAmqpBytes.
+			self
+				setFlag: aSymbol;
+				storeAmqpBytes: value atOffset: offset].
+	^self
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+priority
+	^priority
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+priority: newValue
+
+	| flagName |
+	flagName := #AMQP_BASIC_PRIORITY_FLAG.
+	newValue _validateMin: 0 max: 9.
+	priority := newValue.
+	self uint8At: 57 put: newValue.
+	^ newValue == 0
+		ifTrue: [self clearFlag: flagName]
+		ifFalse: [self setFlag: flagName].
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+replyTo
+	^replyTo
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+replyTo: newValue
+
+	replyTo := GsAmqpBytes fromStringOrNil: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_REPLY_TO_FLAG
+		newValue: self replyTo
+		offset: 80
+%
+category: 'Delivery'
+method: GsAmqpBasicProperties
+setDeliveryNonPersistent
+	^ self deliveryMode: self class AMQP_DELIVERY_NONPERSISTENT
+%
+category: 'Delivery'
+method: GsAmqpBasicProperties
+setDeliveryPersistent
+	^ self deliveryMode: self class AMQP_DELIVERY_PERSISTENT
+%
+category: 'Flags'
+method: GsAmqpBasicProperties
+setFlag: aSymbol
+
+self flags: (self flags bitOr: (self class perform: aSymbol)).
+^ self uint32At: 0 put: self flags ; yourself
+%
+category: 'Flags'
+method: GsAmqpBasicProperties
+testFlag: aSymbol
+	"Returns true if the flag is set, false if not"
+
+	^0 ~~ (self flags bitAnd: (self class perform: aSymbol))
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+timestamp
+	^timestamp
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+timestamp: newValue
+
+	| flagName |
+	flagName := #AMQP_BASIC_TIMESTAMP_FLAG.
+	timestamp := newValue.
+	self uint64At: 128 put: newValue.
+	^ newValue == 0
+		ifTrue: [self clearFlag: flagName]
+		ifFalse: [self setFlag: flagName].
+
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+type
+	^type
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+type: newValue
+	type := GsAmqpBytes fromStringOrNil: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_TYPE_FLAG
+		newValue: self type
+		offset: 136
+%
+! ------------------- Remove existing behavior from GsAmqpTableEntryArray
+removeAllMethods GsAmqpTableEntryArray
+removeAllClassMethods GsAmqpTableEntryArray
+! ------------------- Class methods for GsAmqpTableEntryArray
+category: 'Constants'
+classmethod: GsAmqpTableEntryArray
+elementsToBytes: elements
+
+^ self sizeOfElement * elements
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntryArray
+fromMemoryReferenceIn: aCByteArray atOffset: offset elements: numElements
+
+"Does not allocate new memory. References existing memory at an address contained in aCByteArray at the given offset."
+
+	^(self
+		fromMemoryReferenceIn: aCByteArray
+		atOffset: offset
+		sizeInBytes: (self elementsToBytes: numElements)
+		initializeFromC: false)
+		elements: (Array new: numElements);
+		initializeFromC;
+		yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntryArray
+new
+
+"Use new: instead "
+^ self shouldNotImplement: #new
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntryArray
+new: numElements
+
+	| bytes result |
+	bytes := numElements * self sizeOfElement .
+	result := self gcMalloc: bytes.
+	^result
+		initialize;
+		elements: (Array new: numElements);
+		yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntryArray
+newFromArrayOfPairs: array
+
+	| size |
+	(size := array size) even
+		ifFalse: [self error: 'array of pairs size must be even'].
+	^(self new: size // 2)
+		initialize;
+		buildFromArrayOfPairs: array;
+		yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntryArray
+newFromDictionary: dict
+
+	^(self new: dict size)
+		initialize;
+		buildFromDictionary: dict;
+		yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntryArray
+newFromKeys: keyArray values: valueArray
+
+	| size |
+	(size := keyArray size) == valueArray size
+		ifFalse: [self error: 'size of arrays for keys and values must match'].
+	^(self new: size)
+		initialize;
+		buildFromKeys: keyArray values: valueArray;
+		yourself
+%
+category: 'Constants'
+classmethod: GsAmqpTableEntryArray
+sizeOfElement
+
+^ GsAmqpTableEntry sizeInC
+%
+! ------------------- Instance methods for GsAmqpTableEntryArray
+category: 'Adding'
+method: GsAmqpTableEntryArray
+add: anElement
+
+^ self shouldNotImplement: #add:
+%
+category: 'Adding'
+method: GsAmqpTableEntryArray
+addAll: aCollection
+
+^ self shouldNotImplement: #addAll:
+%
+category: 'Accessing'
+method: GsAmqpTableEntryArray
+at: index
+
+^self elements at: index
+%
+category: 'Updating'
+method: GsAmqpTableEntryArray
+at: oneBasedIdx put: obj
+
+	| offset  |
+
+"Don't allow the elements array to grow"
+	oneBasedIdx > elements size
+		ifTrue: [self _errorIndexOutOfRange: oneBasedIdx].
+"Store reference to obj to protect from GC"
+	self elements at: oneBasedIdx put: obj.
+"Compute C offset in receiver"
+	offset := self offsetForElementIndex: oneBasedIdx.
+	obj
+		ifNil:
+			[self "Clear C memory"
+				memset: 0
+				from: offset
+				to: (self sizeOfElement - 1)]
+		ifNotNil:
+			[obj _validateClass: GsAmqpTableEntry.
+			self "Copy element to C memory"
+				copyBytesFrom: obj
+				from: 1
+				to: self sizeOfElement
+				into: offset]
+%
+category: 'Building'
+method: GsAmqpTableEntryArray
+buildFromArrayOfPairs: array
+
+	| index |
+	index := 0.
+	1 to: array size
+		by: 2
+		do:
+			[:n |
+			index := index + 1.
+			self at: index
+				put: (GsAmqpTableEntry newForKey: (array at: n) value: (array at: n + 1))].
+	^self
+%
+category: 'Building'
+method: GsAmqpTableEntryArray
+buildFromDictionary: dict
+
+| index |
+index := 0.
+dict keysAndValuesDo:[:k :v|
+	index := index + 1.
+	self at: index put: (GsAmqpTableEntry newForKey: k value: v).
+].
+%
+category: 'Building'
+method: GsAmqpTableEntryArray
+buildFromKeys: keysArray values: valuesArray
+
+	| index |
+	index := 0.
+	1 to: keysArray size
+		do:
+			[:n |
+			index := index + 1.
+			self at: index
+				put: (GsAmqpTableEntry newForKey: (keysArray at: n)
+						value: (valuesArray at: n))].
+	^self
+%
+category: 'Accessing'
+method: GsAmqpTableEntryArray
+elements
+	^elements
+%
+category: 'Updating'
+method: GsAmqpTableEntryArray
+elements: newValue
+	elements := newValue
+%
+category: 'Initializing'
+method: GsAmqpTableEntryArray
+initializeFromC
+
+1 to: self elements size do:[:n|
+	self elements at: n put: (GsAmqpTableEntry fromCPointer: self atOffset: (self offsetForElementIndex: n)) ].
+^ self
+%
+category: 'Accessing'
+method: GsAmqpTableEntryArray
+numElements
+
+^ elements size
+%
+category: 'Converting'
+method: GsAmqpTableEntryArray
+offsetForElementIndex: oneBasedIndex
+
+^ (oneBasedIndex - 1) * self sizeOfElement
+%
+category: 'Constants'
+method: GsAmqpTableEntryArray
+sizeOfElement
+
+^ self class sizeOfElement
+%
+! ------------------- Remove existing behavior from GsAmqpFieldValue
+removeAllMethods GsAmqpFieldValue
+removeAllClassMethods GsAmqpFieldValue
+! ------------------- Class methods for GsAmqpFieldValue
+category: 'Converting'
+classmethod: GsAmqpFieldValue
+amqpFieldKindForObject: obj
+
+	^obj _isInteger
+		ifTrue: [self AMQP_FIELD_KIND_I64]
+		ifFalse:
+			[ | cls |
+			cls := obj class.
+			cls == Boolean
+				ifTrue: [self AMQP_FIELD_KIND_BOOLEAN]
+				ifFalse:
+					[cls isBytes
+						ifTrue: [self AMQP_FIELD_KIND_UTF8]
+						ifFalse: [self error: 'Invalid object']]]
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_ARRAY
+
+^ $A asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_BOOLEAN
+
+^ $t asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_BYTES
+
+^ $x asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_DECIMAL
+
+^ $D asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_F32
+
+^ $f asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_F64
+
+^ $d asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_I16
+
+^ $s asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_I32
+
+^ $I asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_I64
+
+^ $l asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_I8
+
+^ $b asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_TABLE
+
+^ $F asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_TIMESTAMP
+
+^ $T asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_U16
+
+^ $u asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_U32
+
+^ $i asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_U64
+
+^ $L asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_U8
+
+^ $B asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_UTF8
+
+^ $S asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_VOID
+
+^ $V asInteger
+%
+category: 'Instance Creation'
+classmethod: GsAmqpFieldValue
+newForObject: anObject
+
+"anObject must be a Boolean, SmallInteger or String"
+
+^ (self new)
+	 initialize ;
+	setValue: anObject ;
+	yourself
+%
+category: 'Constants'
+classmethod: GsAmqpFieldValue
+sizeInC
+
+^ 24
+%
+! ------------------- Instance methods for GsAmqpFieldValue
+category: 'Initialization'
+method: GsAmqpFieldValue
+initializeFromC
+
+	^ self 
+			kind: (self uint8At: 0) ;
+	 		value: (self valueIsBoolean
+				ifTrue: [self booleanAtOffset: 8]
+				ifFalse:
+					[self valueIsString
+						ifTrue:
+							[GsAmqpBytes fromCPointer: self atOffset: 8]
+						ifFalse:
+							[self valueIsInteger
+								ifTrue: [self int64At: 8]
+								ifFalse: [self error: 'Unsupported value kind ' , self kind asString]]]) ;
+			yourself
+%
+category: 'Accessing'
+method: GsAmqpFieldValue
+kind
+	^kind
+%
+category: 'Private'
+method: GsAmqpFieldValue
+kind: newValue
+	kind := newValue
+%
+category: 'Updating'
+method: GsAmqpFieldValue
+setValue: aValue
+
+"Currently only Booleans, Integers and Strings are supported for values"
+	value := aValue. "Reference the incoming arg. We may override this later"
+	aValue
+		ifNil: [self memset: 0 from: 0 to: -1]
+		ifNotNil:
+			[aValue _isInteger
+				ifTrue: [self storeInteger: aValue]
+				ifFalse:
+					[aValue class == Boolean
+						ifTrue: [self storeBoolean: aValue]
+						ifFalse: [self storeStringAsUtf8: aValue]]].
+	^self
+%
+category: 'Updating'
+method: GsAmqpFieldValue
+storeBoolean: aBoolean
+
+^ self uint8At: 0 put: (kind := self class AMQP_FIELD_KIND_BOOLEAN) ;
+	uint64At: 8 put: aBoolean asBit ;
+	yourself
+%
+category: 'Updating'
+method: GsAmqpFieldValue
+storeInteger: anInt
+
+^ self uint8At: 0 put: (kind := self class AMQP_FIELD_KIND_I64) ;
+	int64At: 8 put: anInt ;
+	yourself
+%
+category: 'Updating'
+method: GsAmqpFieldValue
+storeStringAsUtf8: aString
+
+"Create a new GsAmqpBytes object. We must reference it so it does not get garbage collected."
+
+value :=GsAmqpBytes fromStringEncodeAsUtf8: aString.
+^ self uint8At: 0 put: (kind := self class AMQP_FIELD_KIND_UTF8) ;
+	uint64At: 8 put: value len ;
+	uint64At: 16 put: value bytesAddress ;
+	yourself
+%
+category: 'Accessing'
+method: GsAmqpFieldValue
+value
+	^value
+%
+category: 'Private'
+method: GsAmqpFieldValue
+value: newValue
+	value := newValue
+%
+category: 'Testing'
+method: GsAmqpFieldValue
+valueIsBoolean
+
+| myKind |
+myKind := self kind.
+myKind _validateClass: SmallInteger.
+^ myKind == self class AMQP_FIELD_KIND_BOOLEAN
+%
+category: 'Testing'
+method: GsAmqpFieldValue
+valueIsInteger
+
+| myKind |
+(myKind := self kind) _validateClass: SmallInteger. 
+"Hard code values for performance"
+(myKind == 66 or:[ myKind == 73 ]) ifTrue:[ ^ true ].
+(myKind == 76 or:[ myKind == 98 ]) ifTrue:[ ^ true ].
+(myKind == 105 or:[ myKind == 108 ]) ifTrue:[ ^ true ].
+(myKind == 115 or:[ myKind == 117 ]) ifTrue:[ ^ true ].
+^ false
+
+"Note: the above implementation is approx 4X faster than this alternative:
+
+^ { 66  . 73 . 76 . 98 . 105 . 108 . 115 . 117 } includesIdentical: myKind
+"
+%
+category: 'Testing'
+method: GsAmqpFieldValue
+valueIsString
+
+| myKind |
+myKind := self kind.
+myKind _validateClass: SmallInteger.
+^ myKind == self class AMQP_FIELD_KIND_UTF8
+%
 ! ------------------- Remove existing behavior from GsAmqpHeadersExchange
 removeAllMethods GsAmqpHeadersExchange
 removeAllClassMethods GsAmqpHeadersExchange
@@ -4697,10 +4707,8 @@ category: 'Initializing'
 method: GsAmqpTableEntry
 initializeFromC
 
-	| amqpBytes |
-	amqpBytes := GsAmqpBytes fromCPointer: self atOffset: 0.
 	self
-		key: (Association newWithKey: amqpBytes convertToString value: amqpBytes);
+		key: (GsAmqpBytes fromCPointer: self);
 		value: (GsAmqpFieldValue fromCPointer: self atOffset: 16);
 		yourself
 %
@@ -4709,7 +4717,7 @@ method: GsAmqpTableEntry
 key
 	^key
 %
-category: 'Updating'
+category: 'Private'
 method: GsAmqpTableEntry
 key: newValue
 	key := newValue
@@ -4722,39 +4730,36 @@ keyOffset
 %
 category: 'Updating'
 method: GsAmqpTableEntry
-setKey: newValue
+setKey: aStringOrNil
 
-	newValue
+	aStringOrNil
 		ifNil:
-			[key := nil.
-			self
+			[self key: nil ;
 				memset: 0
 				from: self keyOffset
 				to: self valueOffset - 1]
 		ifNotNil:
-			[| amqpBytes |
-			key := Association newWithKey: newValue
-						value: (amqpBytes := GsAmqpBytes fromString: newValue).
-			self
-				uint64At: self keyOffset put: amqpBytes len;
-				uint64At: self keyOffset + 8 put: amqpBytes bytesAddress].
+			[ aStringOrNil _validateClass: String .
+			self key: (GsAmqpBytes fromString: aStringOrNil) ;
+				uint64At: self keyOffset put: key len;
+				uint64At: self keyOffset + 8 put: key bytesAddress].
 	^self
 %
 category: 'Updating'
 method: GsAmqpTableEntry
-setValue: newValue
+setValue: aGsAmqpFieldValueOrNil
 
-	newValue
+	aGsAmqpFieldValueOrNil
 		ifNil:
 			[value := nil.
 			self memset: 0 from: self class valueOffset to: -1 "clear C state" ]
 		ifNotNil:
-			[newValue _validateClass: GsAmqpFieldValue.
-			value := newValue.
-			self "copy C state from newValue into receiver"
-				copyBytesFrom: newValue
+			[aGsAmqpFieldValueOrNil _validateClass: GsAmqpFieldValue.
+			self value: aGsAmqpFieldValueOrNil ;
+			 "now copy C state from newValue into receiver"
+				copyBytesFrom: aGsAmqpFieldValueOrNil
 				from: 1
-				to: newValue class sizeInC
+				to: aGsAmqpFieldValueOrNil class sizeInC
 				into: self class valueOffset].
 	^self
 %
@@ -4763,7 +4768,7 @@ method: GsAmqpTableEntry
 value
 	^value
 %
-category: 'Updating'
+category: 'Private'
 method: GsAmqpTableEntry
 value: newValue
 	value := newValue
@@ -4954,21 +4959,12 @@ method: GsAmqpBasicAck
 deliveryTag: newValue
 	deliveryTag := newValue
 %
-category: 'Flushing To C'
-method: GsAmqpBasicAck
-flushValuesToC
-
-	^self
-		uint64At: 0 put: self deliveryTag;
-		uint32At: 8 put: self multiple asBit;
-		yourself
-%
 category: 'Initialization'
 method: GsAmqpBasicAck
 initializeFromC
 
 ^ self deliveryTag: (self uint64At: 0);
-	multiple: (0 ~~ (self uint32At: 8));
+	multiple: (self booleanAtOffset: 8);
 	yourself
 %
 category: 'Accessing'
@@ -8228,6 +8224,13 @@ fromStringEncodeAsUtf8: byteObj
 				len: cba size.
 			res]
 %
+category: 'Instance Creation'
+classmethod: GsAmqpBytes
+fromStringOrNil: aString
+
+"Similar to #fromString: except return a nil if the argument is nil"
+^ aString ifNil:[nil] ifNotNil:[ self fromString: aString ]
+%
 category: 'Constants'
 classmethod: GsAmqpBytes
 lengthOffset
@@ -8243,6 +8246,13 @@ sizeInC
 ^ 16
 %
 ! ------------------- Instance methods for GsAmqpBytes
+category: 'Formatting'
+method: GsAmqpBytes
+asString
+
+
+^ self printString
+%
 category: 'Accessing'
 method: GsAmqpBytes
 bytes
@@ -8316,6 +8326,12 @@ len: anObject
 		uint64At: 0 put: anObject;
 		yourself
 %
+category: 'Formatting'
+method: GsAmqpBytes
+printString
+
+^ (self class name describeClassName), '(', self convertToString , ')'
+%
 ! ------------------- Remove existing behavior from GsAmqpBasicDeliveryPayload
 removeAllMethods GsAmqpBasicDeliveryPayload
 removeAllClassMethods GsAmqpBasicDeliveryPayload
@@ -8363,7 +8379,7 @@ initializeFromC
 
 self consumerTag: (self stringFromAmqpBytesAtOffset: 0) ;
 	deliveryTag: (self uint64At: 16) ;
-	redelivered: (0 ~~ (self uint32At: 24)) ; "integer to boolean"
+	redelivered: (self booleanAtOffset: 24) ; "integer to boolean"
 	exchange: (self stringFromAmqpBytesAtOffset: 32) ;
 	routingKey: (self stringFromAmqpBytesAtOffset: 48) ;
 	yourself
@@ -8727,7 +8743,7 @@ initializeFromC
 				channel: (self uint32At: 0);
 				consumerTag: (self stringFromAmqpBytesAtOffset: 8);
 				deliveryTag: (self uint64At: 24);
-				redelivered: 1 == (self uint32At: 32);
+				redelivered: (self booleanAtOffset: 32);
 				exchange: (self stringFromAmqpBytesAtOffset: 40);
 				routingKey: (self stringFromAmqpBytesAtOffset: 56);
 				message: (GsAmqpMessage fromCPointer: self atOffset: 72 bodyClass: self messageBodyClass );
@@ -8805,7 +8821,7 @@ initializeFromC
 
 	super initializeFromC.
 	^self
-		requeue: (0 ~~ (self uint32At: 12));
+		requeue: (self booleanAtOffset: 12);
 		yourself
 %
 category: 'Accessing'
@@ -8844,7 +8860,7 @@ method: GsAmqpBasicReject
 initializeFromC
 
 ^ self deliveryTag: (self uint64At: 0) ;
-		requeue: (0 ~~ (self uint32At: 8));
+		requeue: (self booleanAtOffset: 8);
 		yourself
 %
 category: 'Accessing'
