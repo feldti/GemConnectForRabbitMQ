@@ -1,4 +1,1894 @@
 fileformat utf8
+! ------------------- Remove existing behavior from GsAmqpCStruct
+removeAllMethods GsAmqpCStruct
+removeAllClassMethods GsAmqpCStruct
+! ------------------- Class methods for GsAmqpCStruct
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromCPointer: aCPointer
+
+"NOT auto freed"
+^ self fromCPointer: aCPointer atOffset: 0 initializeFromC: true
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromCPointer: aCByteArray atOffset: offset
+
+"NOT auto freed"
+
+
+^ self fromCPointer: aCByteArray atOffset: offset initializeFromC: true
+
+
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromCPointer: aCByteArray atOffset: offset initializeFromC: doInitFromC
+
+"NOT auto freed"
+
+	| res |
+	res := self on: aCByteArray atOffset: offset .
+	doInitFromC ifTrue: [res initializeFromC].
+	^res
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromMemoryReferenceIn: aCByteArray atOffset: offset
+
+	^self
+		fromMemoryReferenceIn: aCByteArray
+		atOffset: offset
+		initializeFromC: true
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromMemoryReferenceIn: aCByteArray atOffset: offset initializeFromC: doInitFromC
+
+	^self
+		fromMemoryReferenceIn: aCByteArray
+		atOffset: offset
+		sizeInBytes: self sizeInC
+		initializeFromC: doInitFromC
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromMemoryReferenceIn: aCByteArray atOffset: offset sizeInBytes: bytes
+
+	^self
+		fromMemoryReferenceIn: aCByteArray
+		atOffset: offset
+		sizeInBytes: bytes
+		initializeFromC: true
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+fromMemoryReferenceIn: aCByteArray atOffset: offset sizeInBytes: bytes initializeFromC: doInitFromC
+
+
+"NOT auto freed"
+
+	| res cPointer |
+
+	cPointer := CPointer forAddress: (aCByteArray uint64At: offset).
+	res := self fromCPointer: cPointer numBytes: bytes.
+	doInitFromC ifTrue: [res initializeFromC].
+	^res
+%
+category: 'Constants'
+classmethod: GsAmqpCStruct
+lastZeroBasedOffset
+
+^self sizeInC - 1
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+new
+
+| result |
+result := self gcMalloc: self sizeInC.
+result initialize.
+^ result
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+new: aSize
+
+"Use new instead "
+^ self shouldNotImplement: #new:
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+on: aCByteArray
+
+	^self on: aCByteArray atOffset: 0
+%
+category: 'Instance Creation'
+classmethod: GsAmqpCStruct
+on: aCByteArray atOffset: offset
+
+	| res |
+	res := self
+				fromRegionOf: aCByteArray
+				offset: offset
+				numBytes: self sizeInC.
+	^ res initialize ;
+		derivedFrom: aCByteArray;
+	yourself
+%
+category: 'Subclass Methods'
+classmethod: GsAmqpCStruct
+sizeInC
+
+^self subclassResponsibility: #sizeInC
+%
+! ------------------- Instance methods for GsAmqpCStruct
+category: 'Accessing Memory'
+method: GsAmqpCStruct
+booleanAtOffset: anOffset
+
+"C memory of receiver at offset anOffset contains 32-bit 0x1 or 0x0. Translate to a Smalltalk true  or false"
+
+^ 0 ~~ (self uint32At: anOffset)
+%
+category: 'Accessing Strings'
+method: GsAmqpCStruct
+byteArrayFromAmqpBytesAtOffset: anOffset
+
+"Receiver contains a amqp_bytes_t struct at offset anOffset. Return a ByteArray containing the bytes that it holds."
+
+	| size |
+	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
+		ifNil: [nil]
+		ifNotNil: [self byteArrayFromCharStarAt: anOffset + 8 numBytes: size]
+%
+category: 'Accessing Strings'
+method: GsAmqpCStruct
+byteObjectFromAmqpBytesAtOffset: anOffset class: aByteClass
+	"Receiver contains a amqp_bytes_t struct at offset anOffset. Return the string that it holds."
+
+	^ (aByteClass isSubclassOf: String)
+		ifTrue: [self stringFromAmqpBytesAtOffset: anOffset]
+		ifFalse:
+			[(aByteClass isSubclassOf: ByteArray)
+				ifTrue: [self byteArrayFromAmqpBytesAtOffset: anOffset]
+				ifFalse: [self error: 'Unexpected byte class']]
+%
+category: 'Updating'
+method: GsAmqpCStruct
+clearAmqpBytesAtOffset: offset
+
+	^self
+		uint64At: offset put: 0; "length"
+		uint64At: (offset + 8) put: 0 ; "char *"
+		yourself
+%
+category: 'Accessing Memory'
+method: GsAmqpCStruct
+cPointerForOffset: offset
+
+^CPointer _allocate _initFrom: self offset: offset
+%
+category: 'Accessing Strings'
+method: GsAmqpCStruct
+getSizeOfAmqpBytesAtOffset: anOffset
+
+	| size |
+	size := self uint64At: anOffset.
+	^size == 0
+		ifTrue: [nil]
+		ifFalse:
+			[size > 16r20000
+				ifTrue:
+					[self
+						error: 'ByteArray larger than 128K detected. Possible bad memory reference']
+				ifFalse: [size]]
+%
+category: 'Subclass Methods'
+method: GsAmqpCStruct
+initializeFromC
+
+"Subclasses may overload this method to initialize instance variables from C state at instance creation time."
+
+^ self
+%
+category: 'Updating'
+method: GsAmqpCStruct
+storeAmqpBytes: amqpBytes atOffset: offset
+
+	^self
+		uint64At: offset put: amqpBytes len;
+		uint64At: (offset + 8) put: amqpBytes bytesAddress;
+		yourself
+%
+category: 'Accessing Strings'
+method: GsAmqpCStruct
+stringFromAmqpBytesAtOffset: anOffset
+	"Receiver contains a amqp_bytes_t struct at offset anOffset. Return the string that it holds."
+
+	| size |
+	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
+		ifNil: [nil]
+		ifNotNil: [self stringFromCharStarAt: anOffset + 8 numBytes: size]
+%
+category: 'Accessing Strings'
+method: GsAmqpCStruct
+utf16FromAmqpBytesAtOffset: anOffset
+
+"Receiver contains a amqp_bytes_t struct at offset anOffset. Return a Utf8 containing the bytes that it holds."
+
+	| size |
+	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
+		ifNil: [nil]
+		ifNotNil: [self utf16FromCharStarAt: anOffset + 8 numBytes: size]
+%
+category: 'Accessing Strings'
+method: GsAmqpCStruct
+utf8FromAmqpBytesAtOffset: anOffset
+
+"Receiver contains a amqp_bytes_t struct at offset anOffset. Return a Utf8 containing the bytes that it holds."
+
+	| size |
+	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
+		ifNil: [nil]
+		ifNotNil: [self utf8FromCharStarAt: anOffset + 8 numBytes: size]
+%
+category: 'Updating'
+method: GsAmqpCStruct
+zeroMemory
+
+	^self
+		memset: 0 from: 0 to: -1;
+		yourself
+%
+! ------------------- Remove existing behavior from GsAmqpConnectionClose
+removeAllMethods GsAmqpConnectionClose
+removeAllClassMethods GsAmqpConnectionClose
+! ------------------- Class methods for GsAmqpConnectionClose
+category: 'Constants'
+classmethod: GsAmqpConnectionClose
+sizeInC
+
+^ 32
+%
+! ------------------- Instance methods for GsAmqpConnectionClose
+category: 'Accessing'
+method: GsAmqpConnectionClose
+classId
+	^classId
+%
+category: 'Updating'
+method: GsAmqpConnectionClose
+classId: newValue
+	classId := newValue
+%
+category: 'Initializing'
+method: GsAmqpConnectionClose
+initializeFromC
+
+^ self replyCode: (self uint16At: 0) ;
+	replyText: (self stringFromAmqpBytesAtOffset: 8) ;
+	classId: (self uint16At: 24) ;
+	methodId: (self uint16At: 26) ;
+	yourself
+
+%
+category: 'Accessing'
+method: GsAmqpConnectionClose
+methodId
+	^methodId
+%
+category: 'Updating'
+method: GsAmqpConnectionClose
+methodId: newValue
+	methodId := newValue
+%
+category: 'Accessing'
+method: GsAmqpConnectionClose
+replyCode
+	^replyCode
+%
+category: 'Updating'
+method: GsAmqpConnectionClose
+replyCode: newValue
+	replyCode := newValue
+%
+category: 'Accessing'
+method: GsAmqpConnectionClose
+replyText
+	^replyText
+%
+category: 'Updating'
+method: GsAmqpConnectionClose
+replyText: newValue
+	replyText := newValue
+%
+! ------------------- Remove existing behavior from GsAmqpEntity
+removeAllMethods GsAmqpEntity
+removeAllClassMethods GsAmqpEntity
+! ------------------- Class methods for GsAmqpEntity
+! ------------------- Instance methods for GsAmqpEntity
+category: 'Accessing'
+method: GsAmqpEntity
+autoDelete
+	^autoDelete
+%
+category: 'Updating'
+method: GsAmqpEntity
+autoDelete: newValue
+	autoDelete := newValue
+%
+category: 'Accessing'
+method: GsAmqpEntity
+channel
+	^channel
+%
+category: 'Updating'
+method: GsAmqpEntity
+channel: newValue
+	channel := newValue
+%
+category: 'Accessing'
+method: GsAmqpEntity
+connection
+	^connection
+%
+category: 'Updating'
+method: GsAmqpEntity
+connection: newValue
+	connection := newValue
+%
+category: 'Accessing'
+method: GsAmqpEntity
+durable
+	^durable
+%
+category: 'Updating'
+method: GsAmqpEntity
+durable: newValue
+	durable := newValue
+%
+category: 'Accessing'
+method: GsAmqpEntity
+name
+	^name
+%
+category: 'Updating'
+method: GsAmqpEntity
+name: newValue
+	name := newValue
+%
+! ------------------- Remove existing behavior from GsAmqpExchange
+removeAllMethods GsAmqpExchange
+removeAllClassMethods GsAmqpExchange
+! ------------------- Class methods for GsAmqpExchange
+category: 'Instance Creation'
+classmethod: GsAmqpExchange
+declareWithConnection: conn name: exchgName type: type channel: channelIdArg durable: durable autoDelete: autoDelete
+
+	|  result channelId |
+	channelId := channelIdArg
+				ifNil: [conn openNextChannel]
+				ifNotNil: [channelIdArg].
+	conn
+				declareExchangeNamed: exchgName
+				channel: channelId
+				type: type
+				durable: durable
+				autoDelete: autoDelete .
+
+	result := self new.
+	^result
+		connection: conn;
+		type: type;
+		channel: channelId;
+		name: exchgName;
+		durable: durable;
+		autoDelete: autoDelete;
+		 yourself
+%
+! ------------------- Instance methods for GsAmqpExchange
+category: 'Deleting'
+method: GsAmqpExchange
+deleteForceIfInUse: forceIfInUse
+
+"Deletes the receiver from the broker. If forceIfInUse is true, the exchange is deleted even if queues are still bound to it.
+If forceIfInUse is false, the exchange is only deleted if there are no queues bound, otherwise an exception is raised."
+
+	^self connection
+		deleteExchangeNamed: self name
+		channel: self channel
+		forceIfInUse:  forceIfInUse
+%
+category: 'Deleting'
+method: GsAmqpExchange
+deleteIfUnused
+
+
+^ self deleteForceIfInUse: false
+%
+category: 'Subclass Methods'
+method: GsAmqpExchange
+exchangKind
+
+^self subclassResponsibility: #exchangKind
+%
+category: 'Deleting'
+method: GsAmqpExchange
+forceDelete
+
+^ self deleteForceIfInUse: true
+%
+category: 'Publishing'
+method: GsAmqpExchange
+publishMessage: msg routingKey: routingKey mandatory: mandatory properties: props
+
+	self connection
+		publishMessage: msg
+		channel: self channel
+		exchange: self name
+		routingKey: routingKey
+		mandatory: mandatory
+		properties: props .
+	^ self
+%
+category: 'Accessing'
+method: GsAmqpExchange
+type
+	^type
+%
+category: 'Updating'
+method: GsAmqpExchange
+type: newValue
+	type := newValue
+%
+! ------------------- Remove existing behavior from GsAmqpBasicAck
+removeAllMethods GsAmqpBasicAck
+removeAllClassMethods GsAmqpBasicAck
+! ------------------- Class methods for GsAmqpBasicAck
+category: 'Constants'
+classmethod: GsAmqpBasicAck
+sizeInC
+
+^ 16
+%
+! ------------------- Instance methods for GsAmqpBasicAck
+category: 'Accessing'
+method: GsAmqpBasicAck
+deliveryTag
+	^deliveryTag
+%
+category: 'Updating'
+method: GsAmqpBasicAck
+deliveryTag: newValue
+	deliveryTag := newValue
+%
+category: 'Initialization'
+method: GsAmqpBasicAck
+initializeFromC
+
+^ self deliveryTag: (self uint64At: 0);
+	multiple: (self booleanAtOffset: 8);
+	yourself
+%
+category: 'Accessing'
+method: GsAmqpBasicAck
+multiple
+	^multiple
+%
+category: 'Updating'
+method: GsAmqpBasicAck
+multiple: newValue
+	multiple := newValue
+%
+! ------------------- Remove existing behavior from GsAmqpBasicDeliveryPayload
+removeAllMethods GsAmqpBasicDeliveryPayload
+removeAllClassMethods GsAmqpBasicDeliveryPayload
+! ------------------- Class methods for GsAmqpBasicDeliveryPayload
+category: 'Constants'
+classmethod: GsAmqpBasicDeliveryPayload
+sizeInC
+
+^ 64
+%
+! ------------------- Instance methods for GsAmqpBasicDeliveryPayload
+category: 'Accessing'
+method: GsAmqpBasicDeliveryPayload
+consumerTag
+	^consumerTag
+%
+category: 'Updating'
+method: GsAmqpBasicDeliveryPayload
+consumerTag: newValue
+	consumerTag := newValue
+%
+category: 'Accessing'
+method: GsAmqpBasicDeliveryPayload
+deliveryTag
+	^deliveryTag
+%
+category: 'Updating'
+method: GsAmqpBasicDeliveryPayload
+deliveryTag: newValue
+	deliveryTag := newValue
+%
+category: 'Accessing'
+method: GsAmqpBasicDeliveryPayload
+exchange
+	^exchange
+%
+category: 'Updating'
+method: GsAmqpBasicDeliveryPayload
+exchange: newValue
+	exchange := newValue
+%
+category: 'Initialization'
+method: GsAmqpBasicDeliveryPayload
+initializeFromC
+
+self consumerTag: (self stringFromAmqpBytesAtOffset: 0) ;
+	deliveryTag: (self uint64At: 16) ;
+	redelivered: (self booleanAtOffset: 24) ; "integer to boolean"
+	exchange: (self stringFromAmqpBytesAtOffset: 32) ;
+	routingKey: (self stringFromAmqpBytesAtOffset: 48) ;
+	yourself
+%
+category: 'Accessing'
+method: GsAmqpBasicDeliveryPayload
+redelivered
+	^redelivered
+%
+category: 'Updating'
+method: GsAmqpBasicDeliveryPayload
+redelivered: newValue
+	redelivered := newValue
+%
+category: 'Accessing'
+method: GsAmqpBasicDeliveryPayload
+routingKey
+	^routingKey
+%
+category: 'Updating'
+method: GsAmqpBasicDeliveryPayload
+routingKey: newValue
+	routingKey := newValue
+%
+! ------------------- Remove existing behavior from GsAmqpBasicNack
+removeAllMethods GsAmqpBasicNack
+removeAllClassMethods GsAmqpBasicNack
+! ------------------- Class methods for GsAmqpBasicNack
+! ------------------- Instance methods for GsAmqpBasicNack
+category: 'Initialization'
+method: GsAmqpBasicNack
+initializeFromC
+
+	super initializeFromC.
+	^self
+		requeue: (self booleanAtOffset: 12);
+		yourself
+%
+category: 'Accessing'
+method: GsAmqpBasicNack
+requeue
+	^requeue
+%
+category: 'Updating'
+method: GsAmqpBasicNack
+requeue: newValue
+	requeue := newValue
+%
+! ------------------- Remove existing behavior from GsAmqpBasicProperties
+removeAllMethods GsAmqpBasicProperties
+removeAllClassMethods GsAmqpBasicProperties
+! ------------------- Class methods for GsAmqpBasicProperties
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_APP_ID_FLAG
+
+	^8
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_CLUSTER_ID_FLAG
+
+	^4
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_CONTENT_ENCODING_FLAG
+
+	^16384
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_CONTENT_TYPE_FLAG
+
+	^32768
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_CORRELATION_ID_FLAG
+
+	^1024
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_DELIVERY_MODE_FLAG
+
+	^4096
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_EXPIRATION_FLAG
+
+	^256
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_HEADERS_FLAG
+
+	^8192
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_MESSAGE_ID_FLAG
+
+	^128
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_PRIORITY_FLAG
+
+	^2048
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_REPLY_TO_FLAG
+
+	^512
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_TIMESTAMP_FLAG
+
+	^64
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_TYPE_FLAG
+
+	^32
+%
+category: 'Constants - Bit Flags'
+classmethod: GsAmqpBasicProperties
+AMQP_BASIC_USER_ID_FLAG
+
+	^16
+%
+category: 'Constants'
+classmethod: GsAmqpBasicProperties
+AMQP_DELIVERY_NONPERSISTENT
+
+^ 1
+%
+category: 'Constants'
+classmethod: GsAmqpBasicProperties
+AMQP_DELIVERY_PERSISTENT
+
+^ 2
+%
+category: 'Constants'
+classmethod: GsAmqpBasicProperties
+sizeInC
+
+^ 200
+%
+! ------------------- Instance methods for GsAmqpBasicProperties
+category: 'Accessing'
+method: GsAmqpBasicProperties
+amqpUserId
+
+^ amqpUserId
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+amqpUserId: newValue
+	amqpUserId := GsAmqpBytes fromStringOrNil: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_USER_ID_FLAG
+		newValue: self amqpUserId
+		offset: 152
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+appId
+	^appId
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+appId: newValue
+
+	appId := GsAmqpBytes fromStringOrNil: newValue .
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_APP_ID_FLAG
+		newValue: self appId
+		offset: 168
+%
+category: 'Flags'
+method: GsAmqpBasicProperties
+clearFlag: aSymbol
+
+self flags: (self flags bitAnd: (self class perform: aSymbol) bitInvert).
+^ self uint32At: 0 put: self flags ; yourself
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+clusterId
+	^clusterId
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+clusterId: newValue
+
+	clusterId := GsAmqpBytes fromStringOrNil: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CLUSTER_ID_FLAG
+		newValue: self clusterId
+		offset: 184
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+contentEncoding
+	^contentEncoding
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+contentEncoding: newValue
+
+	contentEncoding := GsAmqpBytes fromStringOrNil: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CONTENT_ENCODING_FLAG
+		newValue: self contentEncoding
+		offset: 24
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+contentType
+	^contentType
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+contentType: newValue
+
+	contentType := GsAmqpBytes fromStringOrNil: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CONTENT_TYPE_FLAG
+		newValue: self contentType
+		offset: 8
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+correlationId
+	^correlationId
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+correlationId: newValue
+
+	correlationId := GsAmqpBytes fromStringOrNil: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CORELATION_ID_FLAG
+		newValue: self correlationId
+		offset: 64
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+deliveryMode
+	^deliveryMode
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+deliveryMode: newValue
+
+	| flagName |
+	flagName := #AMQP_BASIC_DELIVERY_MODE_FLAG.
+	newValue _validateMin: 0 max: 2.
+	deliveryMode := newValue.
+	self uint8At: 56 put: newValue.
+	^ newValue == 0
+		ifTrue: [self clearFlag: flagName]
+		ifFalse: [self setFlag: flagName].
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+expiration
+	^expiration
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+expiration: newValue
+
+	expiration := GsAmqpBytes fromStringOrNil: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_EXPIRATION_FLAG
+		newValue: self expiration
+		offset: 96
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+flags
+	^flags
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+flags: newValue
+
+	newValue _validateMin: 0 max: 16rFFFFFFFF.
+	flags := newValue
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+headers
+	^headers
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+headers: aGsAmqpTable
+
+	| flagName |
+	headers := aGsAmqpTable.
+	flagName := #AMQP_BASIC_HEADERS_FLAG.
+	aGsAmqpTable
+		ifNil:
+			[self
+				clearFlag: flagName;
+				uint32At: 40 put: 0;
+				uint64At: 48 put: 0]
+		ifNotNil:
+			[self
+				setFlag: flagName;
+				uint32At: 40 put: aGsAmqpTable numEntries;
+				uint64At: 48 put: aGsAmqpTable entriesAddress]
+%
+category: 'Initialization'
+method: GsAmqpBasicProperties
+initialize
+
+	^self
+		flags: 0 ;
+		setDeliveryPersistent ;
+		yourself
+%
+category: 'Initialization'
+method: GsAmqpBasicProperties
+initializeFromC
+
+"Do NOT user setter methods here (except for #flags:) as we are populating Smalltalk state from C state.
+Setter methods update both C state and ST state, which is not what we want when initializing from C."
+
+	self flags: (self uint32At: 0). "Must be first so that #testFlag: is correct"
+	(self testFlag: #AMQP_BASIC_CONTENT_TYPE_FLAG)
+		ifTrue: [contentType := self stringFromAmqpBytesAtOffset: 8].
+	(self testFlag: #AMQP_BASIC_CONTENT_ENCODING_FLAG)
+		ifTrue: [contentEncoding := self stringFromAmqpBytesAtOffset: 24].
+	(self testFlag: #AMQP_BASIC_HEADERS_FLAG)
+		ifTrue: [headers := GsAmqpTable fromCPointer: self atOffset: 40 ].
+	(self testFlag: #AMQP_BASIC_DELIVERY_MODE_FLAG)
+		ifTrue: [deliveryMode := self uint8At: 56].
+	(self testFlag: #AMQP_BASIC_PRIORITY_FLAG)
+		ifTrue: [priority := self uint8At: 57].
+	(self testFlag: #AMQP_BASIC_CORRELATION_ID_FLAG)
+		ifTrue: [correlationId := self stringFromAmqpBytesAtOffset: 64].
+	(self testFlag: #AMQP_BASIC_REPLY_TO_FLAG)
+		ifTrue: [replyTo := self stringFromAmqpBytesAtOffset: 80].
+	(self testFlag: #AMQP_BASIC_EXPIRATION_FLAG)
+		ifTrue: [expiration := self stringFromAmqpBytesAtOffset: 96].
+	(self testFlag: #AMQP_BASIC_MESSAGE_ID_FLAG)
+		ifTrue: [messageId := self stringFromAmqpBytesAtOffset: 112].
+	(self testFlag: #AMQP_BASIC_TIMESTAMP_FLAG)
+		ifTrue: [timestamp := self uint64At: 128].
+	(self testFlag: #AMQP_BASIC_TYPE_FLAG)
+		ifTrue: [type := self stringFromAmqpBytesAtOffset: 136].
+	(self testFlag: #AMQP_BASIC_USER_ID_FLAG)
+		ifTrue: [amqpUserId := self stringFromAmqpBytesAtOffset: 152].
+	(self testFlag: #AMQP_BASIC_APP_ID_FLAG)
+		ifTrue: [appId := self stringFromAmqpBytesAtOffset: 168].
+	(self testFlag: #AMQP_BASIC_CLUSTER_ID_FLAG)
+		ifTrue: [clusterId := self stringFromAmqpBytesAtOffset: 184].
+	^self
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+messageId
+	^messageId
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+messageId: newValue
+
+	messageId := GsAmqpBytes fromStringOrNil: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_MESSAGE_ID_FLAG
+		newValue: self messageId
+		offset: 112
+%
+category: 'Private'
+method: GsAmqpBasicProperties
+postUpdateAmqpBytesWithBitFlag: aSymbol newValue: value offset: offset
+	"Method called when a store of a string or nil is done on the receiver and the stored string does NOT come from the C state.
+Update the appropriate flag and store the AmqpBytes data in the C state. Return the receiver."
+
+	value
+		ifNil:
+			[self
+				clearFlag: aSymbol;
+				clearAmqpBytesAtOffset: offset]
+		ifNotNil:
+			[value _validateClass: GsAmqpBytes.
+			self
+				setFlag: aSymbol;
+				storeAmqpBytes: value atOffset: offset].
+	^self
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+priority
+	^priority
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+priority: newValue
+
+	| flagName |
+	flagName := #AMQP_BASIC_PRIORITY_FLAG.
+	newValue _validateMin: 0 max: 9.
+	priority := newValue.
+	self uint8At: 57 put: newValue.
+	^ newValue == 0
+		ifTrue: [self clearFlag: flagName]
+		ifFalse: [self setFlag: flagName].
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+replyTo
+	^replyTo
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+replyTo: newValue
+
+	replyTo := GsAmqpBytes fromStringOrNil: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_REPLY_TO_FLAG
+		newValue: self replyTo
+		offset: 80
+%
+category: 'Delivery'
+method: GsAmqpBasicProperties
+setDeliveryNonPersistent
+	^ self deliveryMode: self class AMQP_DELIVERY_NONPERSISTENT
+%
+category: 'Delivery'
+method: GsAmqpBasicProperties
+setDeliveryPersistent
+	^ self deliveryMode: self class AMQP_DELIVERY_PERSISTENT
+%
+category: 'Flags'
+method: GsAmqpBasicProperties
+setFlag: aSymbol
+
+self flags: (self flags bitOr: (self class perform: aSymbol)).
+^ self uint32At: 0 put: self flags ; yourself
+%
+category: 'Flags'
+method: GsAmqpBasicProperties
+testFlag: aSymbol
+	"Returns true if the flag is set, false if not"
+
+	^0 ~~ (self flags bitAnd: (self class perform: aSymbol))
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+timestamp
+	^timestamp
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+timestamp: newValue
+
+	| flagName |
+	flagName := #AMQP_BASIC_TIMESTAMP_FLAG.
+	timestamp := newValue.
+	self uint64At: 128 put: newValue.
+	^ newValue == 0
+		ifTrue: [self clearFlag: flagName]
+		ifFalse: [self setFlag: flagName].
+
+%
+category: 'Accessing'
+method: GsAmqpBasicProperties
+type
+	^type
+%
+category: 'Updating'
+method: GsAmqpBasicProperties
+type: newValue
+	type := GsAmqpBytes fromStringOrNil: newValue.
+	^self
+		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_TYPE_FLAG
+		newValue: self type
+		offset: 136
+%
+! ------------------- Remove existing behavior from GsAmqpBasicReject
+removeAllMethods GsAmqpBasicReject
+removeAllClassMethods GsAmqpBasicReject
+! ------------------- Class methods for GsAmqpBasicReject
+category: 'Constants'
+classmethod: GsAmqpBasicReject
+sizeInC
+
+^ 16
+%
+! ------------------- Instance methods for GsAmqpBasicReject
+category: 'Accessing'
+method: GsAmqpBasicReject
+deliveryTag
+	^deliveryTag
+%
+category: 'Updating'
+method: GsAmqpBasicReject
+deliveryTag: newValue
+	deliveryTag := newValue
+%
+category: 'Initialization'
+method: GsAmqpBasicReject
+initializeFromC
+
+^ self deliveryTag: (self uint64At: 0) ;
+		requeue: (self booleanAtOffset: 8);
+		yourself
+%
+category: 'Accessing'
+method: GsAmqpBasicReject
+requeue
+	^requeue
+%
+category: 'Updating'
+method: GsAmqpBasicReject
+requeue: newValue
+	requeue := newValue
+%
+! ------------------- Remove existing behavior from GsAmqpBasicReturn
+removeAllMethods GsAmqpBasicReturn
+removeAllClassMethods GsAmqpBasicReturn
+! ------------------- Class methods for GsAmqpBasicReturn
+category: 'Constants'
+classmethod: GsAmqpBasicReturn
+sizeInC
+
+^ 56
+%
+! ------------------- Instance methods for GsAmqpBasicReturn
+category: 'Accessing'
+method: GsAmqpBasicReturn
+exchange
+	^exchange
+%
+category: 'Updating'
+method: GsAmqpBasicReturn
+exchange: newValue
+	exchange := newValue
+%
+category: 'Initialization'
+method: GsAmqpBasicReturn
+initializeFromC
+
+	^self
+		replyCode: (self uint16At: 0);
+		replyText: (self stringFromAmqpBytesAtOffset: 8);
+		exchange: (self stringFromAmqpBytesAtOffset: 24);
+		routingKey: (self stringFromAmqpBytesAtOffset: 40);
+		yourself
+%
+category: 'Accessing'
+method: GsAmqpBasicReturn
+replyCode
+	^replyCode
+%
+category: 'Updating'
+method: GsAmqpBasicReturn
+replyCode: newValue
+	replyCode := newValue
+%
+category: 'Accessing'
+method: GsAmqpBasicReturn
+replyText
+	^replyText
+%
+category: 'Updating'
+method: GsAmqpBasicReturn
+replyText: newValue
+	replyText := newValue
+%
+category: 'Accessing'
+method: GsAmqpBasicReturn
+routingKey
+	^routingKey
+%
+category: 'Updating'
+method: GsAmqpBasicReturn
+routingKey: newValue
+	routingKey := newValue
+%
+! ------------------- Remove existing behavior from GsAmqpBytes
+removeAllMethods GsAmqpBytes
+removeAllClassMethods GsAmqpBytes
+! ------------------- Class methods for GsAmqpBytes
+category: 'Constants'
+classmethod: GsAmqpBytes
+addressOffset
+
+"Zero-based offset of the char * in the receiver's C memory. Note the result is NOT null terminated!"
+
+^ 8
+%
+category: 'Instance Creation'
+classmethod: GsAmqpBytes
+emptyBytes
+
+"Return a new instance containing no data"
+
+^ self new
+%
+category: 'Instance Creation'
+classmethod: GsAmqpBytes
+fromBytes: byteObj
+
+	^(byteObj size == 0) "Handle both empty byteObj and nil"
+		ifTrue: [self emptyBytes]
+		ifFalse:
+			[| cba res |
+			cba := CByteArray withAll: byteObj nullTerminate: false.
+			(res := self new)
+				bytes: cba;
+				len: cba size.
+			res]
+%
+category: 'Instance Creation'
+classmethod: GsAmqpBytes
+fromString: aString
+
+	^self fromBytes: aString
+%
+category: 'Instance Creation'
+classmethod: GsAmqpBytes
+fromStringEncodeAsUtf8: byteObj
+
+	^(byteObj size == 0) "Handle both empty byteObj and nil"
+		ifTrue: [self emptyBytes]
+		ifFalse:
+			[| cba res |
+			cba := CByteArray gcMalloc: byteObj size.
+			cba encodeUTF8From: byteObj into: 0 allowCodePointZero: false.
+			(res := self new)
+				bytes: cba;
+				len: cba size.
+			res]
+%
+category: 'Instance Creation'
+classmethod: GsAmqpBytes
+fromStringOrNil: aString
+
+"Similar to #fromString: except return a nil if the argument is nil"
+^ aString ifNil:[nil] ifNotNil:[ self fromString: aString ]
+%
+category: 'Constants'
+classmethod: GsAmqpBytes
+lengthOffset
+
+"Zero-based offset of size of the string in the receiver's C memory."
+
+^ 0
+%
+category: 'Constants'
+classmethod: GsAmqpBytes
+sizeInC
+
+^ 16
+%
+! ------------------- Instance methods for GsAmqpBytes
+category: 'Formatting'
+method: GsAmqpBytes
+asString
+
+
+^ self printString
+%
+category: 'Accessing'
+method: GsAmqpBytes
+bytes
+
+"Return nil if the receiver references a NULL string. Othwerwise answer a CByteArray"
+	^self
+		pointerAt: 8
+		resultClass: CByteArray.
+%
+category: 'Updating'
+method: GsAmqpBytes
+bytes: aCByteArray
+	"generated by CDeclaration>>singlePointerUpdatorForOffset:"
+
+	^ self
+		pointerAt: 8 put: aCByteArray;
+		derivedFrom: aCByteArray ;
+		yourself
+%
+category: 'Accessing'
+method: GsAmqpBytes
+bytesAddress
+	   "generated by CDeclaration>>singlePointerAccessorForOffset:"
+	^self uint64At: 8
+%
+category: 'Converting'
+method: GsAmqpBytes
+convertToByteArray
+
+	| length |
+	^(length := self len) == 0
+		ifTrue: [String new]
+		ifFalse:
+			[self byteArrayFromCharStarAt: 8 numBytes: length]
+%
+category: 'Converting'
+method: GsAmqpBytes
+convertToString
+
+	| length |
+	^(length := self len) == 0
+		ifTrue: [String new]
+		ifFalse:
+			[self stringFromCharStarAt: 8 numBytes: length]
+%
+category: 'Initialization'
+method: GsAmqpBytes
+initialize: aCByteArray
+  | sz |
+  sz := self size min: aCByteArray size .
+  self copyBytesFrom: aCByteArray from: 1 to: sz into: 0 allowCodePointZero: true .
+%
+category: 'Initialization'
+method: GsAmqpBytes
+initializeFromC
+
+^ self
+%
+category: 'Accessing'
+method: GsAmqpBytes
+len
+	   "generated by CDeclaration>>simpleAccessorForOffset: 0 "
+	^ self uint64At: 0
+%
+category: 'Updating'
+method: GsAmqpBytes
+len: anObject
+	"generated by CDeclaration>>simpleUpdatorForOffset: 0 "
+
+	^self
+		uint64At: 0 put: anObject;
+		yourself
+%
+category: 'Formatting'
+method: GsAmqpBytes
+printString
+
+^ (self class name describeClassName), '(', self convertToString , ')'
+%
+! ------------------- Remove existing behavior from GsAmqpChannelClose
+removeAllMethods GsAmqpChannelClose
+removeAllClassMethods GsAmqpChannelClose
+! ------------------- Class methods for GsAmqpChannelClose
+! ------------------- Instance methods for GsAmqpChannelClose
+! ------------------- Remove existing behavior from GsAmqpConfirmedMessage
+removeAllMethods GsAmqpConfirmedMessage
+removeAllClassMethods GsAmqpConfirmedMessage
+! ------------------- Class methods for GsAmqpConfirmedMessage
+category: 'Instance Creation'
+classmethod: GsAmqpConfirmedMessage
+newWithMessage: aString publisher: aGsAmqpConfirmedMessagePublisher
+
+	^(self new initialize)
+		message: aString;
+		publisher: aGsAmqpConfirmedMessagePublisher;
+		yourself
+%
+! ------------------- Instance methods for GsAmqpConfirmedMessage
+category: 'Assertions'
+method: GsAmqpConfirmedMessage
+assertConfirmed
+
+^ self isConfirmed ifTrue:[ true] ifFalse:[ self raiseUnexpectedStateError: #confirmed ]
+%
+category: 'Assertions'
+method: GsAmqpConfirmedMessage
+assertPublished
+
+^ self isPublished ifTrue:[ true] ifFalse:[ self raiseUnexpectedStateError: #published ]
+%
+category: 'Assertions'
+method: GsAmqpConfirmedMessage
+assertRejected
+
+^ self isRejected ifTrue:[ true] ifFalse:[ self raiseUnexpectedStateError: #rejected ]
+%
+category: 'Assertions'
+method: GsAmqpConfirmedMessage
+assertReturned
+
+^ self isReturned ifTrue:[ true] ifFalse:[ self raiseUnexpectedStateError: #returned ]
+%
+category: 'Assertions'
+method: GsAmqpConfirmedMessage
+assertUnpublished
+
+^ self isUnpublished ifTrue:[ true] ifFalse:[ self raiseUnexpectedStateError: #unpublished ]
+%
+category: 'Accessing'
+method: GsAmqpConfirmedMessage
+id
+	^id
+%
+category: 'Updating'
+method: GsAmqpConfirmedMessage
+id: newValue
+	id := newValue
+%
+category: 'Initialization'
+method: GsAmqpConfirmedMessage
+initialize
+
+	^self setUnpublished
+%
+category: 'Testing'
+method: GsAmqpConfirmedMessage
+isConfirmed
+
+^ self state == #confirmed
+%
+category: 'Testing'
+method: GsAmqpConfirmedMessage
+isPublished
+
+^ self state == #published
+%
+category: 'Testing'
+method: GsAmqpConfirmedMessage
+isRejected
+
+^ self state == #rejected
+%
+category: 'Testing'
+method: GsAmqpConfirmedMessage
+isReturned
+
+^ self state == #returned
+%
+category: 'Testing'
+method: GsAmqpConfirmedMessage
+isUnpublished
+
+^ self state == #unpublished
+%
+category: 'Accessing'
+method: GsAmqpConfirmedMessage
+message
+	^message
+%
+category: 'Updating'
+method: GsAmqpConfirmedMessage
+message: newValue
+	message := newValue
+%
+category: 'Accessing'
+method: GsAmqpConfirmedMessage
+publisher
+	^publisher
+%
+category: 'Updating'
+method: GsAmqpConfirmedMessage
+publisher: newValue
+	publisher := newValue
+%
+category: 'Assertions'
+method: GsAmqpConfirmedMessage
+raiseUnexpectedStateError: aSymbol
+
+^ self error: ('Unexpected message state (expected ', aSymbol asString, ')')
+%
+category: 'Private'
+method: GsAmqpConfirmedMessage
+setConfirmed
+
+^ self state: #confirmed ; yourself
+%
+category: 'Publishing'
+method: GsAmqpConfirmedMessage
+setPublished: msgId
+
+	^self
+		state: #published;
+		id: msgId ;
+		yourself
+%
+category: 'Private'
+method: GsAmqpConfirmedMessage
+setRejected
+
+^ self state: #rejected ; yourself
+%
+category: 'Private'
+method: GsAmqpConfirmedMessage
+setReturned
+
+^ self state: #returned ; yourself
+%
+category: 'Private'
+method: GsAmqpConfirmedMessage
+setUnpublished
+
+^ self state: #unpublished ; yourself
+%
+category: 'Accessing'
+method: GsAmqpConfirmedMessage
+state
+	^state
+%
+category: 'Updating'
+method: GsAmqpConfirmedMessage
+state: newValue
+	state := newValue
+%
+! ------------------- Remove existing behavior from GsAmqpConfirmedMessagePublisher
+removeAllMethods GsAmqpConfirmedMessagePublisher
+removeAllClassMethods GsAmqpConfirmedMessagePublisher
+! ------------------- Class methods for GsAmqpConfirmedMessagePublisher
+category: 'Instance Creation'
+classmethod: GsAmqpConfirmedMessagePublisher
+newForConnection: conn exchange: exchg routingKey: routingKey mandatory: mandatory
+
+	^(self new)
+		connection: conn;
+		exchange: exchg;
+		routingKey: routingKey;
+		mandatory: mandatory ;
+		initialize
+%
+! ------------------- Instance methods for GsAmqpConfirmedMessagePublisher
+category: 'Private'
+method: GsAmqpConfirmedMessagePublisher
+addPublishedMessage: aGsAmqpConfirmedMessage
+
+	| msgId |
+	msgId := self incrementMessageCount .
+	aGsAmqpConfirmedMessage setPublished: msgId.
+	self publishedMessages add: aGsAmqpConfirmedMessage.
+	self messageDictionary at: msgId put: aGsAmqpConfirmedMessage.
+	^ self
+%
+category: 'Querying'
+method: GsAmqpConfirmedMessagePublisher
+allMessageUpToIncludingId: anInt
+
+"Get all messags with an id less than or equal to anInt"
+
+^ (self publishedMessages select:[:e| e id <= anInt ]) asArray
+%
+category: 'Accessing'
+method: GsAmqpConfirmedMessagePublisher
+autoRemoveConfirmed
+	^autoRemoveConfirmed
+%
+category: 'Updating'
+method: GsAmqpConfirmedMessagePublisher
+autoRemoveConfirmed: newValue
+	autoRemoveConfirmed := newValue
+%
+category: 'Polling'
+method: GsAmqpConfirmedMessagePublisher
+basicPollForConfirmsNoWaitIntoMethodFrame: methodFrame resultInto: result
+	"Poll for publisher confirms (acks, nacks, returns, rejects) until there are no more outstanding responses or we time out waiting."
+
+	| didWork |
+	didWork := false.
+	[true] whileTrue:
+			[| gotDataThisTime |
+			self hasUnconfirmedMessages ifFalse: [^ didWork]. "Early exit for no more outstanding acks"
+			(gotDataThisTime := self primPollForConfirmsWithTimeoutMs: 0
+						methodFrame: methodFrame)
+					ifTrue:  "Got a frame, process it"
+						[didWork := true.
+						self processFrame: methodFrame addMessageTo: result.
+						methodFrame initializeForReuse]
+					ifFalse: [^ didWork] "no (more?) work available, so we are done."
+].
+	self error: 'Should not be here!'.
+	^didWork
+%
+category: 'Polling'
+method: GsAmqpConfirmedMessagePublisher
+basicPollForConfirmsWithTimeoutMs: ms methodFrame: methodFrame resultInto: result
+	"Poll for publisher confirms (acks, nacks, returns, rejects). Answer true if we received a message, false if not, maybe after waiting if ms > 0"
+
+	self hasUnconfirmedMessages ifFalse: [^false].	"Early exit for no more outstanding acks"
+	^(self primPollForConfirmsWithTimeoutMs: ms methodFrame: methodFrame)
+		ifTrue:
+			["Got a frame, process it"
+			self processFrame: methodFrame addMessageTo: result.
+			methodFrame initializeForReuse.
+			true]
+		ifFalse: [false]	"no (more?) work available, so we are done."
+%
+category: 'Accessing'
+method: GsAmqpConfirmedMessagePublisher
+channel
+	^channel
+%
+category: 'Updating'
+method: GsAmqpConfirmedMessagePublisher
+channel: newValue
+	channel := newValue
+%
+category: 'Accessing'
+method: GsAmqpConfirmedMessagePublisher
+confirmedMessages
+	^confirmedMessages
+%
+category: 'Updating'
+method: GsAmqpConfirmedMessagePublisher
+confirmedMessages: newValue
+	confirmedMessages := newValue
+%
+category: 'Accessing'
+method: GsAmqpConfirmedMessagePublisher
+connection
+	^connection
+%
+category: 'Updating'
+method: GsAmqpConfirmedMessagePublisher
+connection: newValue
+	connection := newValue
+%
+category: 'Accessing'
+method: GsAmqpConfirmedMessagePublisher
+exchange
+	^exchange
+%
+category: 'Updating'
+method: GsAmqpConfirmedMessagePublisher
+exchange: newValue
+	exchange := newValue
+%
+category: 'Testing'
+method: GsAmqpConfirmedMessagePublisher
+hasUnconfirmedMessages
+
+^ self messagesNotConfirmedCount > 0
+%
+category: 'Private'
+method: GsAmqpConfirmedMessagePublisher
+incrementMessageCount
+
+self messageCount: (self messageCount + 1).
+^ self messageCount
+%
+category: 'Initialization'
+method: GsAmqpConfirmedMessagePublisher
+initialize
+
+	| chan |
+	chan := self connection openNextChannel.
+	self connection enablePublisherConfirmsForChannel: chan.
+	^self
+		channel: chan;
+		messageCount: 0;
+		publishedMessages: IdentitySet new;
+		confirmedMessages: IdentitySet new;
+		rejectedMessages: IdentitySet new;
+		returnedMessages: IdentitySet new;
+		messageDictionary: IntegerKeyValueDictionary new;
+		autoRemoveConfirmed: true ;
+		yourself
+%
+category: 'Accessing'
+method: GsAmqpConfirmedMessagePublisher
+mandatory
+	^mandatory
+%
+category: 'Updating'
+method: GsAmqpConfirmedMessagePublisher
+mandatory: newValue
+	mandatory := newValue
+%
+category: 'Accessing'
+method: GsAmqpConfirmedMessagePublisher
+messageCount
+	^messageCount
+%
+category: 'Updating'
+method: GsAmqpConfirmedMessagePublisher
+messageCount: newValue
+	messageCount := newValue
+%
+category: 'Accessing'
+method: GsAmqpConfirmedMessagePublisher
+messageDictionary
+	^messageDictionary
+%
+category: 'Updating'
+method: GsAmqpConfirmedMessagePublisher
+messageDictionary: newValue
+	messageDictionary := newValue
+%
+category: 'Querying'
+method: GsAmqpConfirmedMessagePublisher
+messageForId: anInt
+
+^ self messageDictionary at: anInt
+%
+category: 'Querying'
+method: GsAmqpConfirmedMessagePublisher
+messagesNotConfirmedCount
+	^ publishedMessages size
+%
+category: 'Testing'
+method: GsAmqpConfirmedMessagePublisher
+noMoreUnconfirmedMessages
+
+^ self hasUnconfirmedMessages not
+%
+category: 'Polling'
+method: GsAmqpConfirmedMessagePublisher
+pollForConfirmsWithTimeoutMs: ms
+
+^ self pollForConfirmsWithTimeoutMs: ms getAtMost: SmallInteger maximumValue
+%
+category: 'Polling'
+method: GsAmqpConfirmedMessagePublisher
+pollForConfirmsWithTimeoutMs: ms getAtMost: maxConfirms
+
+	| methodFrame result sys |
+	sys := System .
+	result := Array new.
+	methodFrame := GsAmqpFrame newWithConnection: self connection.
+
+	"Simple case: do not loop/retry if caller wants no wait or wai forever"
+	ms <= 0
+		ifTrue:
+			[self
+				basicPollForConfirmsWithTimeoutMs: ms
+				methodFrame: methodFrame
+				resultInto: result]
+		ifFalse:
+			[| nowMs endTimeMs done |
+			nowMs := sys _timeMs.
+			endTimeMs := nowMs + ms.
+			done := false.
+			[done] whileFalse:
+					[| timeLeftMs |
+					(timeLeftMs := endTimeMs - nowMs) > 0
+						ifTrue:
+							[self
+								basicPollForConfirmsWithTimeoutMs: timeLeftMs
+								methodFrame: methodFrame
+								resultInto: result].
+					done := (self noMoreUnconfirmedMessages or:[result size >= maxConfirms])
+								or: [(nowMs := sys _timeMs) >= endTimeMs]]].
+	^result
+%
+category: 'Polling'
+method: GsAmqpConfirmedMessagePublisher
+primPollForConfirmsWithTimeoutMs: ms methodFrame: methodFrame
+
+"Poll for a method frame. Return true if we received one, false if we timed out."
+	^self connection
+		getFrameInto: methodFrame
+		withTimeoutMs: ms
+		errorOnTimeout: false
+%
+category: 'Polling'
+method: GsAmqpConfirmedMessagePublisher
+processBasicAck: aGsAmqpMethod addMessageTo: anArray
+
+	| ack id msgs multiple |
+	ack := aGsAmqpMethod methodObject.
+	id := ack deliveryTag.	"aGsAmqpBasicAck"
+	multiple := ack multiple.
+"uncomment next line for debugging"
+"	multiple ifTrue:[ GsFile gciLogServer: ('Got multiple: all msgs up to and including ', id asString)]."
+	msgs := multiple "Multiple == true means all messages up to and include id are acknowleged"
+				ifTrue: [self allMessageUpToIncludingId: id]
+				ifFalse: [Array with: (self messageForId: id)].
+	msgs do:
+			[:msg |
+			msg setConfirmed.	"Update message state"
+			self publishedMessages remove: msg.	"Remove from published"
+			self autoRemoveConfirmed
+				ifTrue: [self removeMessage: msg]
+				ifFalse: [self confirmedMessages add: msg]	"Add to confirmed if configured, otherwise drop on floor"].
+	anArray addAll: msgs.
+	^self
+%
+category: 'Polling'
+method: GsAmqpConfirmedMessagePublisher
+processBasicNack: aGsAmqpMethod addMessageTo: anArray
+
+	| nack id msgs multiple |
+	nack := aGsAmqpMethod methodObject.
+	id := nack deliveryTag.	"aGsAmqpBasicNack"
+	multiple := nack multiple.
+	msgs := multiple
+				ifTrue: [self allMessageUpToIncludingId: id]
+				ifFalse: [Array with: (self messageForId: id)].	"Multiple == true means all messages up to and include id are acknowleged"
+	self processRejectedMessages: msgs.
+	anArray addAll: msgs.
+	^self
+%
+category: 'Polling'
+method: GsAmqpConfirmedMessagePublisher
+processBasicReject: aGsAmqpMethod addMessageTo: anArray
+
+"Reject is the same as nack except only refers to 1 message, never multple"
+
+	| reject id msgs |
+	reject := aGsAmqpMethod methodObject.
+	id := reject deliveryTag.	"aGsAmqpBasicNack"
+	msgs := Array with: (self messageForId: id).
+	self processRejectedMessages: msgs.
+	anArray addAll: msgs.
+	^self
+%
+category: 'Polling'
+method: GsAmqpConfirmedMessagePublisher
+processBasicReturn: aGsAmqpMethod addMessageTo: anArray
+
+	| return id msg  methodFrame returnedMsg |
+	return := aGsAmqpMethod methodObject.
+	"Read the returned message and discard it"
+	returnedMsg := self connection readMessageInto: nil channel: self channel.
+"Should be an ack or nack next"
+	methodFrame := GsAmqpFrame newWithConnection: self connection.
+	self connection getFrameInto: methodFrame withTimeoutMs: 1000 errorOnTimeout: true. "should not timeout!"
+	id := methodFrame payload methodObject deliveryTag. "Get the id and put the message in the correct state"
+	msg := self messageForId: id.
+	msg setReturned.
+	self publishedMessages remove: msg.
+	self returnedMessages add: msg.
+	^ self
+%
+category: 'Polling'
+method: GsAmqpConfirmedMessagePublisher
+processFrame: aGsAmqpFrame addMessageTo: anArray
+
+	| payload |
+	aGsAmqpFrame isFrameMethod
+		ifFalse: [self error: 'expected a method frame'].
+	payload := aGsAmqpFrame payload.
+	payload isBasicAck
+		ifTrue: [self processBasicAck: payload addMessageTo: anArray]
+		ifFalse:
+			[payload isBasicNack
+				ifTrue: [self processBasicNack: payload addMessageTo: anArray]
+				ifFalse:
+					[payload isBasicReject
+						ifTrue: [self processBasicReject: payload addMessageTo: anArray]
+						ifFalse:
+							[payload isBasicReturn
+								ifTrue: [self processBasicReturn: payload addMessageTo: anArray]
+								ifFalse: [self error: 'unexpected payload kind']]]].
+aGsAmqpFrame initializeForReuse.
+^ self
+%
+category: 'Polling'
+method: GsAmqpConfirmedMessagePublisher
+processRejectedMessages: anArray
+
+	anArray do:
+			[:msg |
+			msg setRejected.	"Update message state"
+			self publishedMessages remove: msg.	"Remove from published"
+			self rejectedMessages add: msg].	"Add to rejected"
+
+	^self
+%
+category: 'Accessing'
+method: GsAmqpConfirmedMessagePublisher
+publishedMessages
+	^publishedMessages
+%
+category: 'Updating'
+method: GsAmqpConfirmedMessagePublisher
+publishedMessages: newValue
+	publishedMessages := newValue
+%
+category: 'Publishing'
+method: GsAmqpConfirmedMessagePublisher
+publishMessage: aGsAmqpConfirmedMessage
+
+	aGsAmqpConfirmedMessage _validateClass: GsAmqpConfirmedMessage.
+	self connection
+		publishMessage: aGsAmqpConfirmedMessage message
+		channel: self channel
+		exchange: self exchange
+		routingKey: self routingKey
+		mandatory: self mandatory
+		properties: nil.
+	^ self addPublishedMessage: aGsAmqpConfirmedMessage .
+%
+category: 'Publishing'
+method: GsAmqpConfirmedMessagePublisher
+publishMessageString: aString
+
+| newMsg |
+newMsg := GsAmqpConfirmedMessage newWithMessage: aString publisher: self.
+ self publishMessage: newMsg.
+^ newMsg
+%
+category: 'Querying'
+method: GsAmqpConfirmedMessagePublisher
+rejectedMessageCount
+	^rejectedMessages size
+%
+category: 'Accessing'
+method: GsAmqpConfirmedMessagePublisher
+rejectedMessages
+	^rejectedMessages
+%
+category: 'Updating'
+method: GsAmqpConfirmedMessagePublisher
+rejectedMessages: newValue
+	rejectedMessages := newValue
+%
+category: 'Removing'
+method: GsAmqpConfirmedMessagePublisher
+removeMessage: aGsAmqpConfirmedMessage
+
+self publishedMessages removeIfPresent: aGsAmqpConfirmedMessage.
+self confirmedMessages removeIfPresent: aGsAmqpConfirmedMessage.
+self rejectedMessages removeIfPresent: aGsAmqpConfirmedMessage.
+self returnedMessages removeIfPresent: aGsAmqpConfirmedMessage.
+self messageDictionary removeKey: aGsAmqpConfirmedMessage id otherwise: nil.
+^ self
+%
+category: 'Querying'
+method: GsAmqpConfirmedMessagePublisher
+returnedMessageCount
+	^returnedMessages size
+%
+category: 'Accessing'
+method: GsAmqpConfirmedMessagePublisher
+returnedMessages
+	^returnedMessages
+%
+category: 'Updating'
+method: GsAmqpConfirmedMessagePublisher
+returnedMessages: newValue
+	returnedMessages := newValue
+%
+category: 'Accessing'
+method: GsAmqpConfirmedMessagePublisher
+routingKey
+	^routingKey
+%
+category: 'Updating'
+method: GsAmqpConfirmedMessagePublisher
+routingKey: newValue
+	routingKey := newValue
+%
+category: 'Querying'
+method: GsAmqpConfirmedMessagePublisher
+undeliverableMessageCount
+
+^ self rejectedMessageCount + self returnedMessageCount
+%
 ! ------------------- Remove existing behavior from GsAmqpConnection
 removeAllMethods GsAmqpConnection
 removeAllClassMethods GsAmqpConnection
@@ -1017,302 +2907,224 @@ _loginWithUserId: uid password: pw
 		ifTrue:[ self setLoggedIn ]
 		ifFalse:[ self reinitializeAfterLoginFailure . reply raiseExceptionForOperation: 'amqp_login']
 %
-! ------------------- Remove existing behavior from GsAmqpEntity
-removeAllMethods GsAmqpEntity
-removeAllClassMethods GsAmqpEntity
-! ------------------- Class methods for GsAmqpEntity
-! ------------------- Instance methods for GsAmqpEntity
-category: 'Accessing'
-method: GsAmqpEntity
-autoDelete
-	^autoDelete
+! ------------------- Remove existing behavior from GsAmqpDirectExchange
+removeAllMethods GsAmqpDirectExchange
+removeAllClassMethods GsAmqpDirectExchange
+! ------------------- Class methods for GsAmqpDirectExchange
+category: 'Instance Creation'
+classmethod: GsAmqpDirectExchange
+declareWithConnection: conn name: exchgName channel: channelIdArg durable: durable autoDelete: autoDelete
+
+	^self
+		declareWithConnection: conn
+		name: exchgName
+		type: 'direct'
+		channel: channelIdArg
+		durable: durable
+		autoDelete: autoDelete
 %
-category: 'Updating'
-method: GsAmqpEntity
-autoDelete: newValue
-	autoDelete := newValue
+category: 'Defaults'
+classmethod: GsAmqpDirectExchange
+defaultName
+
+^ 'amq.direct'
 %
+! ------------------- Instance methods for GsAmqpDirectExchange
+category: 'Exchange Kind'
+method: GsAmqpDirectExchange
+exchangeKind
+
+^ #direct
+%
+! ------------------- Remove existing behavior from GsAmqpEnvelope
+removeAllMethods GsAmqpEnvelope
+removeAllClassMethods GsAmqpEnvelope
+! ------------------- Class methods for GsAmqpEnvelope
+category: 'Constants'
+classmethod: GsAmqpEnvelope
+defaultMessageBodyClass
+
+^ String
+%
+category: 'Instance Creation'
+classmethod: GsAmqpEnvelope
+newForBinaryMessage
+
+^ self newWithMessageBodyClass: ByteArray
+%
+category: 'Instance Creation'
+classmethod: GsAmqpEnvelope
+newWithMessageBodyClass: aByteClass
+
+	aByteClass _validateIsClass.
+	aByteClass isBytes ifFalse: [aByteClass _error: #objErrNotByteKind].
+	^(super new)
+		messageBodyClass: aByteClass;
+		yourself
+%
+category: 'Constants'
+classmethod: GsAmqpEnvelope
+sizeInC
+
+^ 352
+%
+! ------------------- Instance methods for GsAmqpEnvelope
 category: 'Accessing'
-method: GsAmqpEntity
+method: GsAmqpEnvelope
 channel
 	^channel
 %
 category: 'Updating'
-method: GsAmqpEntity
+method: GsAmqpEnvelope
 channel: newValue
 	channel := newValue
 %
-category: 'Accessing'
-method: GsAmqpEntity
-connection
-	^connection
-%
-category: 'Updating'
-method: GsAmqpEntity
-connection: newValue
-	connection := newValue
+category: 'Reusing'
+method: GsAmqpEnvelope
+clearForReuse
+
+^ self reinitialize ; zeroMemory
 %
 category: 'Accessing'
-method: GsAmqpEntity
-durable
-	^durable
+method: GsAmqpEnvelope
+consumerTag
+	^consumerTag
 %
 category: 'Updating'
-method: GsAmqpEntity
-durable: newValue
-	durable := newValue
+method: GsAmqpEnvelope
+consumerTag: newValue
+	consumerTag := newValue
 %
 category: 'Accessing'
-method: GsAmqpEntity
-name
-	^name
+method: GsAmqpEnvelope
+deliveryTag
+	^deliveryTag
 %
 category: 'Updating'
-method: GsAmqpEntity
-name: newValue
-	name := newValue
+method: GsAmqpEnvelope
+deliveryTag: newValue
+	deliveryTag := newValue
 %
-! ------------------- Remove existing behavior from GsAmqpCStruct
-removeAllMethods GsAmqpCStruct
-removeAllClassMethods GsAmqpCStruct
-! ------------------- Class methods for GsAmqpCStruct
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromCPointer: aCPointer
+category: 'Memory Management'
+method: GsAmqpEnvelope
+destroyCStateUsingLibrary: lib
 
-"NOT auto freed"
-^ self fromCPointer: aCPointer atOffset: 0 initializeFromC: true
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromCPointer: aCByteArray atOffset: offset
-
-"NOT auto freed"
-
-
-^ self fromCPointer: aCByteArray atOffset: offset initializeFromC: true
-
+self destroyed ifFalse:[
+	self destroyed: true.
+	lib amqp_destroy_envelope_: self.
+	self zeroMemory.
+].
+^ self
 
 %
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromCPointer: aCByteArray atOffset: offset initializeFromC: doInitFromC
-
-"NOT auto freed"
-
-	| res |
-	res := self on: aCByteArray atOffset: offset .
-	doInitFromC ifTrue: [res initializeFromC].
-	^res
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromMemoryReferenceIn: aCByteArray atOffset: offset
-
-	^self
-		fromMemoryReferenceIn: aCByteArray
-		atOffset: offset
-		initializeFromC: true
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromMemoryReferenceIn: aCByteArray atOffset: offset initializeFromC: doInitFromC
-
-	^self
-		fromMemoryReferenceIn: aCByteArray
-		atOffset: offset
-		sizeInBytes: self sizeInC
-		initializeFromC: doInitFromC
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromMemoryReferenceIn: aCByteArray atOffset: offset sizeInBytes: bytes
-
-	^self
-		fromMemoryReferenceIn: aCByteArray
-		atOffset: offset
-		sizeInBytes: bytes
-		initializeFromC: true
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-fromMemoryReferenceIn: aCByteArray atOffset: offset sizeInBytes: bytes initializeFromC: doInitFromC
-
-
-"NOT auto freed"
-
-	| res cPointer |
-
-	cPointer := CPointer forAddress: (aCByteArray uint64At: offset).
-	res := self fromCPointer: cPointer numBytes: bytes.
-	doInitFromC ifTrue: [res initializeFromC].
-	^res
-%
-category: 'Constants'
-classmethod: GsAmqpCStruct
-lastZeroBasedOffset
-
-^self sizeInC - 1
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-new
-
-| result |
-result := self gcMalloc: self sizeInC.
-result initialize.
-^ result
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-new: aSize
-
-"Use new instead "
-^ self shouldNotImplement: #new:
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-on: aCByteArray
-
-	^self on: aCByteArray atOffset: 0
-%
-category: 'Instance Creation'
-classmethod: GsAmqpCStruct
-on: aCByteArray atOffset: offset
-
-	| res |
-	res := self
-				fromRegionOf: aCByteArray
-				offset: offset
-				numBytes: self sizeInC.
-	^ res initialize ;
-		derivedFrom: aCByteArray;
-	yourself
-%
-category: 'Subclass Methods'
-classmethod: GsAmqpCStruct
-sizeInC
-
-^self subclassResponsibility: #sizeInC
-%
-! ------------------- Instance methods for GsAmqpCStruct
-category: 'Accessing Memory'
-method: GsAmqpCStruct
-booleanAtOffset: anOffset
-
-"C memory of receiver at offset anOffset contains 32-bit 0x1 or 0x0. Translate to a Smalltalk true  or false"
-
-^ 0 ~~ (self uint32At: anOffset)
-%
-category: 'Accessing Strings'
-method: GsAmqpCStruct
-byteArrayFromAmqpBytesAtOffset: anOffset
-
-"Receiver contains a amqp_bytes_t struct at offset anOffset. Return a ByteArray containing the bytes that it holds."
-
-	| size |
-	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
-		ifNil: [nil]
-		ifNotNil: [self byteArrayFromCharStarAt: anOffset + 8 numBytes: size]
-%
-category: 'Accessing Strings'
-method: GsAmqpCStruct
-byteObjectFromAmqpBytesAtOffset: anOffset class: aByteClass
-	"Receiver contains a amqp_bytes_t struct at offset anOffset. Return the string that it holds."
-
-	^ (aByteClass isSubclassOf: String)
-		ifTrue: [self stringFromAmqpBytesAtOffset: anOffset]
-		ifFalse:
-			[(aByteClass isSubclassOf: ByteArray)
-				ifTrue: [self byteArrayFromAmqpBytesAtOffset: anOffset]
-				ifFalse: [self error: 'Unexpected byte class']]
+category: 'Accessing'
+method: GsAmqpEnvelope
+destroyed
+	^destroyed
 %
 category: 'Updating'
-method: GsAmqpCStruct
-clearAmqpBytesAtOffset: offset
+method: GsAmqpEnvelope
+destroyed: newValue
+	destroyed := newValue
+%
+category: 'Accessing'
+method: GsAmqpEnvelope
+exchange
+	^exchange
+%
+category: 'Updating'
+method: GsAmqpEnvelope
+exchange: newValue
+	exchange := newValue
+%
+category: 'Initialization'
+method: GsAmqpEnvelope
+initialize
 
 	^self
-		uint64At: offset put: 0; "length"
-		uint64At: (offset + 8) put: 0 ; "char *"
+		destroyed: false;
+		initializeMessageBodyClass;
 		yourself
 %
-category: 'Accessing Memory'
-method: GsAmqpCStruct
-cPointerForOffset: offset
-
-^CPointer _allocate _initFrom: self offset: offset
-%
-category: 'Accessing Strings'
-method: GsAmqpCStruct
-getSizeOfAmqpBytesAtOffset: anOffset
-
-	| size |
-	size := self uint64At: anOffset.
-	^size == 0
-		ifTrue: [nil]
-		ifFalse:
-			[size > 16r20000
-				ifTrue:
-					[self
-						error: 'ByteArray larger than 128K detected. Possible bad memory reference']
-				ifFalse: [size]]
-%
-category: 'Subclass Methods'
-method: GsAmqpCStruct
+category: 'Initialization'
+method: GsAmqpEnvelope
 initializeFromC
 
-"Subclasses may overload this method to initialize instance variables from C state at instance creation time."
+	self initializeMessageBodyClass.
+	^ self destroyed
+		ifTrue:
+			[self error: 'Attempt to initialize from C an already destroyed envelope']
+		ifFalse:
+			[self
+				channel: (self uint32At: 0);
+				consumerTag: (self stringFromAmqpBytesAtOffset: 8);
+				deliveryTag: (self uint64At: 24);
+				redelivered: (self booleanAtOffset: 32);
+				exchange: (self stringFromAmqpBytesAtOffset: 40);
+				routingKey: (self stringFromAmqpBytesAtOffset: 56);
+				message: (GsAmqpMessage fromCPointer: self atOffset: 72 bodyClass: self messageBodyClass );
+				yourself	"integer to boolean"]
+%
+category: 'Initialization'
+method: GsAmqpEnvelope
+initializeMessageBodyClass
 
-^ self
+	self messageBodyClass
+		ifNil: [self messageBodyClass: self class defaultMessageBodyClass].
+	^self
+%
+category: 'Accessing'
+method: GsAmqpEnvelope
+message
+	^message
 %
 category: 'Updating'
-method: GsAmqpCStruct
-storeAmqpBytes: amqpBytes atOffset: offset
-
-	^self
-		uint64At: offset put: amqpBytes len;
-		uint64At: (offset + 8) put: amqpBytes bytesAddress;
-		yourself
+method: GsAmqpEnvelope
+message: newValue
+	message := newValue
 %
-category: 'Accessing Strings'
-method: GsAmqpCStruct
-stringFromAmqpBytesAtOffset: anOffset
-	"Receiver contains a amqp_bytes_t struct at offset anOffset. Return the string that it holds."
+category: 'Accessing'
+method: GsAmqpEnvelope
+messageBody
 
-	| size |
-	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
-		ifNil: [nil]
-		ifNotNil: [self stringFromCharStarAt: anOffset + 8 numBytes: size]
+^ message ifNil:[ nil ] ifNotNil:[ message body ]
 %
-category: 'Accessing Strings'
-method: GsAmqpCStruct
-utf16FromAmqpBytesAtOffset: anOffset
-
-"Receiver contains a amqp_bytes_t struct at offset anOffset. Return a Utf8 containing the bytes that it holds."
-
-	| size |
-	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
-		ifNil: [nil]
-		ifNotNil: [self utf16FromCharStarAt: anOffset + 8 numBytes: size]
-%
-category: 'Accessing Strings'
-method: GsAmqpCStruct
-utf8FromAmqpBytesAtOffset: anOffset
-
-"Receiver contains a amqp_bytes_t struct at offset anOffset. Return a Utf8 containing the bytes that it holds."
-
-	| size |
-	^(size := self getSizeOfAmqpBytesAtOffset: anOffset)
-		ifNil: [nil]
-		ifNotNil: [self utf8FromCharStarAt: anOffset + 8 numBytes: size]
+category: 'Accessing'
+method: GsAmqpEnvelope
+messageBodyClass
+	^messageBodyClass
 %
 category: 'Updating'
-method: GsAmqpCStruct
-zeroMemory
+method: GsAmqpEnvelope
+messageBodyClass: newValue
+	messageBodyClass := newValue
+%
+category: 'Accessing'
+method: GsAmqpEnvelope
+redelivered
+	^redelivered
+%
+category: 'Updating'
+method: GsAmqpEnvelope
+redelivered: newValue
+	redelivered := newValue
+%
+category: 'Initialization'
+method: GsAmqpEnvelope
+reinitialize
 
-	^self
-		memset: 0 from: 0 to: -1;
-		yourself
+^ self destroyed: false ;
+	yourself
+%
+category: 'Accessing'
+method: GsAmqpEnvelope
+routingKey
+	^routingKey
+%
+category: 'Updating'
+method: GsAmqpEnvelope
+routingKey: newValue
+	routingKey := newValue
 %
 ! ------------------- Remove existing behavior from GsAmqpExample
 removeAllMethods GsAmqpExample
@@ -2962,6 +4774,1897 @@ waitForConsumerTimeMs
 ^ 60000
 %
 ! ------------------- Instance methods for GsAmqpExample
+! ------------------- Remove existing behavior from GsAmqpFanoutExchange
+removeAllMethods GsAmqpFanoutExchange
+removeAllClassMethods GsAmqpFanoutExchange
+! ------------------- Class methods for GsAmqpFanoutExchange
+category: 'Instance Creation'
+classmethod: GsAmqpFanoutExchange
+declareWithConnection: conn name: exchgName channel: channelIdArg durable: durable autoDelete: autoDelete
+
+	^self
+		declareWithConnection: conn
+		name: exchgName
+		type: 'fanout'
+		channel: channelIdArg
+		durable: durable
+		autoDelete: autoDelete
+%
+category: 'Instance Creation'
+classmethod: GsAmqpFanoutExchange
+declareWithConnection: conn name: exchgName channel: channelIdArg durable: durable autoDelete: autoDelete internal: internal
+
+^ self declareWithConnection: conn name: exchgName type: 'fanout' channel: channelIdArg durable: durable autoDelete: autoDelete internal: internal
+%
+! ------------------- Instance methods for GsAmqpFanoutExchange
+category: 'Exchange Kind'
+method: GsAmqpFanoutExchange
+exchangeKind
+
+^ #fanout
+%
+category: 'Publishing'
+method: GsAmqpFanoutExchange
+publishMessage: msg mandatory: mandatory properties: props
+
+^ self publishMessage: msg routingKey: nil mandatory: mandatory properties: props
+%
+! ------------------- Remove existing behavior from GsAmqpFieldValue
+removeAllMethods GsAmqpFieldValue
+removeAllClassMethods GsAmqpFieldValue
+! ------------------- Class methods for GsAmqpFieldValue
+category: 'Converting'
+classmethod: GsAmqpFieldValue
+amqpFieldKindForObject: obj
+
+	^obj _isInteger
+		ifTrue: [self AMQP_FIELD_KIND_I64]
+		ifFalse:
+			[ | cls |
+			cls := obj class.
+			cls == Boolean
+				ifTrue: [self AMQP_FIELD_KIND_BOOLEAN]
+				ifFalse:
+					[cls isBytes
+						ifTrue: [self AMQP_FIELD_KIND_UTF8]
+						ifFalse: [self error: 'Invalid object']]]
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_ARRAY
+
+^ $A asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_BOOLEAN
+
+^ $t asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_BYTES
+
+^ $x asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_DECIMAL
+
+^ $D asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_F32
+
+^ $f asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_F64
+
+^ $d asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_I16
+
+^ $s asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_I32
+
+^ $I asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_I64
+
+^ $l asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_I8
+
+^ $b asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_TABLE
+
+^ $F asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_TIMESTAMP
+
+^ $T asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_U16
+
+^ $u asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_U32
+
+^ $i asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_U64
+
+^ $L asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_U8
+
+^ $B asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_UTF8
+
+^ $S asInteger
+%
+category: 'Constants (Field Kinds)'
+classmethod: GsAmqpFieldValue
+AMQP_FIELD_KIND_VOID
+
+^ $V asInteger
+%
+category: 'Instance Creation'
+classmethod: GsAmqpFieldValue
+newForObject: anObject
+
+"anObject must be a Boolean, SmallInteger or String"
+
+^ (self new)
+	 initialize ;
+	setValue: anObject ;
+	yourself
+%
+category: 'Constants'
+classmethod: GsAmqpFieldValue
+sizeInC
+
+^ 24
+%
+! ------------------- Instance methods for GsAmqpFieldValue
+category: 'Initialization'
+method: GsAmqpFieldValue
+initializeFromC
+
+	^ self
+			kind: (self uint8At: 0) ;
+	 		value: (self valueIsBoolean
+				ifTrue: [self booleanAtOffset: 8]
+				ifFalse:
+					[self valueIsString
+						ifTrue:
+							[GsAmqpBytes fromCPointer: self atOffset: 8]
+						ifFalse:
+							[self valueIsInteger
+								ifTrue: [self int64At: 8]
+								ifFalse: [self error: 'Unsupported value kind ' , self kind asString]]]) ;
+			yourself
+%
+category: 'Accessing'
+method: GsAmqpFieldValue
+kind
+	^kind
+%
+category: 'Private'
+method: GsAmqpFieldValue
+kind: newValue
+	kind := newValue
+%
+category: 'Updating'
+method: GsAmqpFieldValue
+setValue: aValue
+
+"Currently only Booleans, Integers and Strings are supported for values"
+	value := aValue. "Reference the incoming arg. We may override this later"
+	aValue
+		ifNil: [self memset: 0 from: 0 to: -1]
+		ifNotNil:
+			[aValue _isInteger
+				ifTrue: [self storeInteger: aValue]
+				ifFalse:
+					[aValue class == Boolean
+						ifTrue: [self storeBoolean: aValue]
+						ifFalse: [self storeStringAsUtf8: aValue]]].
+	^self
+%
+category: 'Updating'
+method: GsAmqpFieldValue
+storeBoolean: aBoolean
+
+^ self uint8At: 0 put: (kind := self class AMQP_FIELD_KIND_BOOLEAN) ;
+	uint64At: 8 put: aBoolean asBit ;
+	yourself
+%
+category: 'Updating'
+method: GsAmqpFieldValue
+storeInteger: anInt
+
+^ self uint8At: 0 put: (kind := self class AMQP_FIELD_KIND_I64) ;
+	int64At: 8 put: anInt ;
+	yourself
+%
+category: 'Updating'
+method: GsAmqpFieldValue
+storeStringAsUtf8: aString
+
+"Create a new GsAmqpBytes object. We must reference it so it does not get garbage collected."
+
+value :=GsAmqpBytes fromStringEncodeAsUtf8: aString.
+^ self uint8At: 0 put: (kind := self class AMQP_FIELD_KIND_UTF8) ;
+	uint64At: 8 put: value len ;
+	uint64At: 16 put: value bytesAddress ;
+	yourself
+%
+category: 'Accessing'
+method: GsAmqpFieldValue
+value
+	^value
+%
+category: 'Private'
+method: GsAmqpFieldValue
+value: newValue
+	value := newValue
+%
+category: 'Testing'
+method: GsAmqpFieldValue
+valueIsBoolean
+
+| myKind |
+myKind := self kind.
+myKind _validateClass: SmallInteger.
+^ myKind == self class AMQP_FIELD_KIND_BOOLEAN
+%
+category: 'Testing'
+method: GsAmqpFieldValue
+valueIsInteger
+
+| myKind |
+(myKind := self kind) _validateClass: SmallInteger.
+"Hard code values for performance"
+(myKind == 66 or:[ myKind == 73 ]) ifTrue:[ ^ true ].
+(myKind == 76 or:[ myKind == 98 ]) ifTrue:[ ^ true ].
+(myKind == 105 or:[ myKind == 108 ]) ifTrue:[ ^ true ].
+(myKind == 115 or:[ myKind == 117 ]) ifTrue:[ ^ true ].
+^ false
+
+"Note: the above implementation is approx 4X faster than this alternative:
+
+^ { 66  . 73 . 76 . 98 . 105 . 108 . 115 . 117 } includesIdentical: myKind
+"
+%
+category: 'Testing'
+method: GsAmqpFieldValue
+valueIsString
+
+| myKind |
+myKind := self kind.
+myKind _validateClass: SmallInteger.
+^ myKind == self class AMQP_FIELD_KIND_UTF8
+%
+! ------------------- Remove existing behavior from GsAmqpFrame
+removeAllMethods GsAmqpFrame
+removeAllClassMethods GsAmqpFrame
+! ------------------- Class methods for GsAmqpFrame
+category: 'Constants'
+classmethod: GsAmqpFrame
+AMQP_FRAME_BODY
+
+^ 3
+%
+category: 'Constants'
+classmethod: GsAmqpFrame
+AMQP_FRAME_HEADER
+
+^ 2
+%
+category: 'Constants'
+classmethod: GsAmqpFrame
+AMQP_FRAME_METHOD
+
+^ 1
+%
+category: 'Constants'
+classmethod: GsAmqpFrame
+basicPropertiesClassId
+
+"From amqp_framing.c"
+
+^ 60
+%
+category: 'Instance Creation'
+classmethod: GsAmqpFrame
+newWithConnection: aGsAmqpConnection
+
+	^(super new)
+		connection: aGsAmqpConnection;
+		yourself
+%
+category: 'Constants'
+classmethod: GsAmqpFrame
+sizeInC
+
+^ 48
+%
+! ------------------- Instance methods for GsAmqpFrame
+category: 'Accessing Header Members'
+method: GsAmqpFrame
+bodySize
+
+"Valid only if isFrameHeader == true"
+^ self uint64At: 16
+%
+category: 'Accessing Body Members'
+method: GsAmqpFrame
+bodyString
+
+"Valid only if isFrameBody == true"
+^ self stringFromAmqpBytesAtOffset: 8
+%
+category: 'Accessing'
+method: GsAmqpFrame
+channel
+	^channel
+%
+category: 'Updating'
+method: GsAmqpFrame
+channel: newValue
+	channel := newValue
+%
+category: 'Accessing'
+method: GsAmqpFrame
+connection
+	^connection
+%
+category: 'Updating'
+method: GsAmqpFrame
+connection: newValue
+	connection := newValue
+%
+category: 'Accessing Header Members'
+method: GsAmqpFrame
+extractBasicPropertiesPayload
+
+"Only valid if isBasicPropertiesHeader == true"
+^ GsAmqpBasicProperties fromCPointer: (self cPointerForOffset: 24)
+%
+category: 'Accessing Method Members'
+method: GsAmqpFrame
+extractMethodPayload
+
+| result |
+result := GsAmqpMethod fromCPointer: self atOffset: 8 initializeFromC: false.
+^ result connection: self connection; initializeFromC
+
+%
+category: 'Accessing'
+method: GsAmqpFrame
+frameType
+	^frameType
+%
+category: 'Updating'
+method: GsAmqpFrame
+frameType: newValue
+	frameType := newValue
+%
+category: 'Initialization'
+method: GsAmqpFrame
+initializeForReuse
+
+	^ self frameType: nil ;
+		channel: nil ;
+		payload: nil
+		yourself
+%
+category: 'Initialization'
+method: GsAmqpFrame
+initializeFrameBodyFromC
+
+	^self
+		payload: (self stringFromAmqpBytesAtOffset: 8);
+		yourself
+%
+category: 'Initialization'
+method: GsAmqpFrame
+initializeFrameHeaderFromC
+
+	^self
+		payload: self extractBasicPropertiesPayload;
+		yourself
+%
+category: 'Initialization'
+method: GsAmqpFrame
+initializeFrameMethodFromC
+
+	^self
+		payload: self extractMethodPayload;
+		yourself
+%
+category: 'Initialization'
+method: GsAmqpFrame
+initializeFromC
+
+	self
+		frameType: (self uint8At: 0);
+		channel: (self uint16At: 2).
+	self isFrameHeader
+		ifTrue: [self initializeFrameHeaderFromC]
+		ifFalse:
+			[self isFrameMethod
+				ifTrue: [self initializeFrameMethodFromC]
+				ifFalse:
+					[self isFrameBody
+						ifTrue: [self initializeFrameBodyFromC]
+						ifFalse: [self error: 'Unknown frame kind ']]]
+%
+category: 'Testing'
+method: GsAmqpFrame
+isBasicPropertiesHeader
+
+^ self isFrameHeader and:[ self propertiesClassId == self class basicPropertiesClassId]
+%
+category: 'Testing'
+method: GsAmqpFrame
+isFrameBasicAckMethod
+
+^ self isFrameMethod and:[ self methodId == GsAmqpMethod AMQP_BASIC_ACK_METHOD ]
+%
+category: 'Testing'
+method: GsAmqpFrame
+isFrameBasicDeliverMethod
+
+^ self isFrameMethod and:[ self methodId == GsAmqpMethod AMQP_BASIC_DELIVER_METHOD ]
+%
+category: 'Testing'
+method: GsAmqpFrame
+isFrameBasicNackMethod
+
+^ self isFrameMethod and:[ self methodId == GsAmqpMethod AMQP_BASIC_NACK_METHOD ]
+%
+category: 'Testing'
+method: GsAmqpFrame
+isFrameBasicRejectMethod
+
+^ self isFrameMethod and:[ self methodId == GsAmqpMethod AMQP_BASIC_REJECT_METHOD ]
+%
+category: 'Testing'
+method: GsAmqpFrame
+isFrameBasicReturnMethod
+
+^ self isFrameMethod and:[ self methodId == GsAmqpMethod AMQP_BASIC_RETURN_METHOD ]
+%
+category: 'Testing'
+method: GsAmqpFrame
+isFrameBody
+
+^ self frameType == self class AMQP_FRAME_BODY
+%
+category: 'Testing'
+method: GsAmqpFrame
+isFrameHeader
+
+^ self frameType == self class AMQP_FRAME_HEADER
+%
+category: 'Testing'
+method: GsAmqpFrame
+isFrameMethod
+
+^ self frameType == self class AMQP_FRAME_METHOD
+%
+category: 'Accessing Method Members'
+method: GsAmqpFrame
+methodId
+
+"Only valid if isFrameMethod == true"
+
+^ self uint32At: 8
+%
+category: 'Accessing'
+method: GsAmqpFrame
+payload
+	^payload
+%
+category: 'Updating'
+method: GsAmqpFrame
+payload: newValue
+	payload := newValue
+%
+category: 'Accessing Header Members'
+method: GsAmqpFrame
+propertiesClassId
+
+"Valid only if isFrameHeader == true"
+^ self uint16At: 8
+%
+! ------------------- Remove existing behavior from GsAmqpHeadersExchange
+removeAllMethods GsAmqpHeadersExchange
+removeAllClassMethods GsAmqpHeadersExchange
+! ------------------- Class methods for GsAmqpHeadersExchange
+category: 'Instance Creation'
+classmethod: GsAmqpHeadersExchange
+declareWithConnection: conn name: exchgName channel: channelIdArg durable: durable autoDelete: autoDelete
+
+	^self
+		declareWithConnection: conn
+		name: exchgName
+		type: 'headers'
+		channel: channelIdArg
+		durable: durable
+		autoDelete: autoDelete
+%
+category: 'Headers Generation'
+classmethod: GsAmqpHeadersExchange
+generateMessagePropertiesFromHeadersDictionary: dict
+
+| table props |
+table := GsAmqpTable newFromDictionary: dict.
+props := GsAmqpBasicProperties new.
+props headers: table.
+^ props
+
+%
+category: 'Headers Generation'
+classmethod: GsAmqpHeadersExchange
+generateMessagePropertiesFromHeadersKeys: keys values: values
+
+| table props |
+table := GsAmqpTable newFromKeys: keys values: values.
+props := GsAmqpBasicProperties new.
+props headers: table.
+^ props
+
+%
+! ------------------- Instance methods for GsAmqpHeadersExchange
+category: 'Exchange Kind'
+method: GsAmqpHeadersExchange
+exchangeKind
+
+^ #headers
+%
+! ------------------- Remove existing behavior from GsAmqpMessage
+removeAllMethods GsAmqpMessage
+removeAllClassMethods GsAmqpMessage
+! ------------------- Class methods for GsAmqpMessage
+category: 'Constants'
+classmethod: GsAmqpMessage
+defaultBodyClass
+
+^ String
+%
+category: 'Instance Creation'
+classmethod: GsAmqpMessage
+fromCPointer: aCByteArray atOffset: offset bodyClass: aByteClass
+
+	| res |
+	res := self fromCPointer: aCByteArray atOffset: offset initializeFromC: false.
+	res bodyClass: aByteClass.
+	^ res initializeFromC
+%
+category: 'Instance Creation'
+classmethod: GsAmqpMessage
+fromCPointer: aCByteArray bodyClass: aByteClass
+
+	^self fromCPointer: aCByteArray atOffset: 0 bodyClass: aByteClass
+%
+category: 'Constants'
+classmethod: GsAmqpMessage
+sizeInC
+
+^ 280
+%
+! ------------------- Instance methods for GsAmqpMessage
+category: 'Accessing'
+method: GsAmqpMessage
+body
+	^body
+%
+category: 'Updating'
+method: GsAmqpMessage
+body: newValue
+	body := newValue
+%
+category: 'Accessing'
+method: GsAmqpMessage
+bodyClass
+	^bodyClass
+%
+category: 'Updating'
+method: GsAmqpMessage
+bodyClass: newValue
+	bodyClass := newValue
+%
+category: 'Memory Management'
+method: GsAmqpMessage
+destroyCStateUsingLibrary: lib
+
+self destroyed ifFalse:[
+	self destroyed: true.
+	lib amqp_destroy_message_: self.
+	self zeroMemory .
+].
+^ self
+
+%
+category: 'Accessing'
+method: GsAmqpMessage
+destroyed
+	^destroyed
+%
+category: 'Updating'
+method: GsAmqpMessage
+destroyed: newValue
+	destroyed := newValue
+%
+category: 'Initialization'
+method: GsAmqpMessage
+initialize
+
+	^self
+		destroyed: false;
+		bodyClass: String;
+		yourself
+%
+category: 'Initialization'
+method: GsAmqpMessage
+initializeFromC
+
+	self bodyClass ifNil:[ self bodyClass: self class defaultBodyClass ].
+	^self destroyed
+		ifTrue:
+			[self error: 'Attempt to initialize from C an already destroyed message']
+		ifFalse:
+			[self
+				properties: (GsAmqpBasicProperties fromCPointer: self);
+				body: (self byteObjectFromAmqpBytesAtOffset: 200 class: self bodyClass);
+				yourself]
+%
+category: 'Accessing'
+method: GsAmqpMessage
+properties
+	^properties
+%
+category: 'Updating'
+method: GsAmqpMessage
+properties: newValue
+	properties := newValue
+%
+! ------------------- Remove existing behavior from GsAmqpMethod
+removeAllMethods GsAmqpMethod
+removeAllClassMethods GsAmqpMethod
+! ------------------- Class methods for GsAmqpMethod
+category: 'Constants'
+classmethod: GsAmqpMethod
+AMQP_BASIC_ACK_METHOD
+
+^ 16r003C0050
+%
+category: 'Constants'
+classmethod: GsAmqpMethod
+AMQP_BASIC_DELIVER_METHOD
+
+^ 16r003C003C
+%
+category: 'Constants'
+classmethod: GsAmqpMethod
+AMQP_BASIC_NACK_METHOD
+
+^ 16r003C0078
+%
+category: 'Constants'
+classmethod: GsAmqpMethod
+AMQP_BASIC_REJECT_METHOD
+
+^ 16r003C005A
+%
+category: 'Constants'
+classmethod: GsAmqpMethod
+AMQP_BASIC_RETURN_METHOD
+
+^ 16r003C0032
+%
+category: 'Constants'
+classmethod: GsAmqpMethod
+AMQP_CHANNEL_CLOSE_METHOD
+
+^ 16r140028
+%
+category: 'Constants'
+classmethod: GsAmqpMethod
+AMQP_CONNECTION_CLOSE_METHOD
+
+^ 16rA0032
+%
+category: 'Instance Creation'
+classmethod: GsAmqpMethod
+fromRpcReply: rpcReply
+
+	^ (self fromCPointer: rpcReply atOffset: 8 initializeFromC: false)
+		connection: rpcReply connection; "Set connection before calling initializeFromC"
+		initializeFromC;
+		yourself
+%
+category: 'Constants'
+classmethod: GsAmqpMethod
+sizeInC
+
+^ 16
+%
+! ------------------- Instance methods for GsAmqpMethod
+category: 'Accessing'
+method: GsAmqpMethod
+connection
+	^connection
+%
+category: 'Updating'
+method: GsAmqpMethod
+connection: newValue
+	connection := newValue
+%
+category: 'Accessing'
+method: GsAmqpMethod
+decoded
+	^decoded
+%
+category: 'Updating'
+method: GsAmqpMethod
+decoded: newValue
+	decoded := newValue
+%
+category: 'Initialization'
+method: GsAmqpMethod
+decodeMethodObject
+
+	self isBasicAck
+		ifTrue: [^GsAmqpBasicAck fromMemoryReferenceIn: self atOffset: 8].
+	self isBasicNack
+		ifTrue: [^GsAmqpBasicNack fromMemoryReferenceIn: self atOffset: 8].
+	self isBasicReject
+		ifTrue: [^GsAmqpBasicReject fromMemoryReferenceIn: self atOffset: 8].
+	self isBasicReturn
+		ifTrue: [^GsAmqpBasicReturn fromMemoryReferenceIn: self atOffset: 8].
+	self isConnectionClose
+		ifTrue: "broker closed the connection, raise an exception"
+			[ ^ GsAmqpConnectionClose fromMemoryReferenceIn: self atOffset: 8
+			" | close |
+			close := GsAmqpConnectionClose fromMemoryReferenceIn: self atOffset: 8.
+			^(GsRabbitMqError newFromConnectionClose: close) signal "
+		].
+	self isChannelClose
+		ifTrue: "broker closed the connection, raise an exception"
+			[ GsAmqpChannelClose fromMemoryReferenceIn: self atOffset: 8.
+			"| close |
+			close := GsAmqpChannelClose fromMemoryReferenceIn: self atOffset: 8.
+			^(GsRabbitMqError newFromChannelClose: close) signal"
+		].
+	^self error: 'Unexpected method object'
+%
+category: 'Testing'
+method: GsAmqpMethod
+hasContent
+
+"See amqp_framing.c. Only these method kinds have content, all others do not:
+
+    AMQP_BASIC_PUBLISH_METHOD
+    AMQP_BASIC_RETURN_METHOD
+    AMQP_BASIC_DELIVER_METHOD
+    AMQP_BASIC_GET_OK_METHOD
+"
+
+^ self connection methodNumberHasContent: self methodNumber
+%
+category: 'Initialization'
+method: GsAmqpMethod
+initializeFromC
+
+^ self methodNumber: (self uint32At: 0) ;
+	methodName: (self connection library amqp_method_name_: self methodNumber);
+	decoded: (self uint64At: 8) ;
+	methodObject: self decodeMethodObject ;
+	yourself
+%
+category: 'Testing'
+method: GsAmqpMethod
+isBasicAck
+
+^ self methodNumber == self class AMQP_BASIC_ACK_METHOD
+%
+category: 'Testing'
+method: GsAmqpMethod
+isBasicDeliver
+
+^ self methodNumber == self class AMQP_BASIC_DELIVER_METHOD
+%
+category: 'Testing'
+method: GsAmqpMethod
+isBasicNack
+
+^ self methodNumber == self class AMQP_BASIC_NACK_METHOD
+%
+category: 'Testing'
+method: GsAmqpMethod
+isBasicReject
+
+^ self methodNumber == self class AMQP_BASIC_REJECT_METHOD
+%
+category: 'Testing'
+method: GsAmqpMethod
+isBasicReturn
+
+^ self methodNumber == self class AMQP_BASIC_RETURN_METHOD
+%
+category: 'Testing'
+method: GsAmqpMethod
+isChannelClose
+
+^ self methodNumber == self class AMQP_CHANNEL_CLOSE_METHOD
+%
+category: 'Testing'
+method: GsAmqpMethod
+isConnectionClose
+
+^ self methodNumber == self class AMQP_CONNECTION_CLOSE_METHOD
+%
+category: 'Accessing'
+method: GsAmqpMethod
+methodName
+	^methodName
+%
+category: 'Updating'
+method: GsAmqpMethod
+methodName: newValue
+	methodName := newValue
+%
+category: 'Accessing'
+method: GsAmqpMethod
+methodNumber
+	^methodNumber
+%
+category: 'Updating'
+method: GsAmqpMethod
+methodNumber: newValue
+	methodNumber := newValue
+%
+category: 'Accessing'
+method: GsAmqpMethod
+methodObject
+	^methodObject
+%
+category: 'Updating'
+method: GsAmqpMethod
+methodObject: newValue
+	methodObject := newValue
+%
+category: 'Testing'
+method: GsAmqpMethod
+shortName
+
+self isBasicAck ifTrue:[ ^ 'ack' ].
+self isBasicNack ifTrue:[ ^ 'nack' ].
+self isBasicReject ifTrue:[ ^ 'reject' ].
+self isBasicReturn ifTrue:[ ^ 'return' ].
+^ self error: 'Unexpected method for shortName'
+%
+! ------------------- Remove existing behavior from GsAmqpQueue
+removeAllMethods GsAmqpQueue
+removeAllClassMethods GsAmqpQueue
+! ------------------- Class methods for GsAmqpQueue
+category: 'Instance Creation'
+classmethod: GsAmqpQueue
+declareWithConnection: conn durable: durable exclusive: exclusive autoDelete: autoDelete
+
+^ self declareWithConnection: conn name: nil channel: nil durable: durable exclusive: exclusive autoDelete: autoDelete
+%
+category: 'Instance Creation'
+classmethod: GsAmqpQueue
+declareWithConnection: conn name: qName channel: channelIdArg durable: durable exclusive: exclusive autoDelete: autoDelete
+	"qName == nil means name of queue will be selected by the broker.
+channelIdArg == nil means use any open channel and raise an error if no channels are open."
+
+	| qResult result channelId |
+	channelId := channelIdArg
+				ifNil: [conn openNextChannel]
+				ifNotNil: [channelIdArg].
+	qResult := conn
+				declareQueueWithName: qName
+				channel: channelId
+				durable: durable
+				exclusive: exclusive
+				autoDelete: autoDelete
+				passive: false .
+	result := self new.
+	^result
+		connection: conn;
+		channel: channelId;
+		name: qResult queueName;
+		durable: durable;
+		exclusive: exclusive;
+		autoDelete: autoDelete;
+		yourself
+%
+! ------------------- Instance methods for GsAmqpQueue
+category: 'Acknowlegements'
+method: GsAmqpQueue
+ackEnvelope: env
+
+^ self ackEnvelope: env includePreviousMessages: false
+%
+category: 'Acknowlegements'
+method: GsAmqpQueue
+ackEnvelope: env includePreviousMessages: includePrev
+
+	^ self connection
+		ackMessageWithDeliveryTag: env deliveryTag
+		channel: self channel
+		multiple: includePrev
+%
+category: 'Acknowlegements'
+method: GsAmqpQueue
+ackEnvelopeAndAllPrevious: env
+
+^ self ackEnvelope: env includePreviousMessages: true
+%
+category: 'Private'
+method: GsAmqpQueue
+addMatchToAllToDictionary: aDictionary
+
+	aDictionary at: self matchKey ifAbsentPut: [self matchAllValue].
+	^self
+%
+category: 'Private'
+method: GsAmqpQueue
+addMatchToAllToKeys: keys values: values
+
+keys detect:[:e| e = self matchKey ] ifNone:[
+	keys add: self matchKey.
+	values add: self matchAllValue.
+].
+%
+category: 'Private'
+method: GsAmqpQueue
+addMatchToAnyToDictionary: aDictionary
+
+	aDictionary at: self matchKey ifAbsentPut: [self matchAnyValue].
+	^self
+%
+category: 'Private'
+method: GsAmqpQueue
+addMatchToAnyToKeys: keys values: values
+
+keys detect:[:e| e = self matchKey ] ifNone:[
+	keys add: self matchKey.
+	values add: self matchAnyValue
+].
+%
+category: 'Private'
+method: GsAmqpQueue
+basicBindToHeadersExchange: exchg matchKeys: keys values: values
+
+| exchgName args |
+args := GsAmqpTable newFromKeys: keys values: values.
+exchgName := (exchg isKindOf: String) ifTrue:[ exchg ] ifFalse:[ exchg name ].
+self connection bindQueueWithName: self name toExchangeWithName: exchgName channel: self channel routingKey: nil arguments: args.
+^ self
+%
+category: 'Private'
+method: GsAmqpQueue
+basicBindToHeadersExchange: exchg withHeadersDictionary: aDictionary
+
+| exchgName args |
+args := GsAmqpTable  newFromDictionary: aDictionary .
+exchgName := (exchg isKindOf: String) ifTrue:[ exchg ] ifFalse:[ exchg name ].
+self connection bindQueueWithName: self name toExchangeWithName: exchgName channel: self channel routingKey: nil arguments: args.
+^ self
+%
+category: 'Consuming'
+method: GsAmqpQueue
+beginConsumingWithNoLocal: noLocal noAck: noAck
+
+	| tag |
+	tag := self connection
+				beginConsumingQueueWithName: self name
+				channel: self channel
+				consumerTag: self consumerTag
+				noLocal: noLocal
+				noAck: noAck
+				exclusive: self exclusive.
+	self consumerTag ifNil: [self consumerTag: tag].
+	^self
+%
+category: 'Binding'
+method: GsAmqpQueue
+bindToExchange: exchg
+
+^ self bindToExchange: exchg routingKey: nil
+%
+category: 'Binding'
+method: GsAmqpQueue
+bindToExchange: exchg routingKey: rKey
+
+| exchgName |
+exchgName := (exchg isKindOf: String) ifTrue:[ exchg ] ifFalse:[ exchg name ].
+self connection bindQueueWithName: self name toExchangeWithName: exchgName channel: self channel routingKey: rKey .
+self exchange: exchg.
+^ self
+%
+category: 'Binding (Headers Exchanges)'
+method: GsAmqpQueue
+bindToHeadersExchange: exchg matchAllInDictionary: aDictionary
+
+self addMatchToAllToDictionary: aDictionary.
+^ self basicBindToHeadersExchange: exchg withHeadersDictionary: aDictionary.
+%
+category: 'Binding (Headers Exchanges)'
+method: GsAmqpQueue
+bindToHeadersExchange: exchg matchAllKeys: keys values: values
+
+self addMatchToAllToKeys: keys values: values.
+^ self basicBindToHeadersExchange: exchg matchKeys: keys values: values
+%
+category: 'Binding (Headers Exchanges)'
+method: GsAmqpQueue
+bindToHeadersExchange: exchg matchAnyInDictionary: aDictionary
+
+self addMatchToAnyToDictionary: aDictionary.
+^ self basicBindToHeadersExchange: exchg withHeadersDictionary: aDictionary.
+%
+category: 'Binding (Headers Exchanges)'
+method: GsAmqpQueue
+bindToHeadersExchange: exchg matchAnyKeys: keys values: values
+
+self addMatchToAnyToKeys: keys values: values.
+^ self basicBindToHeadersExchange: exchg matchKeys: keys values: values
+%
+category: 'Consuming'
+method: GsAmqpQueue
+consumeMessageInto: aGsAmqpEnvelope timeoutMs: ms
+
+^self connection consumeMessageInto: aGsAmqpEnvelope timeoutMs: ms
+%
+category: 'Accessing'
+method: GsAmqpQueue
+consumerTag
+	^consumerTag
+%
+category: 'Updating'
+method: GsAmqpQueue
+consumerTag: newValue
+	consumerTag := newValue
+%
+category: 'Deleting'
+method: GsAmqpQueue
+deleteForceIfInUse: forceIfInUse forceIfNotEmpty:  forceIfNotEmpty
+
+"Delete the receiver from the broker.
+If forceIfInUse is true then delete the queue even if it has consumers. Otherwise do not delete it and raise an exception.
+If forceIfNotEmpty is true, then delete the queue even if it is not empty. Otherwise do not delete it and raise an exception."
+
+	^self connection
+		deleteQueueWithName: self name
+		channel: self channel
+		forceIfInUse: forceIfInUse
+		forceIfNotEmpty: forceIfNotEmpty
+%
+category: 'Deleting'
+method: GsAmqpQueue
+deleteIfSafe
+
+^ self deleteForceIfInUse: false forceIfNotEmpty:  false
+%
+category: 'Accessing'
+method: GsAmqpQueue
+exchange
+	^exchange
+%
+category: 'Updating'
+method: GsAmqpQueue
+exchange: newValue
+	exchange := newValue
+%
+category: 'Accessing'
+method: GsAmqpQueue
+exclusive
+	^exclusive
+%
+category: 'Updating'
+method: GsAmqpQueue
+exclusive: newValue
+	exclusive := newValue
+%
+category: 'Deleting'
+method: GsAmqpQueue
+forceDelete
+
+^ self deleteForceIfInUse: true forceIfNotEmpty:  true
+%
+category: 'Private'
+method: GsAmqpQueue
+matchAllValue
+
+^ 'all'
+%
+category: 'Private'
+method: GsAmqpQueue
+matchAnyValue
+
+^ 'any'
+%
+category: 'Private'
+method: GsAmqpQueue
+matchKey
+
+^ 'x-match'
+%
+category: 'Accessing'
+method: GsAmqpQueue
+routingKey
+	^routingKey
+%
+category: 'Updating'
+method: GsAmqpQueue
+routingKey: newValue
+	routingKey := newValue
+%
+category: 'Accessing'
+method: GsAmqpQueue
+size
+
+^self connection sizeOfQueueWithName: self name channel: self channel
+%
+category: 'Consuming'
+method: GsAmqpQueue
+stopConsuming
+
+"Tell the broker we are no longer consuming this queue. Has no effect if we were not consuming the queue to start with.
+Note that the broker may have sent messages before it  processed the message to stop consuming. It is therefore the caller's
+responsibility to check the queue for any outstanding messages after calling this method."
+
+	| tag |
+	(tag := self consumerTag)
+		ifNotNil:
+			[self connection stopConsumingQueueOnChannel: self channel
+				consumerTag: tag.
+			self consumerTag: nil].
+	^self
+%
+category: 'Binding'
+method: GsAmqpQueue
+unbind
+
+| exchgName exchg |
+(exchg := self exchange) ifNil: [ ^ self "was not bound" ].
+exchgName := (exchg isKindOf: String) ifTrue:[exchg] ifFalse:[ exchg name ].
+self connection unbindQueueWithName: self name fromExchangeWithName: exchgName channel: self channel routingKey: self routingKey .
+^ self exchange: nil ; consumerTag: nil ;  yourself
+%
+! ------------------- Remove existing behavior from GsAmqpQueueDeclareResult
+removeAllMethods GsAmqpQueueDeclareResult
+removeAllClassMethods GsAmqpQueueDeclareResult
+! ------------------- Class methods for GsAmqpQueueDeclareResult
+category: 'Constants'
+classmethod: GsAmqpQueueDeclareResult
+sizeInC
+
+^ 24
+%
+! ------------------- Instance methods for GsAmqpQueueDeclareResult
+category: 'Accessing'
+method: GsAmqpQueueDeclareResult
+consumerCount
+	^consumerCount
+%
+category: 'Updating'
+method: GsAmqpQueueDeclareResult
+consumerCount: newValue
+	consumerCount := newValue
+%
+category: 'Initialization'
+method: GsAmqpQueueDeclareResult
+initializeFromC
+
+	^self
+		queueName: (GsAmqpBytes fromCPointer: self) convertToString;
+		consumerCount: (self uint32At: 20);
+		messageCount: (self uint32At: 16);
+		yourself
+%
+category: 'Accessing'
+method: GsAmqpQueueDeclareResult
+messageCount
+	^messageCount
+%
+category: 'Updating'
+method: GsAmqpQueueDeclareResult
+messageCount: newValue
+	messageCount := newValue
+%
+category: 'Accessing'
+method: GsAmqpQueueDeclareResult
+queueName
+	^queueName
+%
+category: 'Updating'
+method: GsAmqpQueueDeclareResult
+queueName: newValue
+	queueName := newValue
+%
+! ------------------- Remove existing behavior from GsAmqpRpcReply
+removeAllMethods GsAmqpRpcReply
+removeAllClassMethods GsAmqpRpcReply
+! ------------------- Class methods for GsAmqpRpcReply
+category: 'Constants'
+classmethod: GsAmqpRpcReply
+AMQP_RESPONSE_LIBRARY_EXCEPTION
+
+"library error, an error occurred in the library, examine the library_error"
+^ 2
+%
+category: 'Constants'
+classmethod: GsAmqpRpcReply
+AMQP_RESPONSE_NONE
+
+"the library got an EOF from the socket"
+
+^ 0
+%
+category: 'Constants'
+classmethod: GsAmqpRpcReply
+AMQP_RESPONSE_NORMAL
+
+"response normal, the RPC completed successfully"
+^ 1
+%
+category: 'Constants'
+classmethod: GsAmqpRpcReply
+AMQP_RESPONSE_SERVER_EXCEPTION
+"server exception, the broker returned an error, check replay"
+
+^ 3
+%
+category: 'Constants'
+classmethod: GsAmqpRpcReply
+AMQP_STATUS_SOCKET_CLOSED
+
+^ -16r11
+%
+category: 'Constants'
+classmethod: GsAmqpRpcReply
+AMQP_STATUS_TIMEOUT
+
+^ -16rD
+%
+category: 'Instance Creation'
+classmethod: GsAmqpRpcReply
+new
+
+^ self shouldNotImplement: #new
+%
+category: 'Instance Creation'
+classmethod: GsAmqpRpcReply
+new: aSize
+
+^ self shouldNotImplement: #new:
+%
+category: 'Instance Creation'
+classmethod: GsAmqpRpcReply
+newWithConnection: conn
+
+	^(self gcMalloc: self sizeInC)
+		connection:  conn;
+		yourself
+%
+category: 'Constants'
+classmethod: GsAmqpRpcReply
+sizeInC
+
+^ 32
+%
+category: 'Constants'
+classmethod: GsAmqpRpcReply
+unknownLibraryErrorCode
+
+"AMQP does not have this code but needs it"
+
+^ - 65535
+%
+! ------------------- Instance methods for GsAmqpRpcReply
+category: 'Reusing'
+method: GsAmqpRpcReply
+clearForReuse
+
+"Clear the object so it can be reused for a new C call. Do not clear the library inst var"
+
+	^ self
+		memset: 0 from: 0 to: -1; "Clear C memory"
+		replyType: 0 ;
+		methodNumber: 0 ;
+		libraryError: 0 ;
+		method:  nil ;
+		yourself
+%
+category: 'Accessing'
+method: GsAmqpRpcReply
+connection
+	^connection
+%
+category: 'Updating'
+method: GsAmqpRpcReply
+connection: newValue
+	connection := newValue
+%
+category: 'Initialization'
+method: GsAmqpRpcReply
+initializeFromC
+
+"Initialize the inst vars from the C memory. Only to be called after C memory has been initialized"
+
+replyType := self int32At: 0.
+methodNumber := self int32At: 8.
+libraryError := self int32At: 24.
+self isServerException
+  ifTrue:[ self method: (GsAmqpMethod fromRpcReply: self)  ].
+^ self
+%
+category: 'Testing'
+method: GsAmqpRpcReply
+isFailure
+
+^ self isSuccess not
+%
+category: 'Testing'
+method: GsAmqpRpcReply
+isLibraryException
+
+^self replyType == self class AMQP_RESPONSE_LIBRARY_EXCEPTION
+%
+category: 'Testing'
+method: GsAmqpRpcReply
+isServerException
+
+^self replyType == self class AMQP_RESPONSE_SERVER_EXCEPTION
+%
+category: 'Testing'
+method: GsAmqpRpcReply
+isSocketEof
+
+^self replyType == self class AMQP_RESPONSE_NONE
+%
+category: 'Testing'
+method: GsAmqpRpcReply
+isSuccess
+
+^self replyType == self class AMQP_RESPONSE_NORMAL
+%
+category: 'Testing'
+method: GsAmqpRpcReply
+isTimeout
+
+^ self isLibraryException and:[ self libraryError == self class AMQP_STATUS_TIMEOUT ]
+%
+category: 'Error Handling'
+method: GsAmqpRpcReply
+lastErrorString
+
+"Answer a String describing the last library error code or nil if no library error has occurred.
+Note: The library returns the string '(unknown error)' in the event that the error code is unknown."
+
+	^self libraryError == 0
+		ifTrue: [nil]
+		ifFalse: [self connection library amqp_error_string2_:  self libraryError]
+%
+category: 'Accessing'
+method: GsAmqpRpcReply
+libraryError
+	^libraryError
+%
+category: 'Updating'
+method: GsAmqpRpcReply
+libraryError: newValue
+	libraryError := newValue
+%
+category: 'Accessing'
+method: GsAmqpRpcReply
+libraryErrorNotNoError
+	^libraryError == 0 ifTrue:[ self class unknownLibraryErrorCode ] ifFalse:[ libraryError ]
+%
+category: 'Accessing'
+method: GsAmqpRpcReply
+method
+	^method
+%
+category: 'Updating'
+method: GsAmqpRpcReply
+method: newValue
+	method := newValue
+%
+category: 'Accessing'
+method: GsAmqpRpcReply
+methodNumber
+	^methodNumber
+%
+category: 'Updating'
+method: GsAmqpRpcReply
+methodNumber: newValue
+	methodNumber := newValue
+%
+category: 'Error Handling'
+method: GsAmqpRpcReply
+raiseExceptionForOperation: aString
+	^ (GsRabbitMqError newFromRpcReply: self forOperation: aString) signal
+%
+category: 'Accessing'
+method: GsAmqpRpcReply
+replyType
+	^replyType
+%
+category: 'Updating'
+method: GsAmqpRpcReply
+replyType: newValue
+	replyType := newValue
+%
+! ------------------- Remove existing behavior from GsAmqpTable
+removeAllMethods GsAmqpTable
+removeAllClassMethods GsAmqpTable
+! ------------------- Class methods for GsAmqpTable
+category: 'Instance Creation'
+classmethod: GsAmqpTable
+emptyTable
+
+^ self new
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTable
+newFromArrayOfPairs: array
+
+^(self new) initialize ; buildFromArrayOfPairs: array ; yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTable
+newFromDictionary: aDictionary
+
+^(self new) initialize ; buildFromDictionary: aDictionary ; yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTable
+newFromKeys: keyArray values: valueArray
+
+	^(self new)
+		initialize;
+		buildFromKeys: keyArray values: valueArray;
+		yourself
+%
+category: 'Constants'
+classmethod: GsAmqpTable
+sizeInC
+
+^ 16
+%
+! ------------------- Instance methods for GsAmqpTable
+category: 'Building'
+method: GsAmqpTable
+buildFromArrayOfPairs: array
+
+	^self
+		setEntries: (GsAmqpTableEntryArray newFromArrayOfPairs: array);
+		yourself
+%
+category: 'Building'
+method: GsAmqpTable
+buildFromDictionary: dict
+
+	^self
+		setEntries: (GsAmqpTableEntryArray newFromDictionary: dict);
+		yourself
+%
+category: 'Building'
+method: GsAmqpTable
+buildFromKeys: keyArray values: valueArray
+
+	^self
+		setEntries: (GsAmqpTableEntryArray newFromKeys: keyArray values: valueArray);
+		yourself
+%
+category: 'Accessing'
+method: GsAmqpTable
+entries
+	^entries
+%
+category: 'Private'
+method: GsAmqpTable
+entries: newValue
+	entries := newValue
+%
+category: 'Accessing'
+method: GsAmqpTable
+entriesAddress
+
+^ self uint64At: 8
+%
+category: 'Initialization'
+method: GsAmqpTable
+initializeFromC
+
+
+
+	^ self numEntries: (self int32At: 0) ;
+		entries: (GsAmqpTableEntryArray fromMemoryReferenceIn: self atOffset: 8 elements: self numEntries) ;
+		yourself
+%
+category: 'Accessing'
+method: GsAmqpTable
+numEntries
+	^numEntries
+%
+category: 'Private'
+method: GsAmqpTable
+numEntries: newValue
+	numEntries := newValue
+%
+category: 'Updating'
+method: GsAmqpTable
+setEntries: aGsAmqpTableEntryArrayOrNil
+
+	aGsAmqpTableEntryArrayOrNil
+		ifNil:
+			[self entries: nil ;
+				numEntries: 0 ;
+				 zeroMemory]
+		ifNotNil:
+			[ | numElements |
+			aGsAmqpTableEntryArrayOrNil _validateClass: GsAmqpTableEntryArray.
+			numElements := aGsAmqpTableEntryArrayOrNil numElements.
+			self entries: aGsAmqpTableEntryArrayOrNil;
+				numEntries: numElements ;
+				uint32At: 0 put: numElements ;
+				uint64At: 8 put: aGsAmqpTableEntryArrayOrNil memoryAddress].
+	^self
+%
+! ------------------- Remove existing behavior from GsAmqpTableEntry
+removeAllMethods GsAmqpTableEntry
+removeAllClassMethods GsAmqpTableEntry
+! ------------------- Class methods for GsAmqpTableEntry
+category: 'Constants'
+classmethod: GsAmqpTableEntry
+keyOffset
+
+^ 0
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntry
+newForKey: keyString value: anObject
+
+	^(self new)
+		initialize;
+		setKey: keyString;
+		setValue: (GsAmqpFieldValue newForObject: anObject) ;
+		yourself
+%
+category: 'Constants'
+classmethod: GsAmqpTableEntry
+sizeInC
+
+^ 40
+%
+category: 'Constants'
+classmethod: GsAmqpTableEntry
+valueOffset
+
+^ 16
+%
+! ------------------- Instance methods for GsAmqpTableEntry
+category: 'Initializing'
+method: GsAmqpTableEntry
+initializeFromC
+
+	self
+		key: (GsAmqpBytes fromCPointer: self);
+		value: (GsAmqpFieldValue fromCPointer: self atOffset: 16);
+		yourself
+%
+category: 'Accessing'
+method: GsAmqpTableEntry
+key
+	^key
+%
+category: 'Private'
+method: GsAmqpTableEntry
+key: newValue
+	key := newValue
+%
+category: 'Constants'
+method: GsAmqpTableEntry
+keyOffset
+
+^ self class keyOffset
+%
+category: 'Updating'
+method: GsAmqpTableEntry
+setKey: aStringOrNil
+
+	aStringOrNil
+		ifNil:
+			[self key: nil ;
+				memset: 0
+				from: self keyOffset
+				to: self valueOffset - 1]
+		ifNotNil:
+			[ aStringOrNil _validateClass: String .
+			self key: (GsAmqpBytes fromString: aStringOrNil) ;
+				uint64At: self keyOffset put: key len;
+				uint64At: self keyOffset + 8 put: key bytesAddress].
+	^self
+%
+category: 'Updating'
+method: GsAmqpTableEntry
+setValue: aGsAmqpFieldValueOrNil
+
+	aGsAmqpFieldValueOrNil
+		ifNil:
+			[value := nil.
+			self memset: 0 from: self class valueOffset to: -1 "clear C state" ]
+		ifNotNil:
+			[aGsAmqpFieldValueOrNil _validateClass: GsAmqpFieldValue.
+			self value: aGsAmqpFieldValueOrNil ;
+			 "now copy C state from newValue into receiver"
+				copyBytesFrom: aGsAmqpFieldValueOrNil
+				from: 1
+				to: aGsAmqpFieldValueOrNil class sizeInC
+				into: self class valueOffset].
+	^self
+%
+category: 'Accessing'
+method: GsAmqpTableEntry
+value
+	^value
+%
+category: 'Private'
+method: GsAmqpTableEntry
+value: newValue
+	value := newValue
+%
+category: 'Constants'
+method: GsAmqpTableEntry
+valueOffset
+
+^ self class valueOffset
+%
+! ------------------- Remove existing behavior from GsAmqpTableEntryArray
+removeAllMethods GsAmqpTableEntryArray
+removeAllClassMethods GsAmqpTableEntryArray
+! ------------------- Class methods for GsAmqpTableEntryArray
+category: 'Constants'
+classmethod: GsAmqpTableEntryArray
+elementsToBytes: elements
+
+^ self sizeOfElement * elements
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntryArray
+fromMemoryReferenceIn: aCByteArray atOffset: offset elements: numElements
+
+"Does not allocate new memory. References existing memory at an address contained in aCByteArray at the given offset."
+
+	^(self
+		fromMemoryReferenceIn: aCByteArray
+		atOffset: offset
+		sizeInBytes: (self elementsToBytes: numElements)
+		initializeFromC: false)
+		elements: (Array new: numElements);
+		initializeFromC;
+		yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntryArray
+new
+
+"Use new: instead "
+^ self shouldNotImplement: #new
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntryArray
+new: numElements
+
+	| bytes result |
+	bytes := numElements * self sizeOfElement .
+	result := self gcMalloc: bytes.
+	^result
+		initialize;
+		elements: (Array new: numElements);
+		yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntryArray
+newFromArrayOfPairs: array
+
+	| size |
+	(size := array size) even
+		ifFalse: [self error: 'array of pairs size must be even'].
+	^(self new: size // 2)
+		initialize;
+		buildFromArrayOfPairs: array;
+		yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntryArray
+newFromDictionary: dict
+
+	^(self new: dict size)
+		initialize;
+		buildFromDictionary: dict;
+		yourself
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTableEntryArray
+newFromKeys: keyArray values: valueArray
+
+	| size |
+	(size := keyArray size) == valueArray size
+		ifFalse: [self error: 'size of arrays for keys and values must match'].
+	^(self new: size)
+		initialize;
+		buildFromKeys: keyArray values: valueArray;
+		yourself
+%
+category: 'Constants'
+classmethod: GsAmqpTableEntryArray
+sizeOfElement
+
+^ GsAmqpTableEntry sizeInC
+%
+! ------------------- Instance methods for GsAmqpTableEntryArray
+category: 'Adding'
+method: GsAmqpTableEntryArray
+add: anElement
+
+^ self shouldNotImplement: #add:
+%
+category: 'Adding'
+method: GsAmqpTableEntryArray
+addAll: aCollection
+
+^ self shouldNotImplement: #addAll:
+%
+category: 'Accessing'
+method: GsAmqpTableEntryArray
+at: index
+
+^self elements at: index
+%
+category: 'Updating'
+method: GsAmqpTableEntryArray
+at: oneBasedIdx put: obj
+
+	| offset  |
+
+"Don't allow the elements array to grow"
+	oneBasedIdx > elements size
+		ifTrue: [self _errorIndexOutOfRange: oneBasedIdx].
+"Store reference to obj to protect from GC"
+	self elements at: oneBasedIdx put: obj.
+"Compute C offset in receiver"
+	offset := self offsetForElementIndex: oneBasedIdx.
+	obj
+		ifNil:
+			[self "Clear C memory"
+				memset: 0
+				from: offset
+				to: (self sizeOfElement - 1)]
+		ifNotNil:
+			[obj _validateClass: GsAmqpTableEntry.
+			self "Copy element to C memory"
+				copyBytesFrom: obj
+				from: 1
+				to: self sizeOfElement
+				into: offset]
+%
+category: 'Building'
+method: GsAmqpTableEntryArray
+buildFromArrayOfPairs: array
+
+	| index |
+	index := 0.
+	1 to: array size
+		by: 2
+		do:
+			[:n |
+			index := index + 1.
+			self at: index
+				put: (GsAmqpTableEntry newForKey: (array at: n) value: (array at: n + 1))].
+	^self
+%
+category: 'Building'
+method: GsAmqpTableEntryArray
+buildFromDictionary: dict
+
+| index |
+index := 0.
+dict keysAndValuesDo:[:k :v|
+	index := index + 1.
+	self at: index put: (GsAmqpTableEntry newForKey: k value: v).
+].
+%
+category: 'Building'
+method: GsAmqpTableEntryArray
+buildFromKeys: keysArray values: valuesArray
+
+	| index |
+	index := 0.
+	1 to: keysArray size
+		do:
+			[:n |
+			index := index + 1.
+			self at: index
+				put: (GsAmqpTableEntry newForKey: (keysArray at: n)
+						value: (valuesArray at: n))].
+	^self
+%
+category: 'Accessing'
+method: GsAmqpTableEntryArray
+elements
+	^elements
+%
+category: 'Updating'
+method: GsAmqpTableEntryArray
+elements: newValue
+	elements := newValue
+%
+category: 'Initializing'
+method: GsAmqpTableEntryArray
+initializeFromC
+
+1 to: self elements size do:[:n|
+	self elements at: n put: (GsAmqpTableEntry fromCPointer: self atOffset: (self offsetForElementIndex: n)) ].
+^ self
+%
+category: 'Accessing'
+method: GsAmqpTableEntryArray
+numElements
+
+^ elements size
+%
+category: 'Converting'
+method: GsAmqpTableEntryArray
+offsetForElementIndex: oneBasedIndex
+
+^ (oneBasedIndex - 1) * self sizeOfElement
+%
+category: 'Constants'
+method: GsAmqpTableEntryArray
+sizeOfElement
+
+^ self class sizeOfElement
+%
 ! ------------------- Remove existing behavior from GsAmqpTlsConnection
 removeAllMethods GsAmqpTlsConnection
 removeAllClassMethods GsAmqpTlsConnection
@@ -3210,1379 +6913,6 @@ method: GsAmqpTlsConnection
 verifyPeer: newValue
 	verifyPeer := newValue
 %
-! ------------------- Remove existing behavior from GsAmqpRpcReply
-removeAllMethods GsAmqpRpcReply
-removeAllClassMethods GsAmqpRpcReply
-! ------------------- Class methods for GsAmqpRpcReply
-category: 'Constants'
-classmethod: GsAmqpRpcReply
-AMQP_RESPONSE_LIBRARY_EXCEPTION
-
-"library error, an error occurred in the library, examine the library_error"
-^ 2
-%
-category: 'Constants'
-classmethod: GsAmqpRpcReply
-AMQP_RESPONSE_NONE
-
-"the library got an EOF from the socket"
-
-^ 0
-%
-category: 'Constants'
-classmethod: GsAmqpRpcReply
-AMQP_RESPONSE_NORMAL
-
-"response normal, the RPC completed successfully"
-^ 1
-%
-category: 'Constants'
-classmethod: GsAmqpRpcReply
-AMQP_RESPONSE_SERVER_EXCEPTION
-"server exception, the broker returned an error, check replay"
-
-^ 3
-%
-category: 'Constants'
-classmethod: GsAmqpRpcReply
-AMQP_STATUS_SOCKET_CLOSED
-
-^ -16r11
-%
-category: 'Constants'
-classmethod: GsAmqpRpcReply
-AMQP_STATUS_TIMEOUT
-
-^ -16rD
-%
-category: 'Instance Creation'
-classmethod: GsAmqpRpcReply
-new
-
-^ self shouldNotImplement: #new
-%
-category: 'Instance Creation'
-classmethod: GsAmqpRpcReply
-new: aSize
-
-^ self shouldNotImplement: #new:
-%
-category: 'Instance Creation'
-classmethod: GsAmqpRpcReply
-newWithConnection: conn
-
-	^(self gcMalloc: self sizeInC)
-		connection:  conn;
-		yourself
-%
-category: 'Constants'
-classmethod: GsAmqpRpcReply
-sizeInC
-
-^ 32
-%
-category: 'Constants'
-classmethod: GsAmqpRpcReply
-unknownLibraryErrorCode
-
-"AMQP does not have this code but needs it"
-
-^ - 65535
-%
-! ------------------- Instance methods for GsAmqpRpcReply
-category: 'Reusing'
-method: GsAmqpRpcReply
-clearForReuse
-
-"Clear the object so it can be reused for a new C call. Do not clear the library inst var"
-
-	^ self
-		memset: 0 from: 0 to: -1; "Clear C memory"
-		replyType: 0 ;
-		methodNumber: 0 ;
-		libraryError: 0 ;
-		method:  nil ;
-		yourself
-%
-category: 'Accessing'
-method: GsAmqpRpcReply
-connection
-	^connection
-%
-category: 'Updating'
-method: GsAmqpRpcReply
-connection: newValue
-	connection := newValue
-%
-category: 'Initialization'
-method: GsAmqpRpcReply
-initializeFromC
-
-"Initialize the inst vars from the C memory. Only to be called after C memory has been initialized"
-
-replyType := self int32At: 0.
-methodNumber := self int32At: 8.
-libraryError := self int32At: 24.
-self isServerException
-  ifTrue:[ self method: (GsAmqpMethod fromRpcReply: self)  ].
-^ self
-%
-category: 'Testing'
-method: GsAmqpRpcReply
-isFailure
-
-^ self isSuccess not
-%
-category: 'Testing'
-method: GsAmqpRpcReply
-isLibraryException
-
-^self replyType == self class AMQP_RESPONSE_LIBRARY_EXCEPTION
-%
-category: 'Testing'
-method: GsAmqpRpcReply
-isServerException
-
-^self replyType == self class AMQP_RESPONSE_SERVER_EXCEPTION
-%
-category: 'Testing'
-method: GsAmqpRpcReply
-isSocketEof
-
-^self replyType == self class AMQP_RESPONSE_NONE
-%
-category: 'Testing'
-method: GsAmqpRpcReply
-isSuccess
-
-^self replyType == self class AMQP_RESPONSE_NORMAL
-%
-category: 'Testing'
-method: GsAmqpRpcReply
-isTimeout
-
-^ self isLibraryException and:[ self libraryError == self class AMQP_STATUS_TIMEOUT ]
-%
-category: 'Error Handling'
-method: GsAmqpRpcReply
-lastErrorString
-
-"Answer a String describing the last library error code or nil if no library error has occurred.
-Note: The library returns the string '(unknown error)' in the event that the error code is unknown."
-
-	^self libraryError == 0
-		ifTrue: [nil]
-		ifFalse: [self connection library amqp_error_string2_:  self libraryError]
-%
-category: 'Accessing'
-method: GsAmqpRpcReply
-libraryError
-	^libraryError
-%
-category: 'Updating'
-method: GsAmqpRpcReply
-libraryError: newValue
-	libraryError := newValue
-%
-category: 'Accessing'
-method: GsAmqpRpcReply
-libraryErrorNotNoError
-	^libraryError == 0 ifTrue:[ self class unknownLibraryErrorCode ] ifFalse:[ libraryError ]
-%
-category: 'Accessing'
-method: GsAmqpRpcReply
-method
-	^method
-%
-category: 'Updating'
-method: GsAmqpRpcReply
-method: newValue
-	method := newValue
-%
-category: 'Accessing'
-method: GsAmqpRpcReply
-methodNumber
-	^methodNumber
-%
-category: 'Updating'
-method: GsAmqpRpcReply
-methodNumber: newValue
-	methodNumber := newValue
-%
-category: 'Error Handling'
-method: GsAmqpRpcReply
-raiseExceptionForOperation: aString
-	^ (GsRabbitMqError newFromRpcReply: self forOperation: aString) signal
-%
-category: 'Accessing'
-method: GsAmqpRpcReply
-replyType
-	^replyType
-%
-category: 'Updating'
-method: GsAmqpRpcReply
-replyType: newValue
-	replyType := newValue
-%
-! ------------------- Remove existing behavior from GsAmqpExchange
-removeAllMethods GsAmqpExchange
-removeAllClassMethods GsAmqpExchange
-! ------------------- Class methods for GsAmqpExchange
-category: 'Instance Creation'
-classmethod: GsAmqpExchange
-declareWithConnection: conn name: exchgName type: type channel: channelIdArg durable: durable autoDelete: autoDelete
-
-	|  result channelId |
-	channelId := channelIdArg
-				ifNil: [conn openNextChannel]
-				ifNotNil: [channelIdArg].
-	conn
-				declareExchangeNamed: exchgName
-				channel: channelId
-				type: type
-				durable: durable
-				autoDelete: autoDelete .
-
-	result := self new.
-	^result
-		connection: conn;
-		type: type;
-		channel: channelId;
-		name: exchgName;
-		durable: durable;
-		autoDelete: autoDelete;
-		 yourself
-%
-! ------------------- Instance methods for GsAmqpExchange
-category: 'Deleting'
-method: GsAmqpExchange
-deleteForceIfInUse: forceIfInUse
-
-"Deletes the receiver from the broker. If forceIfInUse is true, the exchange is deleted even if queues are still bound to it.
-If forceIfInUse is false, the exchange is only deleted if there are no queues bound, otherwise an exception is raised."
-
-	^self connection
-		deleteExchangeNamed: self name
-		channel: self channel
-		forceIfInUse:  forceIfInUse
-%
-category: 'Deleting'
-method: GsAmqpExchange
-deleteIfUnused
-
-
-^ self deleteForceIfInUse: false
-%
-category: 'Subclass Methods'
-method: GsAmqpExchange
-exchangKind
-
-^self subclassResponsibility: #exchangKind
-%
-category: 'Deleting'
-method: GsAmqpExchange
-forceDelete
-
-^ self deleteForceIfInUse: true
-%
-category: 'Publishing'
-method: GsAmqpExchange
-publishMessage: msg routingKey: routingKey mandatory: mandatory properties: props
-
-	self connection
-		publishMessage: msg
-		channel: self channel
-		exchange: self name
-		routingKey: routingKey
-		mandatory: mandatory
-		properties: props .
-	^ self
-%
-category: 'Accessing'
-method: GsAmqpExchange
-type
-	^type
-%
-category: 'Updating'
-method: GsAmqpExchange
-type: newValue
-	type := newValue
-%
-! ------------------- Remove existing behavior from GsAmqpTable
-removeAllMethods GsAmqpTable
-removeAllClassMethods GsAmqpTable
-! ------------------- Class methods for GsAmqpTable
-category: 'Instance Creation'
-classmethod: GsAmqpTable
-emptyTable
-
-^ self new
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTable
-newFromArrayOfPairs: array
-
-^(self new) initialize ; buildFromArrayOfPairs: array ; yourself
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTable
-newFromDictionary: aDictionary
-
-^(self new) initialize ; buildFromDictionary: aDictionary ; yourself
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTable
-newFromKeys: keyArray values: valueArray
-
-	^(self new)
-		initialize;
-		buildFromKeys: keyArray values: valueArray;
-		yourself
-%
-category: 'Constants'
-classmethod: GsAmqpTable
-sizeInC
-
-^ 16
-%
-! ------------------- Instance methods for GsAmqpTable
-category: 'Building'
-method: GsAmqpTable
-buildFromArrayOfPairs: array
-
-	^self
-		setEntries: (GsAmqpTableEntryArray newFromArrayOfPairs: array);
-		yourself
-%
-category: 'Building'
-method: GsAmqpTable
-buildFromDictionary: dict
-
-	^self
-		setEntries: (GsAmqpTableEntryArray newFromDictionary: dict);
-		yourself
-%
-category: 'Building'
-method: GsAmqpTable
-buildFromKeys: keyArray values: valueArray
-
-	^self
-		setEntries: (GsAmqpTableEntryArray newFromKeys: keyArray values: valueArray);
-		yourself
-%
-category: 'Accessing'
-method: GsAmqpTable
-entries
-	^entries
-%
-category: 'Private'
-method: GsAmqpTable
-entries: newValue
-	entries := newValue
-%
-category: 'Accessing'
-method: GsAmqpTable
-entriesAddress
-
-^ self uint64At: 8
-%
-category: 'Initialization'
-method: GsAmqpTable
-initializeFromC
-
-
-
-	^ self numEntries: (self int32At: 0) ;
-		entries: (GsAmqpTableEntryArray fromMemoryReferenceIn: self atOffset: 8 elements: self numEntries) ;
-		yourself
-%
-category: 'Accessing'
-method: GsAmqpTable
-numEntries
-	^numEntries
-%
-category: 'Private'
-method: GsAmqpTable
-numEntries: newValue
-	numEntries := newValue
-%
-category: 'Updating'
-method: GsAmqpTable
-setEntries: aGsAmqpTableEntryArrayOrNil
-
-	aGsAmqpTableEntryArrayOrNil
-		ifNil:
-			[self entries: nil ;
-				numEntries: 0 ;
-				 zeroMemory]
-		ifNotNil:
-			[ | numElements |
-			aGsAmqpTableEntryArrayOrNil _validateClass: GsAmqpTableEntryArray.
-			numElements := aGsAmqpTableEntryArrayOrNil numElements.
-			self entries: aGsAmqpTableEntryArrayOrNil;
-				numEntries: numElements ;
-				uint32At: 0 put: numElements ;
-				uint64At: 8 put: aGsAmqpTableEntryArrayOrNil memoryAddress].
-	^self
-%
-! ------------------- Remove existing behavior from GsAmqpBasicProperties
-removeAllMethods GsAmqpBasicProperties
-removeAllClassMethods GsAmqpBasicProperties
-! ------------------- Class methods for GsAmqpBasicProperties
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_APP_ID_FLAG
-
-	^8
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_CLUSTER_ID_FLAG
-
-	^4
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_CONTENT_ENCODING_FLAG
-
-	^16384
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_CONTENT_TYPE_FLAG
-
-	^32768
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_CORRELATION_ID_FLAG
-
-	^1024
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_DELIVERY_MODE_FLAG
-
-	^4096
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_EXPIRATION_FLAG
-
-	^256
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_HEADERS_FLAG
-
-	^8192
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_MESSAGE_ID_FLAG
-
-	^128
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_PRIORITY_FLAG
-
-	^2048
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_REPLY_TO_FLAG
-
-	^512
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_TIMESTAMP_FLAG
-
-	^64
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_TYPE_FLAG
-
-	^32
-%
-category: 'Constants - Bit Flags'
-classmethod: GsAmqpBasicProperties
-AMQP_BASIC_USER_ID_FLAG
-
-	^16
-%
-category: 'Constants'
-classmethod: GsAmqpBasicProperties
-AMQP_DELIVERY_NONPERSISTENT
-
-^ 1
-%
-category: 'Constants'
-classmethod: GsAmqpBasicProperties
-AMQP_DELIVERY_PERSISTENT
-
-^ 2
-%
-category: 'Constants'
-classmethod: GsAmqpBasicProperties
-sizeInC
-
-^ 200
-%
-! ------------------- Instance methods for GsAmqpBasicProperties
-category: 'Accessing'
-method: GsAmqpBasicProperties
-amqpUserId
-
-^ amqpUserId
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-amqpUserId: newValue
-	amqpUserId := GsAmqpBytes fromStringOrNil: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_USER_ID_FLAG
-		newValue: self amqpUserId
-		offset: 152
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-appId
-	^appId
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-appId: newValue
-
-	appId := GsAmqpBytes fromStringOrNil: newValue .
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_APP_ID_FLAG
-		newValue: self appId
-		offset: 168
-%
-category: 'Flags'
-method: GsAmqpBasicProperties
-clearFlag: aSymbol
-
-self flags: (self flags bitAnd: (self class perform: aSymbol) bitInvert).
-^ self uint32At: 0 put: self flags ; yourself
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-clusterId
-	^clusterId
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-clusterId: newValue
-
-	clusterId := GsAmqpBytes fromStringOrNil: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CLUSTER_ID_FLAG
-		newValue: self clusterId
-		offset: 184
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-contentEncoding
-	^contentEncoding
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-contentEncoding: newValue
-
-	contentEncoding := GsAmqpBytes fromStringOrNil: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CONTENT_ENCODING_FLAG
-		newValue: self contentEncoding
-		offset: 24
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-contentType
-	^contentType
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-contentType: newValue
-
-	contentType := GsAmqpBytes fromStringOrNil: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CONTENT_TYPE_FLAG
-		newValue: self contentType
-		offset: 8
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-correlationId
-	^correlationId
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-correlationId: newValue
-
-	correlationId := GsAmqpBytes fromStringOrNil: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_CORELATION_ID_FLAG
-		newValue: self correlationId
-		offset: 64
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-deliveryMode
-	^deliveryMode
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-deliveryMode: newValue
-
-	| flagName |
-	flagName := #AMQP_BASIC_DELIVERY_MODE_FLAG.
-	newValue _validateMin: 0 max: 2.
-	deliveryMode := newValue.
-	self uint8At: 56 put: newValue.
-	^ newValue == 0
-		ifTrue: [self clearFlag: flagName]
-		ifFalse: [self setFlag: flagName].
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-expiration
-	^expiration
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-expiration: newValue
-
-	expiration := GsAmqpBytes fromStringOrNil: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_EXPIRATION_FLAG
-		newValue: self expiration
-		offset: 96
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-flags
-	^flags
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-flags: newValue
-
-	newValue _validateMin: 0 max: 16rFFFFFFFF.
-	flags := newValue
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-headers
-	^headers
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-headers: aGsAmqpTable
-
-	| flagName |
-	headers := aGsAmqpTable.
-	flagName := #AMQP_BASIC_HEADERS_FLAG.
-	aGsAmqpTable
-		ifNil:
-			[self
-				clearFlag: flagName;
-				uint32At: 40 put: 0;
-				uint64At: 48 put: 0]
-		ifNotNil:
-			[self
-				setFlag: flagName;
-				uint32At: 40 put: aGsAmqpTable numEntries;
-				uint64At: 48 put: aGsAmqpTable entriesAddress]
-%
-category: 'Initialization'
-method: GsAmqpBasicProperties
-initialize
-
-	^self
-		flags: 0 ;
-		setDeliveryPersistent ;
-		yourself
-%
-category: 'Initialization'
-method: GsAmqpBasicProperties
-initializeFromC
-
-"Do NOT user setter methods here (except for #flags:) as we are populating Smalltalk state from C state.
-Setter methods update both C state and ST state, which is not what we want when initializing from C."
-
-	self flags: (self uint32At: 0). "Must be first so that #testFlag: is correct"
-	(self testFlag: #AMQP_BASIC_CONTENT_TYPE_FLAG)
-		ifTrue: [contentType := self stringFromAmqpBytesAtOffset: 8].
-	(self testFlag: #AMQP_BASIC_CONTENT_ENCODING_FLAG)
-		ifTrue: [contentEncoding := self stringFromAmqpBytesAtOffset: 24].
-	(self testFlag: #AMQP_BASIC_HEADERS_FLAG)
-		ifTrue: [headers := GsAmqpTable fromCPointer: self atOffset: 40 ].
-	(self testFlag: #AMQP_BASIC_DELIVERY_MODE_FLAG)
-		ifTrue: [deliveryMode := self uint8At: 56].
-	(self testFlag: #AMQP_BASIC_PRIORITY_FLAG)
-		ifTrue: [priority := self uint8At: 57].
-	(self testFlag: #AMQP_BASIC_CORRELATION_ID_FLAG)
-		ifTrue: [correlationId := self stringFromAmqpBytesAtOffset: 64].
-	(self testFlag: #AMQP_BASIC_REPLY_TO_FLAG)
-		ifTrue: [replyTo := self stringFromAmqpBytesAtOffset: 80].
-	(self testFlag: #AMQP_BASIC_EXPIRATION_FLAG)
-		ifTrue: [expiration := self stringFromAmqpBytesAtOffset: 96].
-	(self testFlag: #AMQP_BASIC_MESSAGE_ID_FLAG)
-		ifTrue: [messageId := self stringFromAmqpBytesAtOffset: 112].
-	(self testFlag: #AMQP_BASIC_TIMESTAMP_FLAG)
-		ifTrue: [timestamp := self uint64At: 128].
-	(self testFlag: #AMQP_BASIC_TYPE_FLAG)
-		ifTrue: [type := self stringFromAmqpBytesAtOffset: 136].
-	(self testFlag: #AMQP_BASIC_USER_ID_FLAG)
-		ifTrue: [amqpUserId := self stringFromAmqpBytesAtOffset: 152].
-	(self testFlag: #AMQP_BASIC_APP_ID_FLAG)
-		ifTrue: [appId := self stringFromAmqpBytesAtOffset: 168].
-	(self testFlag: #AMQP_BASIC_CLUSTER_ID_FLAG)
-		ifTrue: [clusterId := self stringFromAmqpBytesAtOffset: 184].
-	^self
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-messageId
-	^messageId
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-messageId: newValue
-
-	messageId := GsAmqpBytes fromStringOrNil: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_MESSAGE_ID_FLAG
-		newValue: self messageId
-		offset: 112
-%
-category: 'Private'
-method: GsAmqpBasicProperties
-postUpdateAmqpBytesWithBitFlag: aSymbol newValue: value offset: offset
-	"Method called when a store of a string or nil is done on the receiver and the stored string does NOT come from the C state.
-Update the appropriate flag and store the AmqpBytes data in the C state. Return the receiver."
-
-	value
-		ifNil: 
-			[self
-				clearFlag: aSymbol;
-				clearAmqpBytesAtOffset: offset]
-		ifNotNil: 
-			[value _validateClass: GsAmqpBytes.
-			self
-				setFlag: aSymbol;
-				storeAmqpBytes: value atOffset: offset].
-	^self
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-priority
-	^priority
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-priority: newValue
-
-	| flagName |
-	flagName := #AMQP_BASIC_PRIORITY_FLAG.
-	newValue _validateMin: 0 max: 9.
-	priority := newValue.
-	self uint8At: 57 put: newValue.
-	^ newValue == 0
-		ifTrue: [self clearFlag: flagName]
-		ifFalse: [self setFlag: flagName].
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-replyTo
-	^replyTo
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-replyTo: newValue
-
-	replyTo := GsAmqpBytes fromStringOrNil: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_REPLY_TO_FLAG
-		newValue: self replyTo
-		offset: 80
-%
-category: 'Delivery'
-method: GsAmqpBasicProperties
-setDeliveryNonPersistent
-	^ self deliveryMode: self class AMQP_DELIVERY_NONPERSISTENT
-%
-category: 'Delivery'
-method: GsAmqpBasicProperties
-setDeliveryPersistent
-	^ self deliveryMode: self class AMQP_DELIVERY_PERSISTENT
-%
-category: 'Flags'
-method: GsAmqpBasicProperties
-setFlag: aSymbol
-
-self flags: (self flags bitOr: (self class perform: aSymbol)).
-^ self uint32At: 0 put: self flags ; yourself
-%
-category: 'Flags'
-method: GsAmqpBasicProperties
-testFlag: aSymbol
-	"Returns true if the flag is set, false if not"
-
-	^0 ~~ (self flags bitAnd: (self class perform: aSymbol))
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-timestamp
-	^timestamp
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-timestamp: newValue
-
-	| flagName |
-	flagName := #AMQP_BASIC_TIMESTAMP_FLAG.
-	timestamp := newValue.
-	self uint64At: 128 put: newValue.
-	^ newValue == 0
-		ifTrue: [self clearFlag: flagName]
-		ifFalse: [self setFlag: flagName].
-
-%
-category: 'Accessing'
-method: GsAmqpBasicProperties
-type
-	^type
-%
-category: 'Updating'
-method: GsAmqpBasicProperties
-type: newValue
-	type := GsAmqpBytes fromStringOrNil: newValue.
-	^self
-		postUpdateAmqpBytesWithBitFlag: #AMQP_BASIC_TYPE_FLAG
-		newValue: self type
-		offset: 136
-%
-! ------------------- Remove existing behavior from GsAmqpTableEntryArray
-removeAllMethods GsAmqpTableEntryArray
-removeAllClassMethods GsAmqpTableEntryArray
-! ------------------- Class methods for GsAmqpTableEntryArray
-category: 'Constants'
-classmethod: GsAmqpTableEntryArray
-elementsToBytes: elements
-
-^ self sizeOfElement * elements
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTableEntryArray
-fromMemoryReferenceIn: aCByteArray atOffset: offset elements: numElements
-
-"Does not allocate new memory. References existing memory at an address contained in aCByteArray at the given offset."
-
-	^(self
-		fromMemoryReferenceIn: aCByteArray
-		atOffset: offset
-		sizeInBytes: (self elementsToBytes: numElements)
-		initializeFromC: false)
-		elements: (Array new: numElements);
-		initializeFromC;
-		yourself
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTableEntryArray
-new
-
-"Use new: instead "
-^ self shouldNotImplement: #new
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTableEntryArray
-new: numElements
-
-	| bytes result |
-	bytes := numElements * self sizeOfElement .
-	result := self gcMalloc: bytes.
-	^result
-		initialize;
-		elements: (Array new: numElements);
-		yourself
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTableEntryArray
-newFromArrayOfPairs: array
-
-	| size |
-	(size := array size) even
-		ifFalse: [self error: 'array of pairs size must be even'].
-	^(self new: size // 2)
-		initialize;
-		buildFromArrayOfPairs: array;
-		yourself
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTableEntryArray
-newFromDictionary: dict
-
-	^(self new: dict size)
-		initialize;
-		buildFromDictionary: dict;
-		yourself
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTableEntryArray
-newFromKeys: keyArray values: valueArray
-
-	| size |
-	(size := keyArray size) == valueArray size
-		ifFalse: [self error: 'size of arrays for keys and values must match'].
-	^(self new: size)
-		initialize;
-		buildFromKeys: keyArray values: valueArray;
-		yourself
-%
-category: 'Constants'
-classmethod: GsAmqpTableEntryArray
-sizeOfElement
-
-^ GsAmqpTableEntry sizeInC
-%
-! ------------------- Instance methods for GsAmqpTableEntryArray
-category: 'Adding'
-method: GsAmqpTableEntryArray
-add: anElement
-
-^ self shouldNotImplement: #add:
-%
-category: 'Adding'
-method: GsAmqpTableEntryArray
-addAll: aCollection
-
-^ self shouldNotImplement: #addAll:
-%
-category: 'Accessing'
-method: GsAmqpTableEntryArray
-at: index
-
-^self elements at: index
-%
-category: 'Updating'
-method: GsAmqpTableEntryArray
-at: oneBasedIdx put: obj
-
-	| offset  |
-
-"Don't allow the elements array to grow"
-	oneBasedIdx > elements size
-		ifTrue: [self _errorIndexOutOfRange: oneBasedIdx].
-"Store reference to obj to protect from GC"
-	self elements at: oneBasedIdx put: obj.
-"Compute C offset in receiver"
-	offset := self offsetForElementIndex: oneBasedIdx.
-	obj
-		ifNil:
-			[self "Clear C memory"
-				memset: 0
-				from: offset
-				to: (self sizeOfElement - 1)]
-		ifNotNil:
-			[obj _validateClass: GsAmqpTableEntry.
-			self "Copy element to C memory"
-				copyBytesFrom: obj
-				from: 1
-				to: self sizeOfElement
-				into: offset]
-%
-category: 'Building'
-method: GsAmqpTableEntryArray
-buildFromArrayOfPairs: array
-
-	| index |
-	index := 0.
-	1 to: array size
-		by: 2
-		do:
-			[:n |
-			index := index + 1.
-			self at: index
-				put: (GsAmqpTableEntry newForKey: (array at: n) value: (array at: n + 1))].
-	^self
-%
-category: 'Building'
-method: GsAmqpTableEntryArray
-buildFromDictionary: dict
-
-| index |
-index := 0.
-dict keysAndValuesDo:[:k :v|
-	index := index + 1.
-	self at: index put: (GsAmqpTableEntry newForKey: k value: v).
-].
-%
-category: 'Building'
-method: GsAmqpTableEntryArray
-buildFromKeys: keysArray values: valuesArray
-
-	| index |
-	index := 0.
-	1 to: keysArray size
-		do:
-			[:n |
-			index := index + 1.
-			self at: index
-				put: (GsAmqpTableEntry newForKey: (keysArray at: n)
-						value: (valuesArray at: n))].
-	^self
-%
-category: 'Accessing'
-method: GsAmqpTableEntryArray
-elements
-	^elements
-%
-category: 'Updating'
-method: GsAmqpTableEntryArray
-elements: newValue
-	elements := newValue
-%
-category: 'Initializing'
-method: GsAmqpTableEntryArray
-initializeFromC
-
-1 to: self elements size do:[:n|
-	self elements at: n put: (GsAmqpTableEntry fromCPointer: self atOffset: (self offsetForElementIndex: n)) ].
-^ self
-%
-category: 'Accessing'
-method: GsAmqpTableEntryArray
-numElements
-
-^ elements size
-%
-category: 'Converting'
-method: GsAmqpTableEntryArray
-offsetForElementIndex: oneBasedIndex
-
-^ (oneBasedIndex - 1) * self sizeOfElement
-%
-category: 'Constants'
-method: GsAmqpTableEntryArray
-sizeOfElement
-
-^ self class sizeOfElement
-%
-! ------------------- Remove existing behavior from GsAmqpFieldValue
-removeAllMethods GsAmqpFieldValue
-removeAllClassMethods GsAmqpFieldValue
-! ------------------- Class methods for GsAmqpFieldValue
-category: 'Converting'
-classmethod: GsAmqpFieldValue
-amqpFieldKindForObject: obj
-
-	^obj _isInteger
-		ifTrue: [self AMQP_FIELD_KIND_I64]
-		ifFalse:
-			[ | cls |
-			cls := obj class.
-			cls == Boolean
-				ifTrue: [self AMQP_FIELD_KIND_BOOLEAN]
-				ifFalse:
-					[cls isBytes
-						ifTrue: [self AMQP_FIELD_KIND_UTF8]
-						ifFalse: [self error: 'Invalid object']]]
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_ARRAY
-
-^ $A asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_BOOLEAN
-
-^ $t asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_BYTES
-
-^ $x asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_DECIMAL
-
-^ $D asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_F32
-
-^ $f asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_F64
-
-^ $d asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_I16
-
-^ $s asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_I32
-
-^ $I asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_I64
-
-^ $l asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_I8
-
-^ $b asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_TABLE
-
-^ $F asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_TIMESTAMP
-
-^ $T asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_U16
-
-^ $u asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_U32
-
-^ $i asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_U64
-
-^ $L asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_U8
-
-^ $B asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_UTF8
-
-^ $S asInteger
-%
-category: 'Constants (Field Kinds)'
-classmethod: GsAmqpFieldValue
-AMQP_FIELD_KIND_VOID
-
-^ $V asInteger
-%
-category: 'Instance Creation'
-classmethod: GsAmqpFieldValue
-newForObject: anObject
-
-"anObject must be a Boolean, SmallInteger or String"
-
-^ (self new)
-	 initialize ;
-	setValue: anObject ;
-	yourself
-%
-category: 'Constants'
-classmethod: GsAmqpFieldValue
-sizeInC
-
-^ 24
-%
-! ------------------- Instance methods for GsAmqpFieldValue
-category: 'Initialization'
-method: GsAmqpFieldValue
-initializeFromC
-
-	^ self 
-			kind: (self uint8At: 0) ;
-	 		value: (self valueIsBoolean
-				ifTrue: [self booleanAtOffset: 8]
-				ifFalse:
-					[self valueIsString
-						ifTrue:
-							[GsAmqpBytes fromCPointer: self atOffset: 8]
-						ifFalse:
-							[self valueIsInteger
-								ifTrue: [self int64At: 8]
-								ifFalse: [self error: 'Unsupported value kind ' , self kind asString]]]) ;
-			yourself
-%
-category: 'Accessing'
-method: GsAmqpFieldValue
-kind
-	^kind
-%
-category: 'Private'
-method: GsAmqpFieldValue
-kind: newValue
-	kind := newValue
-%
-category: 'Updating'
-method: GsAmqpFieldValue
-setValue: aValue
-
-"Currently only Booleans, Integers and Strings are supported for values"
-	value := aValue. "Reference the incoming arg. We may override this later"
-	aValue
-		ifNil: [self memset: 0 from: 0 to: -1]
-		ifNotNil:
-			[aValue _isInteger
-				ifTrue: [self storeInteger: aValue]
-				ifFalse:
-					[aValue class == Boolean
-						ifTrue: [self storeBoolean: aValue]
-						ifFalse: [self storeStringAsUtf8: aValue]]].
-	^self
-%
-category: 'Updating'
-method: GsAmqpFieldValue
-storeBoolean: aBoolean
-
-^ self uint8At: 0 put: (kind := self class AMQP_FIELD_KIND_BOOLEAN) ;
-	uint64At: 8 put: aBoolean asBit ;
-	yourself
-%
-category: 'Updating'
-method: GsAmqpFieldValue
-storeInteger: anInt
-
-^ self uint8At: 0 put: (kind := self class AMQP_FIELD_KIND_I64) ;
-	int64At: 8 put: anInt ;
-	yourself
-%
-category: 'Updating'
-method: GsAmqpFieldValue
-storeStringAsUtf8: aString
-
-"Create a new GsAmqpBytes object. We must reference it so it does not get garbage collected."
-
-value :=GsAmqpBytes fromStringEncodeAsUtf8: aString.
-^ self uint8At: 0 put: (kind := self class AMQP_FIELD_KIND_UTF8) ;
-	uint64At: 8 put: value len ;
-	uint64At: 16 put: value bytesAddress ;
-	yourself
-%
-category: 'Accessing'
-method: GsAmqpFieldValue
-value
-	^value
-%
-category: 'Private'
-method: GsAmqpFieldValue
-value: newValue
-	value := newValue
-%
-category: 'Testing'
-method: GsAmqpFieldValue
-valueIsBoolean
-
-| myKind |
-myKind := self kind.
-myKind _validateClass: SmallInteger.
-^ myKind == self class AMQP_FIELD_KIND_BOOLEAN
-%
-category: 'Testing'
-method: GsAmqpFieldValue
-valueIsInteger
-
-| myKind |
-(myKind := self kind) _validateClass: SmallInteger. 
-"Hard code values for performance"
-(myKind == 66 or:[ myKind == 73 ]) ifTrue:[ ^ true ].
-(myKind == 76 or:[ myKind == 98 ]) ifTrue:[ ^ true ].
-(myKind == 105 or:[ myKind == 108 ]) ifTrue:[ ^ true ].
-(myKind == 115 or:[ myKind == 117 ]) ifTrue:[ ^ true ].
-^ false
-
-"Note: the above implementation is approx 4X faster than this alternative:
-
-^ { 66  . 73 . 76 . 98 . 105 . 108 . 115 . 117 } includesIdentical: myKind
-"
-%
-category: 'Testing'
-method: GsAmqpFieldValue
-valueIsString
-
-| myKind |
-myKind := self kind.
-myKind _validateClass: SmallInteger.
-^ myKind == self class AMQP_FIELD_KIND_UTF8
-%
-! ------------------- Remove existing behavior from GsAmqpHeadersExchange
-removeAllMethods GsAmqpHeadersExchange
-removeAllClassMethods GsAmqpHeadersExchange
-! ------------------- Class methods for GsAmqpHeadersExchange
-category: 'Instance Creation'
-classmethod: GsAmqpHeadersExchange
-declareWithConnection: conn name: exchgName channel: channelIdArg durable: durable autoDelete: autoDelete
-
-	^self
-		declareWithConnection: conn
-		name: exchgName
-		type: 'headers'
-		channel: channelIdArg
-		durable: durable
-		autoDelete: autoDelete
-%
-category: 'Headers Generation'
-classmethod: GsAmqpHeadersExchange
-generateMessagePropertiesFromHeadersDictionary: dict
-
-| table props |
-table := GsAmqpTable newFromDictionary: dict.
-props := GsAmqpBasicProperties new.
-props headers: table.
-^ props
-
-%
-category: 'Headers Generation'
-classmethod: GsAmqpHeadersExchange
-generateMessagePropertiesFromHeadersKeys: keys values: values
-
-| table props |
-table := GsAmqpTable newFromKeys: keys values: values.
-props := GsAmqpBasicProperties new.
-props headers: table.
-^ props
-
-%
-! ------------------- Instance methods for GsAmqpHeadersExchange
-category: 'Exchange Kind'
-method: GsAmqpHeadersExchange
-exchangeKind
-
-^ #headers
-%
 ! ------------------- Remove existing behavior from GsAmqpTopicExchange
 removeAllMethods GsAmqpTopicExchange
 removeAllClassMethods GsAmqpTopicExchange
@@ -4606,1041 +6936,6 @@ exchangeKind
 
 ^ #topic
 %
-! ------------------- Remove existing behavior from GsAmqpFanoutExchange
-removeAllMethods GsAmqpFanoutExchange
-removeAllClassMethods GsAmqpFanoutExchange
-! ------------------- Class methods for GsAmqpFanoutExchange
-category: 'Instance Creation'
-classmethod: GsAmqpFanoutExchange
-declareWithConnection: conn name: exchgName channel: channelIdArg durable: durable autoDelete: autoDelete
-
-	^self
-		declareWithConnection: conn
-		name: exchgName
-		type: 'fanout'
-		channel: channelIdArg
-		durable: durable
-		autoDelete: autoDelete
-%
-category: 'Instance Creation'
-classmethod: GsAmqpFanoutExchange
-declareWithConnection: conn name: exchgName channel: channelIdArg durable: durable autoDelete: autoDelete internal: internal
-
-^ self declareWithConnection: conn name: exchgName type: 'fanout' channel: channelIdArg durable: durable autoDelete: autoDelete internal: internal
-%
-! ------------------- Instance methods for GsAmqpFanoutExchange
-category: 'Exchange Kind'
-method: GsAmqpFanoutExchange
-exchangeKind
-
-^ #fanout
-%
-category: 'Publishing'
-method: GsAmqpFanoutExchange
-publishMessage: msg mandatory: mandatory properties: props
-
-^ self publishMessage: msg routingKey: nil mandatory: mandatory properties: props
-%
-! ------------------- Remove existing behavior from GsAmqpDirectExchange
-removeAllMethods GsAmqpDirectExchange
-removeAllClassMethods GsAmqpDirectExchange
-! ------------------- Class methods for GsAmqpDirectExchange
-category: 'Instance Creation'
-classmethod: GsAmqpDirectExchange
-declareWithConnection: conn name: exchgName channel: channelIdArg durable: durable autoDelete: autoDelete
-
-	^self
-		declareWithConnection: conn
-		name: exchgName
-		type: 'direct'
-		channel: channelIdArg
-		durable: durable
-		autoDelete: autoDelete
-%
-category: 'Defaults'
-classmethod: GsAmqpDirectExchange
-defaultName
-
-^ 'amq.direct'
-%
-! ------------------- Instance methods for GsAmqpDirectExchange
-category: 'Exchange Kind'
-method: GsAmqpDirectExchange
-exchangeKind
-
-^ #direct
-%
-! ------------------- Remove existing behavior from GsAmqpTableEntry
-removeAllMethods GsAmqpTableEntry
-removeAllClassMethods GsAmqpTableEntry
-! ------------------- Class methods for GsAmqpTableEntry
-category: 'Constants'
-classmethod: GsAmqpTableEntry
-keyOffset
-
-^ 0
-%
-category: 'Instance Creation'
-classmethod: GsAmqpTableEntry
-newForKey: keyString value: anObject
-
-	^(self new)
-		initialize;
-		setKey: keyString;
-		setValue: (GsAmqpFieldValue newForObject: anObject) ;
-		yourself
-%
-category: 'Constants'
-classmethod: GsAmqpTableEntry
-sizeInC
-
-^ 40
-%
-category: 'Constants'
-classmethod: GsAmqpTableEntry
-valueOffset
-
-^ 16
-%
-! ------------------- Instance methods for GsAmqpTableEntry
-category: 'Initializing'
-method: GsAmqpTableEntry
-initializeFromC
-
-	self
-		key: (GsAmqpBytes fromCPointer: self);
-		value: (GsAmqpFieldValue fromCPointer: self atOffset: 16);
-		yourself
-%
-category: 'Accessing'
-method: GsAmqpTableEntry
-key
-	^key
-%
-category: 'Private'
-method: GsAmqpTableEntry
-key: newValue
-	key := newValue
-%
-category: 'Constants'
-method: GsAmqpTableEntry
-keyOffset
-
-^ self class keyOffset
-%
-category: 'Updating'
-method: GsAmqpTableEntry
-setKey: aStringOrNil
-
-	aStringOrNil
-		ifNil:
-			[self key: nil ;
-				memset: 0
-				from: self keyOffset
-				to: self valueOffset - 1]
-		ifNotNil:
-			[ aStringOrNil _validateClass: String .
-			self key: (GsAmqpBytes fromString: aStringOrNil) ;
-				uint64At: self keyOffset put: key len;
-				uint64At: self keyOffset + 8 put: key bytesAddress].
-	^self
-%
-category: 'Updating'
-method: GsAmqpTableEntry
-setValue: aGsAmqpFieldValueOrNil
-
-	aGsAmqpFieldValueOrNil
-		ifNil:
-			[value := nil.
-			self memset: 0 from: self class valueOffset to: -1 "clear C state" ]
-		ifNotNil:
-			[aGsAmqpFieldValueOrNil _validateClass: GsAmqpFieldValue.
-			self value: aGsAmqpFieldValueOrNil ;
-			 "now copy C state from newValue into receiver"
-				copyBytesFrom: aGsAmqpFieldValueOrNil
-				from: 1
-				to: aGsAmqpFieldValueOrNil class sizeInC
-				into: self class valueOffset].
-	^self
-%
-category: 'Accessing'
-method: GsAmqpTableEntry
-value
-	^value
-%
-category: 'Private'
-method: GsAmqpTableEntry
-value: newValue
-	value := newValue
-%
-category: 'Constants'
-method: GsAmqpTableEntry
-valueOffset
-
-^ self class valueOffset
-%
-! ------------------- Remove existing behavior from GsAmqpConfirmedMessage
-removeAllMethods GsAmqpConfirmedMessage
-removeAllClassMethods GsAmqpConfirmedMessage
-! ------------------- Class methods for GsAmqpConfirmedMessage
-category: 'Instance Creation'
-classmethod: GsAmqpConfirmedMessage
-newWithMessage: aString publisher: aGsAmqpConfirmedMessagePublisher
-
-	^(self new initialize)
-		message: aString;
-		publisher: aGsAmqpConfirmedMessagePublisher;
-		yourself
-%
-! ------------------- Instance methods for GsAmqpConfirmedMessage
-category: 'Assertions'
-method: GsAmqpConfirmedMessage
-assertConfirmed
-
-^ self isConfirmed ifTrue:[ true] ifFalse:[ self raiseUnexpectedStateError: #confirmed ]
-%
-category: 'Assertions'
-method: GsAmqpConfirmedMessage
-assertPublished
-
-^ self isPublished ifTrue:[ true] ifFalse:[ self raiseUnexpectedStateError: #published ]
-%
-category: 'Assertions'
-method: GsAmqpConfirmedMessage
-assertRejected
-
-^ self isRejected ifTrue:[ true] ifFalse:[ self raiseUnexpectedStateError: #rejected ]
-%
-category: 'Assertions'
-method: GsAmqpConfirmedMessage
-assertReturned
-
-^ self isReturned ifTrue:[ true] ifFalse:[ self raiseUnexpectedStateError: #returned ]
-%
-category: 'Assertions'
-method: GsAmqpConfirmedMessage
-assertUnpublished
-
-^ self isUnpublished ifTrue:[ true] ifFalse:[ self raiseUnexpectedStateError: #unpublished ]
-%
-category: 'Accessing'
-method: GsAmqpConfirmedMessage
-id
-	^id
-%
-category: 'Updating'
-method: GsAmqpConfirmedMessage
-id: newValue
-	id := newValue
-%
-category: 'Initialization'
-method: GsAmqpConfirmedMessage
-initialize
-
-	^self setUnpublished
-%
-category: 'Testing'
-method: GsAmqpConfirmedMessage
-isConfirmed
-
-^ self state == #confirmed
-%
-category: 'Testing'
-method: GsAmqpConfirmedMessage
-isPublished
-
-^ self state == #published
-%
-category: 'Testing'
-method: GsAmqpConfirmedMessage
-isRejected
-
-^ self state == #rejected
-%
-category: 'Testing'
-method: GsAmqpConfirmedMessage
-isReturned
-
-^ self state == #returned
-%
-category: 'Testing'
-method: GsAmqpConfirmedMessage
-isUnpublished
-
-^ self state == #unpublished
-%
-category: 'Accessing'
-method: GsAmqpConfirmedMessage
-message
-	^message
-%
-category: 'Updating'
-method: GsAmqpConfirmedMessage
-message: newValue
-	message := newValue
-%
-category: 'Accessing'
-method: GsAmqpConfirmedMessage
-publisher
-	^publisher
-%
-category: 'Updating'
-method: GsAmqpConfirmedMessage
-publisher: newValue
-	publisher := newValue
-%
-category: 'Assertions'
-method: GsAmqpConfirmedMessage
-raiseUnexpectedStateError: aSymbol
-
-^ self error: ('Unexpected message state (expected ', aSymbol asString, ')')
-%
-category: 'Private'
-method: GsAmqpConfirmedMessage
-setConfirmed
-
-^ self state: #confirmed ; yourself
-%
-category: 'Publishing'
-method: GsAmqpConfirmedMessage
-setPublished: msgId
-
-	^self
-		state: #published;
-		id: msgId ;
-		yourself
-%
-category: 'Private'
-method: GsAmqpConfirmedMessage
-setRejected
-
-^ self state: #rejected ; yourself
-%
-category: 'Private'
-method: GsAmqpConfirmedMessage
-setReturned
-
-^ self state: #returned ; yourself
-%
-category: 'Private'
-method: GsAmqpConfirmedMessage
-setUnpublished
-
-^ self state: #unpublished ; yourself
-%
-category: 'Accessing'
-method: GsAmqpConfirmedMessage
-state
-	^state
-%
-category: 'Updating'
-method: GsAmqpConfirmedMessage
-state: newValue
-	state := newValue
-%
-! ------------------- Remove existing behavior from GsAmqpBasicAck
-removeAllMethods GsAmqpBasicAck
-removeAllClassMethods GsAmqpBasicAck
-! ------------------- Class methods for GsAmqpBasicAck
-category: 'Constants'
-classmethod: GsAmqpBasicAck
-sizeInC
-
-^ 16
-%
-! ------------------- Instance methods for GsAmqpBasicAck
-category: 'Accessing'
-method: GsAmqpBasicAck
-deliveryTag
-	^deliveryTag
-%
-category: 'Updating'
-method: GsAmqpBasicAck
-deliveryTag: newValue
-	deliveryTag := newValue
-%
-category: 'Initialization'
-method: GsAmqpBasicAck
-initializeFromC
-
-^ self deliveryTag: (self uint64At: 0);
-	multiple: (self booleanAtOffset: 8);
-	yourself
-%
-category: 'Accessing'
-method: GsAmqpBasicAck
-multiple
-	^multiple
-%
-category: 'Updating'
-method: GsAmqpBasicAck
-multiple: newValue
-	multiple := newValue
-%
-! ------------------- Remove existing behavior from GsAmqpConnectionClose
-removeAllMethods GsAmqpConnectionClose
-removeAllClassMethods GsAmqpConnectionClose
-! ------------------- Class methods for GsAmqpConnectionClose
-category: 'Constants'
-classmethod: GsAmqpConnectionClose
-sizeInC
-
-^ 32
-%
-! ------------------- Instance methods for GsAmqpConnectionClose
-category: 'Accessing'
-method: GsAmqpConnectionClose
-classId
-	^classId
-%
-category: 'Updating'
-method: GsAmqpConnectionClose
-classId: newValue
-	classId := newValue
-%
-category: 'Initializing'
-method: GsAmqpConnectionClose
-initializeFromC
-
-^ self replyCode: (self uint16At: 0) ;
-	replyText: (self stringFromAmqpBytesAtOffset: 8) ;
-	classId: (self uint16At: 24) ;
-	methodId: (self uint16At: 26) ;
-	yourself
-
-%
-category: 'Accessing'
-method: GsAmqpConnectionClose
-methodId
-	^methodId
-%
-category: 'Updating'
-method: GsAmqpConnectionClose
-methodId: newValue
-	methodId := newValue
-%
-category: 'Accessing'
-method: GsAmqpConnectionClose
-replyCode
-	^replyCode
-%
-category: 'Updating'
-method: GsAmqpConnectionClose
-replyCode: newValue
-	replyCode := newValue
-%
-category: 'Accessing'
-method: GsAmqpConnectionClose
-replyText
-	^replyText
-%
-category: 'Updating'
-method: GsAmqpConnectionClose
-replyText: newValue
-	replyText := newValue
-%
-! ------------------- Remove existing behavior from GsAmqpConfirmedMessagePublisher
-removeAllMethods GsAmqpConfirmedMessagePublisher
-removeAllClassMethods GsAmqpConfirmedMessagePublisher
-! ------------------- Class methods for GsAmqpConfirmedMessagePublisher
-category: 'Instance Creation'
-classmethod: GsAmqpConfirmedMessagePublisher
-newForConnection: conn exchange: exchg routingKey: routingKey mandatory: mandatory
-
-	^(self new)
-		connection: conn;
-		exchange: exchg;
-		routingKey: routingKey;
-		mandatory: mandatory ;
-		initialize
-%
-! ------------------- Instance methods for GsAmqpConfirmedMessagePublisher
-category: 'Private'
-method: GsAmqpConfirmedMessagePublisher
-addPublishedMessage: aGsAmqpConfirmedMessage
-
-	| msgId |
-	msgId := self incrementMessageCount .
-	aGsAmqpConfirmedMessage setPublished: msgId.
-	self publishedMessages add: aGsAmqpConfirmedMessage.
-	self messageDictionary at: msgId put: aGsAmqpConfirmedMessage.
-	^ self
-%
-category: 'Querying'
-method: GsAmqpConfirmedMessagePublisher
-allMessageUpToIncludingId: anInt
-
-"Get all messags with an id less than or equal to anInt"
-
-^ (self publishedMessages select:[:e| e id <= anInt ]) asArray
-%
-category: 'Accessing'
-method: GsAmqpConfirmedMessagePublisher
-autoRemoveConfirmed
-	^autoRemoveConfirmed
-%
-category: 'Updating'
-method: GsAmqpConfirmedMessagePublisher
-autoRemoveConfirmed: newValue
-	autoRemoveConfirmed := newValue
-%
-category: 'Polling'
-method: GsAmqpConfirmedMessagePublisher
-basicPollForConfirmsNoWaitIntoMethodFrame: methodFrame resultInto: result
-	"Poll for publisher confirms (acks, nacks, returns, rejects) until there are no more outstanding responses or we time out waiting."
-
-	| didWork |
-	didWork := false.
-	[true] whileTrue:
-			[| gotDataThisTime |
-			self hasUnconfirmedMessages ifFalse: [^ didWork]. "Early exit for no more outstanding acks"
-			(gotDataThisTime := self primPollForConfirmsWithTimeoutMs: 0
-						methodFrame: methodFrame)
-					ifTrue:  "Got a frame, process it"
-						[didWork := true.
-						self processFrame: methodFrame addMessageTo: result.
-						methodFrame initializeForReuse]
-					ifFalse: [^ didWork] "no (more?) work available, so we are done."
-].
-	self error: 'Should not be here!'.
-	^didWork
-%
-category: 'Polling'
-method: GsAmqpConfirmedMessagePublisher
-basicPollForConfirmsWithTimeoutMs: ms methodFrame: methodFrame resultInto: result
-	"Poll for publisher confirms (acks, nacks, returns, rejects). Answer true if we received a message, false if not, maybe after waiting if ms > 0"
-
-	self hasUnconfirmedMessages ifFalse: [^false].	"Early exit for no more outstanding acks"
-	^(self primPollForConfirmsWithTimeoutMs: ms methodFrame: methodFrame)
-		ifTrue:
-			["Got a frame, process it"
-			self processFrame: methodFrame addMessageTo: result.
-			methodFrame initializeForReuse.
-			true]
-		ifFalse: [false]	"no (more?) work available, so we are done."
-%
-category: 'Accessing'
-method: GsAmqpConfirmedMessagePublisher
-channel
-	^channel
-%
-category: 'Updating'
-method: GsAmqpConfirmedMessagePublisher
-channel: newValue
-	channel := newValue
-%
-category: 'Accessing'
-method: GsAmqpConfirmedMessagePublisher
-confirmedMessages
-	^confirmedMessages
-%
-category: 'Updating'
-method: GsAmqpConfirmedMessagePublisher
-confirmedMessages: newValue
-	confirmedMessages := newValue
-%
-category: 'Accessing'
-method: GsAmqpConfirmedMessagePublisher
-connection
-	^connection
-%
-category: 'Updating'
-method: GsAmqpConfirmedMessagePublisher
-connection: newValue
-	connection := newValue
-%
-category: 'Accessing'
-method: GsAmqpConfirmedMessagePublisher
-exchange
-	^exchange
-%
-category: 'Updating'
-method: GsAmqpConfirmedMessagePublisher
-exchange: newValue
-	exchange := newValue
-%
-category: 'Testing'
-method: GsAmqpConfirmedMessagePublisher
-hasUnconfirmedMessages
-
-^ self messagesNotConfirmedCount > 0
-%
-category: 'Private'
-method: GsAmqpConfirmedMessagePublisher
-incrementMessageCount
-
-self messageCount: (self messageCount + 1).
-^ self messageCount
-%
-category: 'Initialization'
-method: GsAmqpConfirmedMessagePublisher
-initialize
-
-	| chan |
-	chan := self connection openNextChannel.
-	self connection enablePublisherConfirmsForChannel: chan.
-	^self
-		channel: chan;
-		messageCount: 0;
-		publishedMessages: IdentitySet new;
-		confirmedMessages: IdentitySet new;
-		rejectedMessages: IdentitySet new;
-		returnedMessages: IdentitySet new;
-		messageDictionary: IntegerKeyValueDictionary new;
-		autoRemoveConfirmed: true ;
-		yourself
-%
-category: 'Accessing'
-method: GsAmqpConfirmedMessagePublisher
-mandatory
-	^mandatory
-%
-category: 'Updating'
-method: GsAmqpConfirmedMessagePublisher
-mandatory: newValue
-	mandatory := newValue
-%
-category: 'Accessing'
-method: GsAmqpConfirmedMessagePublisher
-messageCount
-	^messageCount
-%
-category: 'Updating'
-method: GsAmqpConfirmedMessagePublisher
-messageCount: newValue
-	messageCount := newValue
-%
-category: 'Accessing'
-method: GsAmqpConfirmedMessagePublisher
-messageDictionary
-	^messageDictionary
-%
-category: 'Updating'
-method: GsAmqpConfirmedMessagePublisher
-messageDictionary: newValue
-	messageDictionary := newValue
-%
-category: 'Querying'
-method: GsAmqpConfirmedMessagePublisher
-messageForId: anInt
-
-^ self messageDictionary at: anInt
-%
-category: 'Querying'
-method: GsAmqpConfirmedMessagePublisher
-messagesNotConfirmedCount
-	^ publishedMessages size
-%
-category: 'Testing'
-method: GsAmqpConfirmedMessagePublisher
-noMoreUnconfirmedMessages
-
-^ self hasUnconfirmedMessages not
-%
-category: 'Polling'
-method: GsAmqpConfirmedMessagePublisher
-pollForConfirmsWithTimeoutMs: ms
-
-^ self pollForConfirmsWithTimeoutMs: ms getAtMost: SmallInteger maximumValue
-%
-category: 'Polling'
-method: GsAmqpConfirmedMessagePublisher
-pollForConfirmsWithTimeoutMs: ms getAtMost: maxConfirms
-
-	| methodFrame result sys |
-	sys := System .
-	result := Array new.
-	methodFrame := GsAmqpFrame newWithConnection: self connection.
-
-	"Simple case: do not loop/retry if caller wants no wait or wai forever"
-	ms <= 0
-		ifTrue:
-			[self
-				basicPollForConfirmsWithTimeoutMs: ms
-				methodFrame: methodFrame
-				resultInto: result]
-		ifFalse:
-			[| nowMs endTimeMs done |
-			nowMs := sys _timeMs.
-			endTimeMs := nowMs + ms.
-			done := false.
-			[done] whileFalse:
-					[| timeLeftMs |
-					(timeLeftMs := endTimeMs - nowMs) > 0
-						ifTrue:
-							[self
-								basicPollForConfirmsWithTimeoutMs: timeLeftMs
-								methodFrame: methodFrame
-								resultInto: result].
-					done := (self noMoreUnconfirmedMessages or:[result size >= maxConfirms])
-								or: [(nowMs := sys _timeMs) >= endTimeMs]]].
-	^result
-%
-category: 'Polling'
-method: GsAmqpConfirmedMessagePublisher
-primPollForConfirmsWithTimeoutMs: ms methodFrame: methodFrame
-
-"Poll for a method frame. Return true if we received one, false if we timed out."
-	^self connection
-		getFrameInto: methodFrame
-		withTimeoutMs: ms
-		errorOnTimeout: false
-%
-category: 'Polling'
-method: GsAmqpConfirmedMessagePublisher
-processBasicAck: aGsAmqpMethod addMessageTo: anArray
-
-	| ack id msgs multiple |
-	ack := aGsAmqpMethod methodObject.
-	id := ack deliveryTag.	"aGsAmqpBasicAck"
-	multiple := ack multiple.
-"uncomment next line for debugging"
-"	multiple ifTrue:[ GsFile gciLogServer: ('Got multiple: all msgs up to and including ', id asString)]."
-	msgs := multiple "Multiple == true means all messages up to and include id are acknowleged"
-				ifTrue: [self allMessageUpToIncludingId: id]
-				ifFalse: [Array with: (self messageForId: id)].
-	msgs do:
-			[:msg |
-			msg setConfirmed.	"Update message state"
-			self publishedMessages remove: msg.	"Remove from published"
-			self autoRemoveConfirmed
-				ifTrue: [self removeMessage: msg]
-				ifFalse: [self confirmedMessages add: msg]	"Add to confirmed if configured, otherwise drop on floor"].
-	anArray addAll: msgs.
-	^self
-%
-category: 'Polling'
-method: GsAmqpConfirmedMessagePublisher
-processBasicNack: aGsAmqpMethod addMessageTo: anArray
-
-	| nack id msgs multiple |
-	nack := aGsAmqpMethod methodObject.
-	id := nack deliveryTag.	"aGsAmqpBasicNack"
-	multiple := nack multiple.
-	msgs := multiple
-				ifTrue: [self allMessageUpToIncludingId: id]
-				ifFalse: [Array with: (self messageForId: id)].	"Multiple == true means all messages up to and include id are acknowleged"
-	self processRejectedMessages: msgs.
-	anArray addAll: msgs.
-	^self
-%
-category: 'Polling'
-method: GsAmqpConfirmedMessagePublisher
-processBasicReject: aGsAmqpMethod addMessageTo: anArray
-
-"Reject is the same as nack except only refers to 1 message, never multple"
-
-	| reject id msgs |
-	reject := aGsAmqpMethod methodObject.
-	id := reject deliveryTag.	"aGsAmqpBasicNack"
-	msgs := Array with: (self messageForId: id).
-	self processRejectedMessages: msgs.
-	anArray addAll: msgs.
-	^self
-%
-category: 'Polling'
-method: GsAmqpConfirmedMessagePublisher
-processBasicReturn: aGsAmqpMethod addMessageTo: anArray
-
-	| return id msg  methodFrame returnedMsg |
-	return := aGsAmqpMethod methodObject.
-	"Read the returned message and discard it"
-	returnedMsg := self connection readMessageInto: nil channel: self channel.
-"Should be an ack or nack next"
-	methodFrame := GsAmqpFrame newWithConnection: self connection.
-	self connection getFrameInto: methodFrame withTimeoutMs: 1000 errorOnTimeout: true. "should not timeout!"
-	id := methodFrame payload methodObject deliveryTag. "Get the id and put the message in the correct state"
-	msg := self messageForId: id.
-	msg setReturned.
-	self publishedMessages remove: msg.
-	self returnedMessages add: msg.
-	^ self
-%
-category: 'Polling'
-method: GsAmqpConfirmedMessagePublisher
-processFrame: aGsAmqpFrame addMessageTo: anArray
-
-	| payload |
-	aGsAmqpFrame isFrameMethod
-		ifFalse: [self error: 'expected a method frame'].
-	payload := aGsAmqpFrame payload.
-	payload isBasicAck
-		ifTrue: [self processBasicAck: payload addMessageTo: anArray]
-		ifFalse:
-			[payload isBasicNack
-				ifTrue: [self processBasicNack: payload addMessageTo: anArray]
-				ifFalse:
-					[payload isBasicReject
-						ifTrue: [self processBasicReject: payload addMessageTo: anArray]
-						ifFalse:
-							[payload isBasicReturn
-								ifTrue: [self processBasicReturn: payload addMessageTo: anArray]
-								ifFalse: [self error: 'unexpected payload kind']]]].
-aGsAmqpFrame initializeForReuse.
-^ self
-%
-category: 'Polling'
-method: GsAmqpConfirmedMessagePublisher
-processRejectedMessages: anArray
-
-	anArray do:
-			[:msg |
-			msg setRejected.	"Update message state"
-			self publishedMessages remove: msg.	"Remove from published"
-			self rejectedMessages add: msg].	"Add to rejected"
-
-	^self
-%
-category: 'Accessing'
-method: GsAmqpConfirmedMessagePublisher
-publishedMessages
-	^publishedMessages
-%
-category: 'Updating'
-method: GsAmqpConfirmedMessagePublisher
-publishedMessages: newValue
-	publishedMessages := newValue
-%
-category: 'Publishing'
-method: GsAmqpConfirmedMessagePublisher
-publishMessage: aGsAmqpConfirmedMessage
-
-	aGsAmqpConfirmedMessage _validateClass: GsAmqpConfirmedMessage.
-	self connection
-		publishMessage: aGsAmqpConfirmedMessage message
-		channel: self channel
-		exchange: self exchange
-		routingKey: self routingKey
-		mandatory: self mandatory
-		properties: nil.
-	^ self addPublishedMessage: aGsAmqpConfirmedMessage .
-%
-category: 'Publishing'
-method: GsAmqpConfirmedMessagePublisher
-publishMessageString: aString
-
-| newMsg |
-newMsg := GsAmqpConfirmedMessage newWithMessage: aString publisher: self.
- self publishMessage: newMsg.
-^ newMsg
-%
-category: 'Querying'
-method: GsAmqpConfirmedMessagePublisher
-rejectedMessageCount
-	^rejectedMessages size
-%
-category: 'Accessing'
-method: GsAmqpConfirmedMessagePublisher
-rejectedMessages
-	^rejectedMessages
-%
-category: 'Updating'
-method: GsAmqpConfirmedMessagePublisher
-rejectedMessages: newValue
-	rejectedMessages := newValue
-%
-category: 'Removing'
-method: GsAmqpConfirmedMessagePublisher
-removeMessage: aGsAmqpConfirmedMessage
-
-self publishedMessages removeIfPresent: aGsAmqpConfirmedMessage.
-self confirmedMessages removeIfPresent: aGsAmqpConfirmedMessage.
-self rejectedMessages removeIfPresent: aGsAmqpConfirmedMessage.
-self returnedMessages removeIfPresent: aGsAmqpConfirmedMessage.
-self messageDictionary removeKey: aGsAmqpConfirmedMessage id otherwise: nil.
-^ self
-%
-category: 'Querying'
-method: GsAmqpConfirmedMessagePublisher
-returnedMessageCount
-	^returnedMessages size
-%
-category: 'Accessing'
-method: GsAmqpConfirmedMessagePublisher
-returnedMessages
-	^returnedMessages
-%
-category: 'Updating'
-method: GsAmqpConfirmedMessagePublisher
-returnedMessages: newValue
-	returnedMessages := newValue
-%
-category: 'Accessing'
-method: GsAmqpConfirmedMessagePublisher
-routingKey
-	^routingKey
-%
-category: 'Updating'
-method: GsAmqpConfirmedMessagePublisher
-routingKey: newValue
-	routingKey := newValue
-%
-category: 'Querying'
-method: GsAmqpConfirmedMessagePublisher
-undeliverableMessageCount
-
-^ self rejectedMessageCount + self returnedMessageCount
-%
-! ------------------- Remove existing behavior from GsRabbitMqError
-removeAllMethods GsRabbitMqError
-removeAllClassMethods GsRabbitMqError
-! ------------------- Class methods for GsRabbitMqError
-category: 'Instance Creation'
-classmethod: GsRabbitMqError
-newFromChannelClose: aGsAmqpConnectionClose
-
-^ self new initializeFromChannelClosedMethod: aGsAmqpConnectionClose
-%
-category: 'Instance Creation'
-classmethod: GsRabbitMqError
-newFromConnectionClose: aGsAmqpConnectionClose
-
-^ self new initializeFromConnectionClosedMethod: aGsAmqpConnectionClose
-%
-category: 'Instance Creation'
-classmethod: GsRabbitMqError
-newFromRpcReply: reply forOperation: aString
-
-	^reply isSuccess
-		ifTrue:
-			[self error: 'Attempt to raise an exception from a successful operation']
-		ifFalse: [self new initializeFromReply: reply forOperation: aString]
-%
-category: 'Instance Creation'
-classmethod: GsRabbitMqError
-newWithStatusCode: status library: library
-	"GsRabbitMqError newWithStatusCode: -1 library: GsLibRabbitMq new"
-
-	| result |
-	result := self new initialize.
-	^result
-		amqpErrorCode: status;
-		details: (library amqp_error_string2_: status);
-		yourself
-%
-category: 'Instance Creation'
-classmethod: GsRabbitMqError
-signalForOperation: aString
-
-^self signal: ('A RabbitMQ operation failed: ', aString asString)
-%
-category: 'Signaling'
-classmethod: GsRabbitMqError
-signalWithErrorCode: anInt library: aLib
-
-^ (self newWithStatusCode: anInt library: aLib) signal
-%
-! ------------------- Instance methods for GsRabbitMqError
-category: 'Accessing'
-method: GsRabbitMqError
-amqpErrorCode
-	^amqpErrorCode
-%
-category: 'Updating'
-method: GsRabbitMqError
-amqpErrorCode: newValue
-	amqpErrorCode := newValue
-%
-category: 'Formatting'
-method: GsRabbitMqError
-buildErrorStringForOperation: aString with: details
-
-^'RabbitMQ call ', aString asString, ' failed ', details
-%
-category: 'Initialize'
-method: GsRabbitMqError
-initialize
-
-super initialize.
-^ self amqpErrorCode: 0
-	yourself
-%
-category: 'Initialize'
-method: GsRabbitMqError
-initializeFromChannelClosedMethod: aMethod
-
-^ self amqpErrorCode: aMethod replyCode ;
-	details: ('The broker has closed the channel. Reply code: ', aMethod replyCode asString, ' classId: ', aMethod classId asString, ' methodId: ', aMethod methodId asString, ' replyText: ', aMethod replyText asString)
-	yourself
-%
-category: 'Initialize'
-method: GsRabbitMqError
-initializeFromConnectionClosedMethod: aMethod
-
-^ self amqpErrorCode: aMethod replyCode ;
-	details: ('The broker has closed the connection. Reply code: ', aMethod replyCode asString, ' classId: ', aMethod classId asString, ' methodId: ', aMethod methodId asString, ' replyText: ', aMethod replyText asString)
-	yourself
-%
-category: 'Initialize'
-method: GsRabbitMqError
-initializeFromReply: aReply forOperation: aString
-
-super initialize.
-self replyType: aReply replyType.
-aReply isLibraryException ifTrue:[ ^ self initializeLibraryExceptionFromReply: aReply forOperation: aString].
-aReply isServerException ifTrue:[ ^ self initializeServerExceptionFromReply: aReply forOperation: aString].
-aReply isSocketEof ifTrue:[ ^ self initializeSocketEofExceptionFromReply: aReply forOperation: aString].
-
-"Should never reach this code!"
-^self error: 'Unknown reply kind, should not be here!'
-%
-category: 'Initialize'
-method: GsRabbitMqError
-initializeLibraryExceptionFromReply: reply forOperation: aString
-
-^ self amqpErrorCode: reply libraryErrorNotNoError ;
-	details: (self buildErrorStringForOperation: aString with: ('with a library exception ', (reply connection library amqp_error_string2_: self amqpErrorCode))) ;
-	yourself
-%
-category: 'Initialize'
-method: GsRabbitMqError
-initializeServerExceptionFromReply: reply forOperation: aString
-
-^ self amqpErrorCode: reply methodNumber ;
-	details: (self buildErrorStringForOperation: aString with: ('with a server exception. The server returned: ' , (reply connection library methodNumberToString: self amqpErrorCode))) ;
-	yourself
-%
-category: 'Initialize'
-method: GsRabbitMqError
-initializeSocketEofExceptionFromReply: reply forOperation: aString
-
-^ self amqpErrorCode: GsAmqpRpcReply AMQP_STATUS_SOCKET_CLOSED ;
-	details: (self buildErrorStringForOperation: aString with: ('with socket EOF exception ', (reply connection library methodNumberToString: self amqpErrorCode))) ;
-	yourself
-%
-category: 'Testing'
-method: GsRabbitMqError
-isLibraryException
-
-^self replyType == GsAmqpRpcReply AMQP_RESPONSE_LIBRARY_EXCEPTION
-%
-category: 'Testing'
-method: GsRabbitMqError
-isServerException
-
-^self replyType == GsAmqpRpcReply AMQP_RESPONSE_SERVER_EXCEPTION
-%
-category: 'Testing'
-method: GsRabbitMqError
-isSocketEof
-
-^self replyType == GsAmqpRpcReply AMQP_RESPONSE_NONE
-%
-category: 'Accessing'
-method: GsRabbitMqError
-replyType
-	^replyType
-%
-category: 'Updating'
-method: GsRabbitMqError
-replyType: newValue
-	replyType := newValue
-%
-! ------------------- Remove existing behavior from GsAmqpChannelClose
-removeAllMethods GsAmqpChannelClose
-removeAllClassMethods GsAmqpChannelClose
-! ------------------- Class methods for GsAmqpChannelClose
-! ------------------- Instance methods for GsAmqpChannelClose
 ! ------------------- Remove existing behavior from GsLibRabbitMq
 removeAllMethods GsLibRabbitMq
 removeAllClassMethods GsLibRabbitMq
@@ -8062,1453 +9357,158 @@ __attribute__((visibility(""default"")))void recycle_amqp_pool(amqp_pool_t *pool
 	"Interpreted as #void from #( #'ptr' )"
 	^ Function_recycle_amqp_pool callWith: { pool  }
 %
-! ------------------- Remove existing behavior from GsAmqpMessage
-removeAllMethods GsAmqpMessage
-removeAllClassMethods GsAmqpMessage
-! ------------------- Class methods for GsAmqpMessage
-category: 'Constants'
-classmethod: GsAmqpMessage
-defaultBodyClass
+! ------------------- Remove existing behavior from GsRabbitMqError
+removeAllMethods GsRabbitMqError
+removeAllClassMethods GsRabbitMqError
+! ------------------- Class methods for GsRabbitMqError
+category: 'Instance Creation'
+classmethod: GsRabbitMqError
+newFromChannelClose: aGsAmqpConnectionClose
 
-^ String
+^ self new initializeFromChannelClosedMethod: aGsAmqpConnectionClose
 %
 category: 'Instance Creation'
-classmethod: GsAmqpMessage
-fromCPointer: aCByteArray atOffset: offset bodyClass: aByteClass
+classmethod: GsRabbitMqError
+newFromConnectionClose: aGsAmqpConnectionClose
 
-	| res |
-	res := self fromCPointer: aCByteArray atOffset: offset initializeFromC: false.
-	res bodyClass: aByteClass.
-	^ res initializeFromC
+^ self new initializeFromConnectionClosedMethod: aGsAmqpConnectionClose
 %
 category: 'Instance Creation'
-classmethod: GsAmqpMessage
-fromCPointer: aCByteArray bodyClass: aByteClass
+classmethod: GsRabbitMqError
+newFromRpcReply: reply forOperation: aString
 
-	^self fromCPointer: aCByteArray atOffset: 0 bodyClass: aByteClass
-%
-category: 'Constants'
-classmethod: GsAmqpMessage
-sizeInC
-
-^ 280
-%
-! ------------------- Instance methods for GsAmqpMessage
-category: 'Accessing'
-method: GsAmqpMessage
-body
-	^body
-%
-category: 'Updating'
-method: GsAmqpMessage
-body: newValue
-	body := newValue
-%
-category: 'Accessing'
-method: GsAmqpMessage
-bodyClass
-	^bodyClass
-%
-category: 'Updating'
-method: GsAmqpMessage
-bodyClass: newValue
-	bodyClass := newValue
-%
-category: 'Memory Management'
-method: GsAmqpMessage
-destroyCStateUsingLibrary: lib
-
-self destroyed ifFalse:[
-	self destroyed: true.
-	lib amqp_destroy_message_: self.
-	self zeroMemory .
-].
-^ self
-
-%
-category: 'Accessing'
-method: GsAmqpMessage
-destroyed
-	^destroyed
-%
-category: 'Updating'
-method: GsAmqpMessage
-destroyed: newValue
-	destroyed := newValue
-%
-category: 'Initialization'
-method: GsAmqpMessage
-initialize
-
-	^self
-		destroyed: false;
-		bodyClass: String;
-		yourself
-%
-category: 'Initialization'
-method: GsAmqpMessage
-initializeFromC
-
-	self bodyClass ifNil:[ self bodyClass: self class defaultBodyClass ].
-	^self destroyed
+	^reply isSuccess
 		ifTrue:
-			[self error: 'Attempt to initialize from C an already destroyed message']
-		ifFalse:
-			[self
-				properties: (GsAmqpBasicProperties fromCPointer: self);
-				body: (self byteObjectFromAmqpBytesAtOffset: 200 class: self bodyClass);
-				yourself]
-%
-category: 'Accessing'
-method: GsAmqpMessage
-properties
-	^properties
-%
-category: 'Updating'
-method: GsAmqpMessage
-properties: newValue
-	properties := newValue
-%
-! ------------------- Remove existing behavior from GsAmqpBytes
-removeAllMethods GsAmqpBytes
-removeAllClassMethods GsAmqpBytes
-! ------------------- Class methods for GsAmqpBytes
-category: 'Constants'
-classmethod: GsAmqpBytes
-addressOffset
-
-"Zero-based offset of the char * in the receiver's C memory. Note the result is NOT null terminated!"
-
-^ 8
+			[self error: 'Attempt to raise an exception from a successful operation']
+		ifFalse: [self new initializeFromReply: reply forOperation: aString]
 %
 category: 'Instance Creation'
-classmethod: GsAmqpBytes
-emptyBytes
+classmethod: GsRabbitMqError
+newWithStatusCode: status library: library
+	"GsRabbitMqError newWithStatusCode: -1 library: GsLibRabbitMq new"
 
-"Return a new instance containing no data"
-
-^ self new
-%
-category: 'Instance Creation'
-classmethod: GsAmqpBytes
-fromBytes: byteObj
-
-	^(byteObj size == 0) "Handle both empty byteObj and nil"
-		ifTrue: [self emptyBytes]
-		ifFalse:
-			[| cba res |
-			cba := CByteArray withAll: byteObj nullTerminate: false.
-			(res := self new)
-				bytes: cba;
-				len: cba size.
-			res]
-%
-category: 'Instance Creation'
-classmethod: GsAmqpBytes
-fromString: aString
-
-	^self fromBytes: aString
-%
-category: 'Instance Creation'
-classmethod: GsAmqpBytes
-fromStringEncodeAsUtf8: byteObj
-
-	^(byteObj size == 0) "Handle both empty byteObj and nil"
-		ifTrue: [self emptyBytes]
-		ifFalse:
-			[| cba res |
-			cba := CByteArray gcMalloc: byteObj size.
-			cba encodeUTF8From: byteObj into: 0 allowCodePointZero: false.
-			(res := self new)
-				bytes: cba;
-				len: cba size.
-			res]
-%
-category: 'Instance Creation'
-classmethod: GsAmqpBytes
-fromStringOrNil: aString
-
-"Similar to #fromString: except return a nil if the argument is nil"
-^ aString ifNil:[nil] ifNotNil:[ self fromString: aString ]
-%
-category: 'Constants'
-classmethod: GsAmqpBytes
-lengthOffset
-
-"Zero-based offset of size of the string in the receiver's C memory."
-
-^ 0
-%
-category: 'Constants'
-classmethod: GsAmqpBytes
-sizeInC
-
-^ 16
-%
-! ------------------- Instance methods for GsAmqpBytes
-category: 'Formatting'
-method: GsAmqpBytes
-asString
-
-
-^ self printString
-%
-category: 'Accessing'
-method: GsAmqpBytes
-bytes
-
-"Return nil if the receiver references a NULL string. Othwerwise answer a CByteArray"
-	^self
-		pointerAt: 8
-		resultClass: CByteArray.
-%
-category: 'Updating'
-method: GsAmqpBytes
-bytes: aCByteArray
-	"generated by CDeclaration>>singlePointerUpdatorForOffset:"
-
-	^ self
-		pointerAt: 8 put: aCByteArray;
-		derivedFrom: aCByteArray ;
-		yourself
-%
-category: 'Accessing'
-method: GsAmqpBytes
-bytesAddress
-	   "generated by CDeclaration>>singlePointerAccessorForOffset:"
-	^self uint64At: 8
-%
-category: 'Converting'
-method: GsAmqpBytes
-convertToByteArray
-
-	| length |
-	^(length := self len) == 0
-		ifTrue: [String new]
-		ifFalse:
-			[self byteArrayFromCharStarAt: 8 numBytes: length]
-%
-category: 'Converting'
-method: GsAmqpBytes
-convertToString
-
-	| length |
-	^(length := self len) == 0
-		ifTrue: [String new]
-		ifFalse:
-			[self stringFromCharStarAt: 8 numBytes: length]
-%
-category: 'Initialization'
-method: GsAmqpBytes
-initialize: aCByteArray
-  | sz |
-  sz := self size min: aCByteArray size .
-  self copyBytesFrom: aCByteArray from: 1 to: sz into: 0 allowCodePointZero: true .
-%
-category: 'Initialization'
-method: GsAmqpBytes
-initializeFromC
-
-^ self
-%
-category: 'Accessing'
-method: GsAmqpBytes
-len
-	   "generated by CDeclaration>>simpleAccessorForOffset: 0 "
-	^ self uint64At: 0
-%
-category: 'Updating'
-method: GsAmqpBytes
-len: anObject
-	"generated by CDeclaration>>simpleUpdatorForOffset: 0 "
-
-	^self
-		uint64At: 0 put: anObject;
-		yourself
-%
-category: 'Formatting'
-method: GsAmqpBytes
-printString
-
-^ (self class name describeClassName), '(', self convertToString , ')'
-%
-! ------------------- Remove existing behavior from GsAmqpBasicDeliveryPayload
-removeAllMethods GsAmqpBasicDeliveryPayload
-removeAllClassMethods GsAmqpBasicDeliveryPayload
-! ------------------- Class methods for GsAmqpBasicDeliveryPayload
-category: 'Constants'
-classmethod: GsAmqpBasicDeliveryPayload
-sizeInC
-
-^ 64
-%
-! ------------------- Instance methods for GsAmqpBasicDeliveryPayload
-category: 'Accessing'
-method: GsAmqpBasicDeliveryPayload
-consumerTag
-	^consumerTag
-%
-category: 'Updating'
-method: GsAmqpBasicDeliveryPayload
-consumerTag: newValue
-	consumerTag := newValue
-%
-category: 'Accessing'
-method: GsAmqpBasicDeliveryPayload
-deliveryTag
-	^deliveryTag
-%
-category: 'Updating'
-method: GsAmqpBasicDeliveryPayload
-deliveryTag: newValue
-	deliveryTag := newValue
-%
-category: 'Accessing'
-method: GsAmqpBasicDeliveryPayload
-exchange
-	^exchange
-%
-category: 'Updating'
-method: GsAmqpBasicDeliveryPayload
-exchange: newValue
-	exchange := newValue
-%
-category: 'Initialization'
-method: GsAmqpBasicDeliveryPayload
-initializeFromC
-
-self consumerTag: (self stringFromAmqpBytesAtOffset: 0) ;
-	deliveryTag: (self uint64At: 16) ;
-	redelivered: (self booleanAtOffset: 24) ; "integer to boolean"
-	exchange: (self stringFromAmqpBytesAtOffset: 32) ;
-	routingKey: (self stringFromAmqpBytesAtOffset: 48) ;
-	yourself
-%
-category: 'Accessing'
-method: GsAmqpBasicDeliveryPayload
-redelivered
-	^redelivered
-%
-category: 'Updating'
-method: GsAmqpBasicDeliveryPayload
-redelivered: newValue
-	redelivered := newValue
-%
-category: 'Accessing'
-method: GsAmqpBasicDeliveryPayload
-routingKey
-	^routingKey
-%
-category: 'Updating'
-method: GsAmqpBasicDeliveryPayload
-routingKey: newValue
-	routingKey := newValue
-%
-! ------------------- Remove existing behavior from GsAmqpMethod
-removeAllMethods GsAmqpMethod
-removeAllClassMethods GsAmqpMethod
-! ------------------- Class methods for GsAmqpMethod
-category: 'Constants'
-classmethod: GsAmqpMethod
-AMQP_BASIC_ACK_METHOD
-
-^ 16r003C0050
-%
-category: 'Constants'
-classmethod: GsAmqpMethod
-AMQP_BASIC_DELIVER_METHOD
-
-^ 16r003C003C
-%
-category: 'Constants'
-classmethod: GsAmqpMethod
-AMQP_BASIC_NACK_METHOD
-
-^ 16r003C0078
-%
-category: 'Constants'
-classmethod: GsAmqpMethod
-AMQP_BASIC_REJECT_METHOD
-
-^ 16r003C005A
-%
-category: 'Constants'
-classmethod: GsAmqpMethod
-AMQP_BASIC_RETURN_METHOD
-
-^ 16r003C0032
-%
-category: 'Constants'
-classmethod: GsAmqpMethod
-AMQP_CHANNEL_CLOSE_METHOD
-
-^ 16r140028
-%
-category: 'Constants'
-classmethod: GsAmqpMethod
-AMQP_CONNECTION_CLOSE_METHOD
-
-^ 16rA0032
-%
-category: 'Instance Creation'
-classmethod: GsAmqpMethod
-fromRpcReply: rpcReply
-
-	^ (self fromCPointer: rpcReply atOffset: 8 initializeFromC: false)
-		connection: rpcReply connection; "Set connection before calling initializeFromC"
-		initializeFromC;
-		yourself
-%
-category: 'Constants'
-classmethod: GsAmqpMethod
-sizeInC
-
-^ 16
-%
-! ------------------- Instance methods for GsAmqpMethod
-category: 'Accessing'
-method: GsAmqpMethod
-connection
-	^connection
-%
-category: 'Updating'
-method: GsAmqpMethod
-connection: newValue
-	connection := newValue
-%
-category: 'Accessing'
-method: GsAmqpMethod
-decoded
-	^decoded
-%
-category: 'Updating'
-method: GsAmqpMethod
-decoded: newValue
-	decoded := newValue
-%
-category: 'Initialization'
-method: GsAmqpMethod
-decodeMethodObject
-
-	self isBasicAck
-		ifTrue: [^GsAmqpBasicAck fromMemoryReferenceIn: self atOffset: 8].
-	self isBasicNack
-		ifTrue: [^GsAmqpBasicNack fromMemoryReferenceIn: self atOffset: 8].
-	self isBasicReject
-		ifTrue: [^GsAmqpBasicReject fromMemoryReferenceIn: self atOffset: 8].
-	self isBasicReturn
-		ifTrue: [^GsAmqpBasicReturn fromMemoryReferenceIn: self atOffset: 8].
-	self isConnectionClose
-		ifTrue: "broker closed the connection, raise an exception"
-			[ ^ GsAmqpConnectionClose fromMemoryReferenceIn: self atOffset: 8
-			" | close |
-			close := GsAmqpConnectionClose fromMemoryReferenceIn: self atOffset: 8.
-			^(GsRabbitMqError newFromConnectionClose: close) signal "
-		].
-	self isChannelClose
-		ifTrue: "broker closed the connection, raise an exception"
-			[ GsAmqpChannelClose fromMemoryReferenceIn: self atOffset: 8.
-			"| close |
-			close := GsAmqpChannelClose fromMemoryReferenceIn: self atOffset: 8.
-			^(GsRabbitMqError newFromChannelClose: close) signal"
-		].
-	^self error: 'Unexpected method object'
-%
-category: 'Testing'
-method: GsAmqpMethod
-hasContent
-
-"See amqp_framing.c. Only these method kinds have content, all others do not:
-
-    AMQP_BASIC_PUBLISH_METHOD
-    AMQP_BASIC_RETURN_METHOD
-    AMQP_BASIC_DELIVER_METHOD
-    AMQP_BASIC_GET_OK_METHOD
-"
-
-^ self connection methodNumberHasContent: self methodNumber
-%
-category: 'Initialization'
-method: GsAmqpMethod
-initializeFromC
-
-^ self methodNumber: (self uint32At: 0) ;
-	methodName: (self connection library amqp_method_name_: self methodNumber);
-	decoded: (self uint64At: 8) ;
-	methodObject: self decodeMethodObject ;
-	yourself
-%
-category: 'Testing'
-method: GsAmqpMethod
-isBasicAck
-
-^ self methodNumber == self class AMQP_BASIC_ACK_METHOD
-%
-category: 'Testing'
-method: GsAmqpMethod
-isBasicDeliver
-
-^ self methodNumber == self class AMQP_BASIC_DELIVER_METHOD
-%
-category: 'Testing'
-method: GsAmqpMethod
-isBasicNack
-
-^ self methodNumber == self class AMQP_BASIC_NACK_METHOD
-%
-category: 'Testing'
-method: GsAmqpMethod
-isBasicReject
-
-^ self methodNumber == self class AMQP_BASIC_REJECT_METHOD
-%
-category: 'Testing'
-method: GsAmqpMethod
-isBasicReturn
-
-^ self methodNumber == self class AMQP_BASIC_RETURN_METHOD
-%
-category: 'Testing'
-method: GsAmqpMethod
-isChannelClose
-
-^ self methodNumber == self class AMQP_CHANNEL_CLOSE_METHOD
-%
-category: 'Testing'
-method: GsAmqpMethod
-isConnectionClose
-
-^ self methodNumber == self class AMQP_CONNECTION_CLOSE_METHOD
-%
-category: 'Accessing'
-method: GsAmqpMethod
-methodName
-	^methodName
-%
-category: 'Updating'
-method: GsAmqpMethod
-methodName: newValue
-	methodName := newValue
-%
-category: 'Accessing'
-method: GsAmqpMethod
-methodNumber
-	^methodNumber
-%
-category: 'Updating'
-method: GsAmqpMethod
-methodNumber: newValue
-	methodNumber := newValue
-%
-category: 'Accessing'
-method: GsAmqpMethod
-methodObject
-	^methodObject
-%
-category: 'Updating'
-method: GsAmqpMethod
-methodObject: newValue
-	methodObject := newValue
-%
-category: 'Testing'
-method: GsAmqpMethod
-shortName
-
-self isBasicAck ifTrue:[ ^ 'ack' ].
-self isBasicNack ifTrue:[ ^ 'nack' ].
-self isBasicReject ifTrue:[ ^ 'reject' ].
-self isBasicReturn ifTrue:[ ^ 'return' ].
-^ self error: 'Unexpected method for shortName'
-%
-! ------------------- Remove existing behavior from GsAmqpEnvelope
-removeAllMethods GsAmqpEnvelope
-removeAllClassMethods GsAmqpEnvelope
-! ------------------- Class methods for GsAmqpEnvelope
-category: 'Constants'
-classmethod: GsAmqpEnvelope
-defaultMessageBodyClass
-
-^ String
-%
-category: 'Instance Creation'
-classmethod: GsAmqpEnvelope
-newForBinaryMessage
-
-^ self newWithMessageBodyClass: ByteArray
-%
-category: 'Instance Creation'
-classmethod: GsAmqpEnvelope
-newWithMessageBodyClass: aByteClass
-
-	aByteClass _validateIsClass.
-	aByteClass isBytes ifFalse: [aByteClass _error: #objErrNotByteKind].
-	^(super new)
-		messageBodyClass: aByteClass;
-		yourself
-%
-category: 'Constants'
-classmethod: GsAmqpEnvelope
-sizeInC
-
-^ 352
-%
-! ------------------- Instance methods for GsAmqpEnvelope
-category: 'Accessing'
-method: GsAmqpEnvelope
-channel
-	^channel
-%
-category: 'Updating'
-method: GsAmqpEnvelope
-channel: newValue
-	channel := newValue
-%
-category: 'Reusing'
-method: GsAmqpEnvelope
-clearForReuse
-
-^ self reinitialize ; zeroMemory
-%
-category: 'Accessing'
-method: GsAmqpEnvelope
-consumerTag
-	^consumerTag
-%
-category: 'Updating'
-method: GsAmqpEnvelope
-consumerTag: newValue
-	consumerTag := newValue
-%
-category: 'Accessing'
-method: GsAmqpEnvelope
-deliveryTag
-	^deliveryTag
-%
-category: 'Updating'
-method: GsAmqpEnvelope
-deliveryTag: newValue
-	deliveryTag := newValue
-%
-category: 'Memory Management'
-method: GsAmqpEnvelope
-destroyCStateUsingLibrary: lib
-
-self destroyed ifFalse:[
-	self destroyed: true.
-	lib amqp_destroy_envelope_: self.
-	self zeroMemory.
-].
-^ self
-
-%
-category: 'Accessing'
-method: GsAmqpEnvelope
-destroyed
-	^destroyed
-%
-category: 'Updating'
-method: GsAmqpEnvelope
-destroyed: newValue
-	destroyed := newValue
-%
-category: 'Accessing'
-method: GsAmqpEnvelope
-exchange
-	^exchange
-%
-category: 'Updating'
-method: GsAmqpEnvelope
-exchange: newValue
-	exchange := newValue
-%
-category: 'Initialization'
-method: GsAmqpEnvelope
-initialize
-
-	^self
-		destroyed: false;
-		initializeMessageBodyClass;
-		yourself
-%
-category: 'Initialization'
-method: GsAmqpEnvelope
-initializeFromC
-
-	self initializeMessageBodyClass.
-	^ self destroyed
-		ifTrue:
-			[self error: 'Attempt to initialize from C an already destroyed envelope']
-		ifFalse:
-			[self
-				channel: (self uint32At: 0);
-				consumerTag: (self stringFromAmqpBytesAtOffset: 8);
-				deliveryTag: (self uint64At: 24);
-				redelivered: (self booleanAtOffset: 32);
-				exchange: (self stringFromAmqpBytesAtOffset: 40);
-				routingKey: (self stringFromAmqpBytesAtOffset: 56);
-				message: (GsAmqpMessage fromCPointer: self atOffset: 72 bodyClass: self messageBodyClass );
-				yourself	"integer to boolean"]
-%
-category: 'Initialization'
-method: GsAmqpEnvelope
-initializeMessageBodyClass
-
-	self messageBodyClass
-		ifNil: [self messageBodyClass: self class defaultMessageBodyClass].
-	^self
-%
-category: 'Accessing'
-method: GsAmqpEnvelope
-message
-	^message
-%
-category: 'Updating'
-method: GsAmqpEnvelope
-message: newValue
-	message := newValue
-%
-category: 'Accessing'
-method: GsAmqpEnvelope
-messageBody
-
-^ message ifNil:[ nil ] ifNotNil:[ message body ]
-%
-category: 'Accessing'
-method: GsAmqpEnvelope
-messageBodyClass
-	^messageBodyClass
-%
-category: 'Updating'
-method: GsAmqpEnvelope
-messageBodyClass: newValue
-	messageBodyClass := newValue
-%
-category: 'Accessing'
-method: GsAmqpEnvelope
-redelivered
-	^redelivered
-%
-category: 'Updating'
-method: GsAmqpEnvelope
-redelivered: newValue
-	redelivered := newValue
-%
-category: 'Initialization'
-method: GsAmqpEnvelope
-reinitialize
-
-^ self destroyed: false ;
-	yourself
-%
-category: 'Accessing'
-method: GsAmqpEnvelope
-routingKey
-	^routingKey
-%
-category: 'Updating'
-method: GsAmqpEnvelope
-routingKey: newValue
-	routingKey := newValue
-%
-! ------------------- Remove existing behavior from GsAmqpBasicNack
-removeAllMethods GsAmqpBasicNack
-removeAllClassMethods GsAmqpBasicNack
-! ------------------- Class methods for GsAmqpBasicNack
-! ------------------- Instance methods for GsAmqpBasicNack
-category: 'Initialization'
-method: GsAmqpBasicNack
-initializeFromC
-
-	super initializeFromC.
-	^self
-		requeue: (self booleanAtOffset: 12);
-		yourself
-%
-category: 'Accessing'
-method: GsAmqpBasicNack
-requeue
-	^requeue
-%
-category: 'Updating'
-method: GsAmqpBasicNack
-requeue: newValue
-	requeue := newValue
-%
-! ------------------- Remove existing behavior from GsAmqpBasicReject
-removeAllMethods GsAmqpBasicReject
-removeAllClassMethods GsAmqpBasicReject
-! ------------------- Class methods for GsAmqpBasicReject
-category: 'Constants'
-classmethod: GsAmqpBasicReject
-sizeInC
-
-^ 16
-%
-! ------------------- Instance methods for GsAmqpBasicReject
-category: 'Accessing'
-method: GsAmqpBasicReject
-deliveryTag
-	^deliveryTag
-%
-category: 'Updating'
-method: GsAmqpBasicReject
-deliveryTag: newValue
-	deliveryTag := newValue
-%
-category: 'Initialization'
-method: GsAmqpBasicReject
-initializeFromC
-
-^ self deliveryTag: (self uint64At: 0) ;
-		requeue: (self booleanAtOffset: 8);
-		yourself
-%
-category: 'Accessing'
-method: GsAmqpBasicReject
-requeue
-	^requeue
-%
-category: 'Updating'
-method: GsAmqpBasicReject
-requeue: newValue
-	requeue := newValue
-%
-! ------------------- Remove existing behavior from GsAmqpQueue
-removeAllMethods GsAmqpQueue
-removeAllClassMethods GsAmqpQueue
-! ------------------- Class methods for GsAmqpQueue
-category: 'Instance Creation'
-classmethod: GsAmqpQueue
-declareWithConnection: conn durable: durable exclusive: exclusive autoDelete: autoDelete
-
-^ self declareWithConnection: conn name: nil channel: nil durable: durable exclusive: exclusive autoDelete: autoDelete
-%
-category: 'Instance Creation'
-classmethod: GsAmqpQueue
-declareWithConnection: conn name: qName channel: channelIdArg durable: durable exclusive: exclusive autoDelete: autoDelete
-	"qName == nil means name of queue will be selected by the broker.
-channelIdArg == nil means use any open channel and raise an error if no channels are open."
-
-	| qResult result channelId |
-	channelId := channelIdArg
-				ifNil: [conn openNextChannel]
-				ifNotNil: [channelIdArg].
-	qResult := conn
-				declareQueueWithName: qName
-				channel: channelId
-				durable: durable
-				exclusive: exclusive
-				autoDelete: autoDelete
-				passive: false .
-	result := self new.
+	| result |
+	result := self new initialize.
 	^result
-		connection: conn;
-		channel: channelId;
-		name: qResult queueName;
-		durable: durable;
-		exclusive: exclusive;
-		autoDelete: autoDelete;
+		amqpErrorCode: status;
+		details: (library amqp_error_string2_: status);
 		yourself
-%
-! ------------------- Instance methods for GsAmqpQueue
-category: 'Acknowlegements'
-method: GsAmqpQueue
-ackEnvelope: env
-
-^ self ackEnvelope: env includePreviousMessages: false
-%
-category: 'Acknowlegements'
-method: GsAmqpQueue
-ackEnvelope: env includePreviousMessages: includePrev
-
-	^ self connection
-		ackMessageWithDeliveryTag: env deliveryTag
-		channel: self channel
-		multiple: includePrev
-%
-category: 'Acknowlegements'
-method: GsAmqpQueue
-ackEnvelopeAndAllPrevious: env
-
-^ self ackEnvelope: env includePreviousMessages: true
-%
-category: 'Private'
-method: GsAmqpQueue
-addMatchToAllToDictionary: aDictionary
-
-	aDictionary at: self matchKey ifAbsentPut: [self matchAllValue].
-	^self
-%
-category: 'Private'
-method: GsAmqpQueue
-addMatchToAllToKeys: keys values: values
-
-keys detect:[:e| e = self matchKey ] ifNone:[
-	keys add: self matchKey.
-	values add: self matchAllValue.
-].
-%
-category: 'Private'
-method: GsAmqpQueue
-addMatchToAnyToDictionary: aDictionary
-
-	aDictionary at: self matchKey ifAbsentPut: [self matchAnyValue].
-	^self
-%
-category: 'Private'
-method: GsAmqpQueue
-addMatchToAnyToKeys: keys values: values
-
-keys detect:[:e| e = self matchKey ] ifNone:[
-	keys add: self matchKey.
-	values add: self matchAnyValue
-].
-%
-category: 'Private'
-method: GsAmqpQueue
-basicBindToHeadersExchange: exchg matchKeys: keys values: values
-
-| exchgName args |
-args := GsAmqpTable newFromKeys: keys values: values.
-exchgName := (exchg isKindOf: String) ifTrue:[ exchg ] ifFalse:[ exchg name ].
-self connection bindQueueWithName: self name toExchangeWithName: exchgName channel: self channel routingKey: nil arguments: args.
-^ self
-%
-category: 'Private'
-method: GsAmqpQueue
-basicBindToHeadersExchange: exchg withHeadersDictionary: aDictionary
-
-| exchgName args |
-args := GsAmqpTable  newFromDictionary: aDictionary .
-exchgName := (exchg isKindOf: String) ifTrue:[ exchg ] ifFalse:[ exchg name ].
-self connection bindQueueWithName: self name toExchangeWithName: exchgName channel: self channel routingKey: nil arguments: args.
-^ self
-%
-category: 'Consuming'
-method: GsAmqpQueue
-beginConsumingWithNoLocal: noLocal noAck: noAck
-
-	| tag |
-	tag := self connection
-				beginConsumingQueueWithName: self name
-				channel: self channel
-				consumerTag: self consumerTag
-				noLocal: noLocal
-				noAck: noAck
-				exclusive: self exclusive.
-	self consumerTag ifNil: [self consumerTag: tag].
-	^self
-%
-category: 'Binding'
-method: GsAmqpQueue
-bindToExchange: exchg
-
-^ self bindToExchange: exchg routingKey: nil
-%
-category: 'Binding'
-method: GsAmqpQueue
-bindToExchange: exchg routingKey: rKey
-
-| exchgName |
-exchgName := (exchg isKindOf: String) ifTrue:[ exchg ] ifFalse:[ exchg name ].
-self connection bindQueueWithName: self name toExchangeWithName: exchgName channel: self channel routingKey: rKey .
-self exchange: exchg.
-^ self
-%
-category: 'Binding (Headers Exchanges)'
-method: GsAmqpQueue
-bindToHeadersExchange: exchg matchAllInDictionary: aDictionary
-
-self addMatchToAllToDictionary: aDictionary.
-^ self basicBindToHeadersExchange: exchg withHeadersDictionary: aDictionary.
-%
-category: 'Binding (Headers Exchanges)'
-method: GsAmqpQueue
-bindToHeadersExchange: exchg matchAllKeys: keys values: values
-
-self addMatchToAllToKeys: keys values: values.
-^ self basicBindToHeadersExchange: exchg matchKeys: keys values: values
-%
-category: 'Binding (Headers Exchanges)'
-method: GsAmqpQueue
-bindToHeadersExchange: exchg matchAnyInDictionary: aDictionary
-
-self addMatchToAnyToDictionary: aDictionary.
-^ self basicBindToHeadersExchange: exchg withHeadersDictionary: aDictionary.
-%
-category: 'Binding (Headers Exchanges)'
-method: GsAmqpQueue
-bindToHeadersExchange: exchg matchAnyKeys: keys values: values
-
-self addMatchToAnyToKeys: keys values: values.
-^ self basicBindToHeadersExchange: exchg matchKeys: keys values: values
-%
-category: 'Consuming'
-method: GsAmqpQueue
-consumeMessageInto: aGsAmqpEnvelope timeoutMs: ms
-
-^self connection consumeMessageInto: aGsAmqpEnvelope timeoutMs: ms
-%
-category: 'Accessing'
-method: GsAmqpQueue
-consumerTag
-	^consumerTag
-%
-category: 'Updating'
-method: GsAmqpQueue
-consumerTag: newValue
-	consumerTag := newValue
-%
-category: 'Deleting'
-method: GsAmqpQueue
-deleteForceIfInUse: forceIfInUse forceIfNotEmpty:  forceIfNotEmpty
-
-"Delete the receiver from the broker.
-If forceIfInUse is true then delete the queue even if it has consumers. Otherwise do not delete it and raise an exception.
-If forceIfNotEmpty is true, then delete the queue even if it is not empty. Otherwise do not delete it and raise an exception."
-
-	^self connection
-		deleteQueueWithName: self name
-		channel: self channel
-		forceIfInUse: forceIfInUse
-		forceIfNotEmpty: forceIfNotEmpty
-%
-category: 'Deleting'
-method: GsAmqpQueue
-deleteIfSafe
-
-^ self deleteForceIfInUse: false forceIfNotEmpty:  false
-%
-category: 'Accessing'
-method: GsAmqpQueue
-exchange
-	^exchange
-%
-category: 'Updating'
-method: GsAmqpQueue
-exchange: newValue
-	exchange := newValue
-%
-category: 'Accessing'
-method: GsAmqpQueue
-exclusive
-	^exclusive
-%
-category: 'Updating'
-method: GsAmqpQueue
-exclusive: newValue
-	exclusive := newValue
-%
-category: 'Deleting'
-method: GsAmqpQueue
-forceDelete
-
-^ self deleteForceIfInUse: true forceIfNotEmpty:  true
-%
-category: 'Private'
-method: GsAmqpQueue
-matchAllValue
-
-^ 'all'
-%
-category: 'Private'
-method: GsAmqpQueue
-matchAnyValue
-
-^ 'any'
-%
-category: 'Private'
-method: GsAmqpQueue
-matchKey
-
-^ 'x-match'
-%
-category: 'Accessing'
-method: GsAmqpQueue
-routingKey
-	^routingKey
-%
-category: 'Updating'
-method: GsAmqpQueue
-routingKey: newValue
-	routingKey := newValue
-%
-category: 'Accessing'
-method: GsAmqpQueue
-size
-
-^self connection sizeOfQueueWithName: self name channel: self channel
-%
-category: 'Consuming'
-method: GsAmqpQueue
-stopConsuming
-
-"Tell the broker we are no longer consuming this queue. Has no effect if we were not consuming the queue to start with.
-Note that the broker may have sent messages before it  processed the message to stop consuming. It is therefore the caller's
-responsibility to check the queue for any outstanding messages after calling this method."
-
-	| tag |
-	(tag := self consumerTag)
-		ifNotNil:
-			[self connection stopConsumingQueueOnChannel: self channel
-				consumerTag: tag.
-			self consumerTag: nil].
-	^self
-%
-category: 'Binding'
-method: GsAmqpQueue
-unbind
-
-| exchgName exchg |
-(exchg := self exchange) ifNil: [ ^ self "was not bound" ].
-exchgName := (exchg isKindOf: String) ifTrue:[exchg] ifFalse:[ exchg name ].
-self connection unbindQueueWithName: self name fromExchangeWithName: exchgName channel: self channel routingKey: self routingKey .
-^ self exchange: nil ; consumerTag: nil ;  yourself
-%
-! ------------------- Remove existing behavior from GsAmqpFrame
-removeAllMethods GsAmqpFrame
-removeAllClassMethods GsAmqpFrame
-! ------------------- Class methods for GsAmqpFrame
-category: 'Constants'
-classmethod: GsAmqpFrame
-AMQP_FRAME_BODY
-
-^ 3
-%
-category: 'Constants'
-classmethod: GsAmqpFrame
-AMQP_FRAME_HEADER
-
-^ 2
-%
-category: 'Constants'
-classmethod: GsAmqpFrame
-AMQP_FRAME_METHOD
-
-^ 1
-%
-category: 'Constants'
-classmethod: GsAmqpFrame
-basicPropertiesClassId
-
-"From amqp_framing.c"
-
-^ 60
 %
 category: 'Instance Creation'
-classmethod: GsAmqpFrame
-newWithConnection: aGsAmqpConnection
+classmethod: GsRabbitMqError
+signalForOperation: aString
 
-	^(super new)
-		connection: aGsAmqpConnection;
-		yourself
+^self signal: ('A RabbitMQ operation failed: ', aString asString)
 %
-category: 'Constants'
-classmethod: GsAmqpFrame
-sizeInC
+category: 'Signaling'
+classmethod: GsRabbitMqError
+signalWithErrorCode: anInt library: aLib
 
-^ 48
+^ (self newWithStatusCode: anInt library: aLib) signal
 %
-! ------------------- Instance methods for GsAmqpFrame
-category: 'Accessing Header Members'
-method: GsAmqpFrame
-bodySize
-
-"Valid only if isFrameHeader == true"
-^ self uint64At: 16
-%
-category: 'Accessing Body Members'
-method: GsAmqpFrame
-bodyString
-
-"Valid only if isFrameBody == true"
-^ self stringFromAmqpBytesAtOffset: 8
-%
+! ------------------- Instance methods for GsRabbitMqError
 category: 'Accessing'
-method: GsAmqpFrame
-channel
-	^channel
+method: GsRabbitMqError
+amqpErrorCode
+	^amqpErrorCode
 %
 category: 'Updating'
-method: GsAmqpFrame
-channel: newValue
-	channel := newValue
+method: GsRabbitMqError
+amqpErrorCode: newValue
+	amqpErrorCode := newValue
 %
-category: 'Accessing'
-method: GsAmqpFrame
-connection
-	^connection
-%
-category: 'Updating'
-method: GsAmqpFrame
-connection: newValue
-	connection := newValue
-%
-category: 'Accessing Header Members'
-method: GsAmqpFrame
-extractBasicPropertiesPayload
+category: 'Formatting'
+method: GsRabbitMqError
+buildErrorStringForOperation: aString with: details
 
-"Only valid if isBasicPropertiesHeader == true"
-^ GsAmqpBasicProperties fromCPointer: (self cPointerForOffset: 24)
+^'RabbitMQ call ', aString asString, ' failed ', details
 %
-category: 'Accessing Method Members'
-method: GsAmqpFrame
-extractMethodPayload
+category: 'Initialize'
+method: GsRabbitMqError
+initialize
 
-| result |
-result := GsAmqpMethod fromCPointer: self atOffset: 8 initializeFromC: false.
-^ result connection: self connection; initializeFromC
+super initialize.
+^ self amqpErrorCode: 0
+	yourself
+%
+category: 'Initialize'
+method: GsRabbitMqError
+initializeFromChannelClosedMethod: aMethod
 
+^ self amqpErrorCode: aMethod replyCode ;
+	details: ('The broker has closed the channel. Reply code: ', aMethod replyCode asString, ' classId: ', aMethod classId asString, ' methodId: ', aMethod methodId asString, ' replyText: ', aMethod replyText asString)
+	yourself
 %
-category: 'Accessing'
-method: GsAmqpFrame
-frameType
-	^frameType
-%
-category: 'Updating'
-method: GsAmqpFrame
-frameType: newValue
-	frameType := newValue
-%
-category: 'Initialization'
-method: GsAmqpFrame
-initializeForReuse
+category: 'Initialize'
+method: GsRabbitMqError
+initializeFromConnectionClosedMethod: aMethod
 
-	^ self frameType: nil ;
-		channel: nil ;
-		payload: nil
-		yourself
+^ self amqpErrorCode: aMethod replyCode ;
+	details: ('The broker has closed the connection. Reply code: ', aMethod replyCode asString, ' classId: ', aMethod classId asString, ' methodId: ', aMethod methodId asString, ' replyText: ', aMethod replyText asString)
+	yourself
 %
-category: 'Initialization'
-method: GsAmqpFrame
-initializeFrameBodyFromC
+category: 'Initialize'
+method: GsRabbitMqError
+initializeFromReply: aReply forOperation: aString
 
-	^self
-		payload: (self stringFromAmqpBytesAtOffset: 8);
-		yourself
+super initialize.
+self replyType: aReply replyType.
+aReply isLibraryException ifTrue:[ ^ self initializeLibraryExceptionFromReply: aReply forOperation: aString].
+aReply isServerException ifTrue:[ ^ self initializeServerExceptionFromReply: aReply forOperation: aString].
+aReply isSocketEof ifTrue:[ ^ self initializeSocketEofExceptionFromReply: aReply forOperation: aString].
+
+"Should never reach this code!"
+^self error: 'Unknown reply kind, should not be here!'
 %
-category: 'Initialization'
-method: GsAmqpFrame
-initializeFrameHeaderFromC
+category: 'Initialize'
+method: GsRabbitMqError
+initializeLibraryExceptionFromReply: reply forOperation: aString
 
-	^self
-		payload: self extractBasicPropertiesPayload;
-		yourself
+^ self amqpErrorCode: reply libraryErrorNotNoError ;
+	details: (self buildErrorStringForOperation: aString with: ('with a library exception ', (reply connection library amqp_error_string2_: self amqpErrorCode))) ;
+	yourself
 %
-category: 'Initialization'
-method: GsAmqpFrame
-initializeFrameMethodFromC
+category: 'Initialize'
+method: GsRabbitMqError
+initializeServerExceptionFromReply: reply forOperation: aString
 
-	^self
-		payload: self extractMethodPayload;
-		yourself
+^ self amqpErrorCode: reply methodNumber ;
+	details: (self buildErrorStringForOperation: aString with: ('with a server exception. The server returned: ' , (reply connection library methodNumberToString: self amqpErrorCode))) ;
+	yourself
 %
-category: 'Initialization'
-method: GsAmqpFrame
-initializeFromC
+category: 'Initialize'
+method: GsRabbitMqError
+initializeSocketEofExceptionFromReply: reply forOperation: aString
 
-	self
-		frameType: (self uint8At: 0);
-		channel: (self uint16At: 2).
-	self isFrameHeader
-		ifTrue: [self initializeFrameHeaderFromC]
-		ifFalse:
-			[self isFrameMethod
-				ifTrue: [self initializeFrameMethodFromC]
-				ifFalse:
-					[self isFrameBody
-						ifTrue: [self initializeFrameBodyFromC]
-						ifFalse: [self error: 'Unknown frame kind ']]]
+^ self amqpErrorCode: GsAmqpRpcReply AMQP_STATUS_SOCKET_CLOSED ;
+	details: (self buildErrorStringForOperation: aString with: ('with socket EOF exception ', (reply connection library methodNumberToString: self amqpErrorCode))) ;
+	yourself
 %
 category: 'Testing'
-method: GsAmqpFrame
-isBasicPropertiesHeader
+method: GsRabbitMqError
+isLibraryException
 
-^ self isFrameHeader and:[ self propertiesClassId == self class basicPropertiesClassId]
+^self replyType == GsAmqpRpcReply AMQP_RESPONSE_LIBRARY_EXCEPTION
 %
 category: 'Testing'
-method: GsAmqpFrame
-isFrameBasicAckMethod
+method: GsRabbitMqError
+isServerException
 
-^ self isFrameMethod and:[ self methodId == GsAmqpMethod AMQP_BASIC_ACK_METHOD ]
+^self replyType == GsAmqpRpcReply AMQP_RESPONSE_SERVER_EXCEPTION
 %
 category: 'Testing'
-method: GsAmqpFrame
-isFrameBasicDeliverMethod
+method: GsRabbitMqError
+isSocketEof
 
-^ self isFrameMethod and:[ self methodId == GsAmqpMethod AMQP_BASIC_DELIVER_METHOD ]
-%
-category: 'Testing'
-method: GsAmqpFrame
-isFrameBasicNackMethod
-
-^ self isFrameMethod and:[ self methodId == GsAmqpMethod AMQP_BASIC_NACK_METHOD ]
-%
-category: 'Testing'
-method: GsAmqpFrame
-isFrameBasicRejectMethod
-
-^ self isFrameMethod and:[ self methodId == GsAmqpMethod AMQP_BASIC_REJECT_METHOD ]
-%
-category: 'Testing'
-method: GsAmqpFrame
-isFrameBasicReturnMethod
-
-^ self isFrameMethod and:[ self methodId == GsAmqpMethod AMQP_BASIC_RETURN_METHOD ]
-%
-category: 'Testing'
-method: GsAmqpFrame
-isFrameBody
-
-^ self frameType == self class AMQP_FRAME_BODY
-%
-category: 'Testing'
-method: GsAmqpFrame
-isFrameHeader
-
-^ self frameType == self class AMQP_FRAME_HEADER
-%
-category: 'Testing'
-method: GsAmqpFrame
-isFrameMethod
-
-^ self frameType == self class AMQP_FRAME_METHOD
-%
-category: 'Accessing Method Members'
-method: GsAmqpFrame
-methodId
-
-"Only valid if isFrameMethod == true"
-
-^ self uint32At: 8
+^self replyType == GsAmqpRpcReply AMQP_RESPONSE_NONE
 %
 category: 'Accessing'
-method: GsAmqpFrame
-payload
-	^payload
+method: GsRabbitMqError
+replyType
+	^replyType
 %
 category: 'Updating'
-method: GsAmqpFrame
-payload: newValue
-	payload := newValue
-%
-category: 'Accessing Header Members'
-method: GsAmqpFrame
-propertiesClassId
-
-"Valid only if isFrameHeader == true"
-^ self uint16At: 8
-%
-! ------------------- Remove existing behavior from GsAmqpBasicReturn
-removeAllMethods GsAmqpBasicReturn
-removeAllClassMethods GsAmqpBasicReturn
-! ------------------- Class methods for GsAmqpBasicReturn
-category: 'Constants'
-classmethod: GsAmqpBasicReturn
-sizeInC
-
-^ 56
-%
-! ------------------- Instance methods for GsAmqpBasicReturn
-category: 'Accessing'
-method: GsAmqpBasicReturn
-exchange
-	^exchange
-%
-category: 'Updating'
-method: GsAmqpBasicReturn
-exchange: newValue
-	exchange := newValue
-%
-category: 'Initialization'
-method: GsAmqpBasicReturn
-initializeFromC
-
-	^self
-		replyCode: (self uint16At: 0);
-		replyText: (self stringFromAmqpBytesAtOffset: 8);
-		exchange: (self stringFromAmqpBytesAtOffset: 24);
-		routingKey: (self stringFromAmqpBytesAtOffset: 40);
-		yourself
-%
-category: 'Accessing'
-method: GsAmqpBasicReturn
-replyCode
-	^replyCode
-%
-category: 'Updating'
-method: GsAmqpBasicReturn
-replyCode: newValue
-	replyCode := newValue
-%
-category: 'Accessing'
-method: GsAmqpBasicReturn
-replyText
-	^replyText
-%
-category: 'Updating'
-method: GsAmqpBasicReturn
-replyText: newValue
-	replyText := newValue
-%
-category: 'Accessing'
-method: GsAmqpBasicReturn
-routingKey
-	^routingKey
-%
-category: 'Updating'
-method: GsAmqpBasicReturn
-routingKey: newValue
-	routingKey := newValue
-%
-! ------------------- Remove existing behavior from GsAmqpQueueDeclareResult
-removeAllMethods GsAmqpQueueDeclareResult
-removeAllClassMethods GsAmqpQueueDeclareResult
-! ------------------- Class methods for GsAmqpQueueDeclareResult
-category: 'Constants'
-classmethod: GsAmqpQueueDeclareResult
-sizeInC
-
-^ 24
-%
-! ------------------- Instance methods for GsAmqpQueueDeclareResult
-category: 'Accessing'
-method: GsAmqpQueueDeclareResult
-consumerCount
-	^consumerCount
-%
-category: 'Updating'
-method: GsAmqpQueueDeclareResult
-consumerCount: newValue
-	consumerCount := newValue
-%
-category: 'Initialization'
-method: GsAmqpQueueDeclareResult
-initializeFromC
-
-	^self
-		queueName: (GsAmqpBytes fromCPointer: self) convertToString;
-		consumerCount: (self uint32At: 20);
-		messageCount: (self uint32At: 16);
-		yourself
-%
-category: 'Accessing'
-method: GsAmqpQueueDeclareResult
-messageCount
-	^messageCount
-%
-category: 'Updating'
-method: GsAmqpQueueDeclareResult
-messageCount: newValue
-	messageCount := newValue
-%
-category: 'Accessing'
-method: GsAmqpQueueDeclareResult
-queueName
-	^queueName
-%
-category: 'Updating'
-method: GsAmqpQueueDeclareResult
-queueName: newValue
-	queueName := newValue
+method: GsRabbitMqError
+replyType: newValue
+	replyType := newValue
 %

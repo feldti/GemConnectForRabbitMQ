@@ -28,6 +28,144 @@ tlsTestsEnabled
 
 ^ self class tlsTestsEnabled
 %
+! ------------------- Remove existing behavior from GsAmqpBasicPropertiesTestCase
+removeAllMethods GsAmqpBasicPropertiesTestCase
+removeAllClassMethods GsAmqpBasicPropertiesTestCase
+! ------------------- Class methods for GsAmqpBasicPropertiesTestCase
+category: 'Flags'
+classmethod: GsAmqpBasicPropertiesTestCase
+allFlagMethodNames
+
+^ GsAmqpBasicProperties class selectors select:[:each| 0 ~~ (each asString findPattern: { '_FLAG' } startingAt: 1)]
+%
+category: 'Flags'
+classmethod: GsAmqpBasicPropertiesTestCase
+allFlagValues
+
+"GsAmqpBasicPropertiesTestCase allFlagValues"
+
+^ self allFlagMethodNames collect:[:e| GsAmqpBasicProperties perform: e ]
+%
+! ------------------- Instance methods for GsAmqpBasicPropertiesTestCase
+category: 'Tests'
+method: GsAmqpBasicPropertiesTestCase
+testBits
+
+	| flagMethods inst |
+	flagMethods := self class allFlagMethodNames.
+	inst := GsAmqpBasicProperties new.
+	"Initialize method should set this by default."
+	self
+		assert: inst flags
+			identical: (inst class perform: #AMQP_BASIC_DELIVERY_MODE_FLAG);
+		assert: inst deliveryMode identical: inst class AMQP_DELIVERY_PERSISTENT.
+	flagMethods do:
+			[:sym |
+			"Test set/clear/test works for each flag"
+			inst flags: 0.
+			self
+				deny: (inst testFlag: sym);
+				assert: (inst clearFlag: sym) identical: inst;
+				deny: (inst testFlag: sym);
+				assert: inst flags identical: 0;
+				assert: (inst setFlag: sym) identical: inst;
+				assert: (inst testFlag: sym);
+				assert: inst flags identical: (inst class perform: sym);
+				assert: (inst clearFlag: sym) identical: inst;
+				deny: (inst testFlag: sym);
+				assert: inst flags identical: 0].
+	^self
+%
+category: 'Tests'
+method: GsAmqpBasicPropertiesTestCase
+testNoDuplicateBits
+
+	| flagMethods flagValues |
+	flagMethods := self class allFlagMethodNames.
+	flagValues := self class allFlagValues asIdentitySet.	"Rejects any duplicate values"
+	self
+		assert: flagMethods size identical: flagValues size;
+		yourself
+%
+! ------------------- Remove existing behavior from GsAmqpBytesTestCase
+removeAllMethods GsAmqpBytesTestCase
+removeAllClassMethods GsAmqpBytesTestCase
+! ------------------- Class methods for GsAmqpBytesTestCase
+! ------------------- Instance methods for GsAmqpBytesTestCase
+category: 'Tests'
+method: GsAmqpBytesTestCase
+testEmptyByteArray
+
+	^self _testEmptyObj: (GsAmqpBytes fromBytes: ByteArray new)
+%
+category: 'Tests'
+method: GsAmqpBytesTestCase
+testEmptyBytes
+
+	^self _testEmptyObj: GsAmqpBytes emptyBytes
+%
+category: 'Tests'
+method: GsAmqpBytesTestCase
+testEmptyString
+
+	^self _testEmptyObj: (GsAmqpBytes fromString: String new)
+%
+category: 'Tests'
+method: GsAmqpBytesTestCase
+testFromBytes
+
+
+| ba obj obj2 |
+
+ba := ByteArray withRandomBytes: 32.
+obj := GsAmqpBytes fromBytes: ba.
+
+^ self assert: obj class identical: GsAmqpBytes ;
+	assert: obj len identical: ba size ;
+	assert: (obj2 := obj bytes) class identical: CByteArray ;
+	assert: (obj2 := obj convertToByteArray) class equals: ByteArray ;
+	assert: obj2 equals: ba ;
+	yourself
+%
+category: 'Tests'
+method: GsAmqpBytesTestCase
+testFromString
+
+
+| string obj obj2 |
+
+string := 'This is a string' .
+obj := GsAmqpBytes fromString: string.
+
+^ self assert: obj class identical: GsAmqpBytes ;
+	assert: obj len identical: string size ;
+	assert: (obj2 := obj bytes) class identical: CByteArray ;
+	assert: (obj2 := obj convertToString) class equals: String ;
+	assert: obj2 equals: string ;
+	assert: (obj2 := obj convertToByteArray) class equals: ByteArray ;
+	yourself
+%
+category: 'Tests'
+method: GsAmqpBytesTestCase
+testNil
+
+	^self _testEmptyObj: (GsAmqpBytes fromBytes: nil) ;
+		_testEmptyObj: (GsAmqpBytes fromString: nil)
+%
+category: 'Tests'
+method: GsAmqpBytesTestCase
+_testEmptyObj: obj
+
+^ self assert: obj class identical: GsAmqpBytes ;
+	assert: obj len identical: 0 ;
+	assert: obj bytesAddress identical: 0 ;
+	assert: obj bytes identical: nil ;
+	assert: (obj utf8FromAmqpBytesAtOffset: 0) identical: nil ;
+	assert: (obj utf16FromAmqpBytesAtOffset: 0) identical: nil ;
+	assert: (obj stringFromAmqpBytesAtOffset: 0) identical: nil ;
+	assert: (obj byteArrayFromAmqpBytesAtOffset: 0) identical: nil ;
+	yourself
+%
 ! ------------------- Remove existing behavior from GsAmqpConnectionTestCase
 removeAllMethods GsAmqpConnectionTestCase
 removeAllClassMethods GsAmqpConnectionTestCase
@@ -516,144 +654,6 @@ self should:[ conn setSocketOptions] raise: 2318 ;
 ] ensure:[ conn _destroyConnection ].
 ^ self
 %
-! ------------------- Remove existing behavior from GsAmqpBasicPropertiesTestCase
-removeAllMethods GsAmqpBasicPropertiesTestCase
-removeAllClassMethods GsAmqpBasicPropertiesTestCase
-! ------------------- Class methods for GsAmqpBasicPropertiesTestCase
-category: 'Flags'
-classmethod: GsAmqpBasicPropertiesTestCase
-allFlagMethodNames
-
-^ GsAmqpBasicProperties class selectors select:[:each| 0 ~~ (each asString findPattern: { '_FLAG' } startingAt: 1)]
-%
-category: 'Flags'
-classmethod: GsAmqpBasicPropertiesTestCase
-allFlagValues
-
-"GsAmqpBasicPropertiesTestCase allFlagValues"
-
-^ self allFlagMethodNames collect:[:e| GsAmqpBasicProperties perform: e ]
-%
-! ------------------- Instance methods for GsAmqpBasicPropertiesTestCase
-category: 'Tests'
-method: GsAmqpBasicPropertiesTestCase
-testBits
-
-	| flagMethods inst |
-	flagMethods := self class allFlagMethodNames.
-	inst := GsAmqpBasicProperties new.
-	"Initialize method should set this by default."
-	self
-		assert: inst flags
-			identical: (inst class perform: #AMQP_BASIC_DELIVERY_MODE_FLAG);
-		assert: inst deliveryMode identical: inst class AMQP_DELIVERY_PERSISTENT.
-	flagMethods do:
-			[:sym |
-			"Test set/clear/test works for each flag"
-			inst flags: 0.
-			self
-				deny: (inst testFlag: sym);
-				assert: (inst clearFlag: sym) identical: inst;
-				deny: (inst testFlag: sym);
-				assert: inst flags identical: 0;
-				assert: (inst setFlag: sym) identical: inst;
-				assert: (inst testFlag: sym);
-				assert: inst flags identical: (inst class perform: sym);
-				assert: (inst clearFlag: sym) identical: inst;
-				deny: (inst testFlag: sym);
-				assert: inst flags identical: 0].
-	^self
-%
-category: 'Tests'
-method: GsAmqpBasicPropertiesTestCase
-testNoDuplicateBits
-
-	| flagMethods flagValues |
-	flagMethods := self class allFlagMethodNames.
-	flagValues := self class allFlagValues asIdentitySet.	"Rejects any duplicate values"
-	self
-		assert: flagMethods size identical: flagValues size;
-		yourself
-%
-! ------------------- Remove existing behavior from GsAmqpBytesTestCase
-removeAllMethods GsAmqpBytesTestCase
-removeAllClassMethods GsAmqpBytesTestCase
-! ------------------- Class methods for GsAmqpBytesTestCase
-! ------------------- Instance methods for GsAmqpBytesTestCase
-category: 'Tests'
-method: GsAmqpBytesTestCase
-testEmptyByteArray
-
-	^self _testEmptyObj: (GsAmqpBytes fromBytes: ByteArray new)
-%
-category: 'Tests'
-method: GsAmqpBytesTestCase
-testEmptyBytes
-
-	^self _testEmptyObj: GsAmqpBytes emptyBytes
-%
-category: 'Tests'
-method: GsAmqpBytesTestCase
-testEmptyString
-
-	^self _testEmptyObj: (GsAmqpBytes fromString: String new)
-%
-category: 'Tests'
-method: GsAmqpBytesTestCase
-testFromBytes
-
-
-| ba obj obj2 |
-
-ba := ByteArray withRandomBytes: 32.
-obj := GsAmqpBytes fromBytes: ba.
-
-^ self assert: obj class identical: GsAmqpBytes ;
-	assert: obj len identical: ba size ;
-	assert: (obj2 := obj bytes) class identical: CByteArray ;
-	assert: (obj2 := obj convertToByteArray) class equals: ByteArray ;
-	assert: obj2 equals: ba ;
-	yourself
-%
-category: 'Tests'
-method: GsAmqpBytesTestCase
-testFromString
-
-
-| string obj obj2 |
-
-string := 'This is a string' .
-obj := GsAmqpBytes fromString: string.
-
-^ self assert: obj class identical: GsAmqpBytes ;
-	assert: obj len identical: string size ;
-	assert: (obj2 := obj bytes) class identical: CByteArray ;
-	assert: (obj2 := obj convertToString) class equals: String ;
-	assert: obj2 equals: string ;
-	assert: (obj2 := obj convertToByteArray) class equals: ByteArray ;
-	yourself
-%
-category: 'Tests'
-method: GsAmqpBytesTestCase
-testNil
-
-	^self _testEmptyObj: (GsAmqpBytes fromBytes: nil) ;
-		_testEmptyObj: (GsAmqpBytes fromString: nil)
-%
-category: 'Tests'
-method: GsAmqpBytesTestCase
-_testEmptyObj: obj
-
-^ self assert: obj class identical: GsAmqpBytes ;
-	assert: obj len identical: 0 ;
-	assert: obj bytesAddress identical: 0 ;
-	assert: obj bytes identical: nil ;
-	assert: (obj utf8FromAmqpBytesAtOffset: 0) identical: nil ;
-	assert: (obj utf16FromAmqpBytesAtOffset: 0) identical: nil ;
-	assert: (obj stringFromAmqpBytesAtOffset: 0) identical: nil ;
-	assert: (obj byteArrayFromAmqpBytesAtOffset: 0) identical: nil ;
-	yourself
-%
 ! ------------------- Remove existing behavior from GsAmqpTlsExampleTestCase
 removeAllMethods GsAmqpTlsExampleTestCase
 removeAllClassMethods GsAmqpTlsExampleTestCase
@@ -664,6 +664,7 @@ method: GsAmqpTlsExampleTestCase
 setUp
 
 | cls |
+self tlsTestsEnabled ifFalse:[ ^ self ] .
 super setUp.
 cls := GsAmqpTlsConnectionTestCase .
 self assert: cls credentialsAreSetup description: ('RabbitMq credentials must be specifed in ', cls name, ' in order to run this test case').
@@ -679,6 +680,7 @@ method: GsAmqpTlsExampleTestCase
 testRunExamples
 
 | consumer producer |
+self tlsTestsEnabled ifFalse:[ ^ self ] .
 [
 self assert: (consumer := GsTsExternalSession newDefault login) class identical: GsTsExternalSession ;
 	assert: consumer isLoggedIn.

@@ -13,6 +13,32 @@ GsTestCase subclass: 'GsAmqpAbstractTestCase'
 
 %
 set compile_env: 0
+! ------------------- Class definition for GsAmqpBasicPropertiesTestCase
+expectvalue /Class
+doit
+GsAmqpAbstractTestCase subclass: 'GsAmqpBasicPropertiesTestCase'
+  instVarNames: #()
+  classVars: #()
+  classInstVars: #()
+  poolDictionaries: #()
+  inDictionary: GemConnectForRabbitMqTests
+  options: #()
+
+%
+set compile_env: 0
+! ------------------- Class definition for GsAmqpBytesTestCase
+expectvalue /Class
+doit
+GsAmqpAbstractTestCase subclass: 'GsAmqpBytesTestCase'
+  instVarNames: #()
+  classVars: #()
+  classInstVars: #()
+  poolDictionaries: #()
+  inDictionary: GemConnectForRabbitMqTests
+  options: #()
+
+%
+set compile_env: 0
 ! ------------------- Class definition for GsAmqpConnectionTestCase
 expectvalue /Class
 doit
@@ -45,32 +71,6 @@ doit
 GsAmqpConnectionTestCase subclass: 'GsAmqpTlsConnectionTestCase'
   instVarNames: #()
   classVars: #( caCertPath certPath privateKey privateKeyPassphrase verifyHostname verifyPeer)
-  classInstVars: #()
-  poolDictionaries: #()
-  inDictionary: GemConnectForRabbitMqTests
-  options: #()
-
-%
-set compile_env: 0
-! ------------------- Class definition for GsAmqpBasicPropertiesTestCase
-expectvalue /Class
-doit
-GsAmqpAbstractTestCase subclass: 'GsAmqpBasicPropertiesTestCase'
-  instVarNames: #()
-  classVars: #()
-  classInstVars: #()
-  poolDictionaries: #()
-  inDictionary: GemConnectForRabbitMqTests
-  options: #()
-
-%
-set compile_env: 0
-! ------------------- Class definition for GsAmqpBytesTestCase
-expectvalue /Class
-doit
-GsAmqpAbstractTestCase subclass: 'GsAmqpBytesTestCase'
-  instVarNames: #()
-  classVars: #()
   classInstVars: #()
   poolDictionaries: #()
   inDictionary: GemConnectForRabbitMqTests
