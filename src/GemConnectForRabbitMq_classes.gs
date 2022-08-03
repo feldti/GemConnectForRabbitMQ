@@ -199,7 +199,7 @@ doit
 Object subclass: 'GsAmqpConnection'
   instVarNames: #( library connection socket
                     openChannels highestOpenChannel replyObject host
-                    port loggedIn connected)
+                    port loggedIn connected vhost)
   classVars: #()
   classInstVars: #()
   poolDictionaries: #()
@@ -241,7 +241,7 @@ expectvalue /Class
 doit
 Object subclass: 'GsAmqpExample'
   instVarNames: #()
-  classVars: #( amqpUserId badMessages caCertPath certPath debugEnabled hostname loginTimeoutMs messages password port privateKey privateKeyPassphrase randomString tlsPort)
+  classVars: #( amqpUserId badMessages caCertPath certPath debugEnabled hostname loginTimeoutMs messages password port privateKey privateKeyPassphrase randomString tlsPort vhost)
   classInstVars: #()
   poolDictionaries: #()
   inDictionary: GemConnectForRabbitMq

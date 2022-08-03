@@ -1901,6 +1901,12 @@ defaultPort
 %
 category: 'Constants'
 classmethod: GsAmqpConnection
+defaultVhost
+
+^ '/'
+%
+category: 'Constants'
+classmethod: GsAmqpConnection
 maxChannels
 
 ^ 16
@@ -1915,11 +1921,18 @@ category: 'Instance Creation'
 classmethod: GsAmqpConnection
 newOnHost: hostOrIp port: aPort
 
+^ self newOnHost: hostOrIp port: aPort vhost: self defaultVhost
+%
+category: 'Instance Creation'
+classmethod: GsAmqpConnection
+newOnHost: hostOrIp port: aPort vhost: aVhost
+
 	| result |
 	result := super new initialize.
 	^result
 		host: hostOrIp;
 		port: aPort ;
+		vhost: aVhost ;
 		yourself
 %
 ! ------------------- Instance methods for GsAmqpConnection
@@ -2318,6 +2331,7 @@ initialize
 	replyObject: (GsAmqpRpcReply newWithConnection: self) ;
 	openChannels: (Array new: self class maxChannels) ;
 	highestOpenChannel: 0 ;
+	vhost: self class defaultVhost ;
 	setNotLoggedIn ;
 	yourself
 %
@@ -2846,6 +2860,18 @@ validateSocket
 self socket ifNil:[ self raiseInvalidSocketError ].
 ^ self
 %
+category: 'Accessing'
+method: GsAmqpConnection
+vhost
+
+^vhost
+%
+category: 'Updating'
+method: GsAmqpConnection
+vhost: value
+
+vhost := value
+%
 category: 'Private'
 method: GsAmqpConnection
 _closeConnection
@@ -2901,7 +2927,7 @@ _loginWithUserId: uid password: pw
 	uid _validateClass: String.
 	pw _validateClass: String.
 	reply := self replyObject clearForReuse .
-	self library amqp_login_: reply _: self connection _: '/' _: 0 _: 131072 _: 0 _: 0 varArgs: { #'const char*' . uid . #'const char*' . pw } .
+	self library amqp_login_: reply _: self connection _: self vhost  _: 0 _: 131072 _: 0 _: 0 varArgs: { #'const char*' . uid . #'const char*' . pw } .
 	reply initializeFromC .
 	^ reply isSuccess
 		ifTrue:[ self setLoggedIn ]
@@ -3245,6 +3271,12 @@ defaultUserId
 
 ^ 'guest'
 %
+category: 'Default Credentials'
+classmethod: GsAmqpExample
+defaultVhost
+
+^ GsAmqpConnection defaultVhost
+%
 category: 'Accessing'
 classmethod: GsAmqpExample
 directExchangeName
@@ -3368,20 +3400,16 @@ newConnection
 	^self
 		newConnectionToHost: self hostname
 		port: self port
+		vhost: self vhost
 		userId: self amqpUserId
 		password: self password
+		timeoutMs: self loginTimeoutMs
 %
 category: 'Default Connections'
 classmethod: GsAmqpExample
-newConnectionToHost: hostname port: port userId: uid password: pw
+newConnectionToHost: hostname port: port vhost: vhost userId: uid password: pw timeoutMs: timeoutMs
 
-^ self newConnectionToHost: hostname port: port userId: uid password: pw timeoutMs: self loginTimeoutMs
-%
-category: 'Default Connections'
-classmethod: GsAmqpExample
-newConnectionToHost: hostname port: port userId: uid password: pw timeoutMs: timeoutMs
-
-	^(GsAmqpConnection newOnHost: hostname port: port)
+	^(GsAmqpConnection newOnHost: hostname port: port vhost: vhost)
 		loginWithUserId: uid
 		password: pw
 		timeoutMs: timeoutMs
@@ -3399,6 +3427,7 @@ newTlsConnection
 	^self
 		newTlsConnectionToHost: self hostname
 		port: self tlsPort
+		vhost: self vhost
 		userId: self amqpUserId
 		password: self password
 		caCertPath: self caCertPath
@@ -3409,11 +3438,12 @@ newTlsConnection
 %
 category: 'Default TLS Connections'
 classmethod: GsAmqpExample
-newTlsConnectionToHost: hostname port: port userId: uid password: password caCertPath: caCertPath certPath: certPath keyPath: keyPath keyPassphrase: passphrase timeoutMs: timeoutMs
+newTlsConnectionToHost: hostname port: port vhost: vhost userId: uid password: password caCertPath: caCertPath certPath: certPath keyPath: keyPath keyPassphrase: passphrase timeoutMs: timeoutMs
 
 	^(GsAmqpTlsConnection
 		newOnHost: hostname
 		port: port
+		vhost: vhost
 		caCertPath: caCertPath
 		certPath: certPath
 		keyPath: keyPath
@@ -4742,6 +4772,18 @@ topicExchangeName
 
 ^ self exchangeNameForKind: 'topic'
 %
+category: 'Accessing'
+classmethod: GsAmqpExample
+vhost
+
+^ vhost ifNil:[ self defaultVhost ] ifNotNil:[ vhost ]
+%
+category: 'Updating'
+classmethod: GsAmqpExample
+vhost: newValue
+
+vhost := newValue
+%
 category: 'Producer - Consumer Coordination'
 classmethod: GsAmqpExample
 waitForConsumerReady: exampleNum upTo: ms
@@ -6064,6 +6106,12 @@ AMQP_STATUS_TIMEOUT
 
 ^ -16rD
 %
+category: 'Constants'
+classmethod: GsAmqpRpcReply
+defaultVhost
+
+^ '/'
+%
 category: 'Instance Creation'
 classmethod: GsAmqpRpcReply
 new
@@ -6679,10 +6727,49 @@ category: 'Instance Creation'
 classmethod: GsAmqpTlsConnection
 newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyObj: aGsTlsPrivateKey
 
+^ self newOnHost: hostOrIp port: aPort vhost: self defaultVhost caCertPath: caCertPath certPath: certPath keyObj: aGsTlsPrivateKey
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTlsConnection
+newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyPath: keyPath
+
+"Use this method only if the private key file referenced by keyPath does not have a passphrase."
+
+
+^ self newOnHost: hostOrIp port: aPort vhost: self defaultVhost caCertPath: caCertPath certPath: certPath keyPath: keyPath
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTlsConnection
+newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyPath: keyPath keyPassphrase: passPhrase
+
+"Use this method if the private key file requires a passphrase."
+
+	"Note: amqp_ssl_socket_set_key_passwd() does not appear to work.
+As a workaround, we decrypt and load the private key using GsTlsPrivateKey, then pass the PEM string to RabbitMQ."
+
+
+^ self newOnHost: hostOrIp port: aPort vhost: self defaultVhost caCertPath: caCertPath certPath: certPath keyPath: keyPath keyPassphrase: passPhrase
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTlsConnection
+newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyString: keyString keyPassphrase: passPhrase
+
+"Use this method when you have a private key in the form of a PEM string. pass phrase must be the pass phrase for the private key or nil
+if the key requires no pass phrase."
+
+"Note: amqp_ssl_socket_set_key_passwd() does not appear to work.
+As a workaround, we decrypt and load the private key using GsTlsPrivateKey, then pass the PEM string to RabbitMQ."
+
+^ self newOnHost: hostOrIp port: aPort vhost: self defaultVhost caCertPath: caCertPath certPath: certPath keyString: keyString keyPassphrase: passPhrase
+%
+category: 'Instance Creation'
+classmethod: GsAmqpTlsConnection
+newOnHost: hostOrIp port: aPort vhost: vhost caCertPath: caCertPath certPath: certPath keyObj: aGsTlsPrivateKey
+
 
 	| result |
 	aGsTlsPrivateKey _validateClass: GsTlsPrivateKey .
-	result := self newOnHost: hostOrIp port: aPort.
+	result := self newOnHost: hostOrIp port: aPort vhost: vhost.
 	^result
 		caCertPath: caCertPath;
 		certPath: certPath;
@@ -6691,12 +6778,12 @@ newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyObj
 %
 category: 'Instance Creation'
 classmethod: GsAmqpTlsConnection
-newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyPath: keyPath
+newOnHost: hostOrIp port: aPort vhost: vhost caCertPath: caCertPath certPath: certPath keyPath: keyPath
 
 "Use this method only if the private key file referenced by keyPath does not have a passphrase."
 
 	| result |
-	result := self newOnHost: hostOrIp port: aPort.
+	result := self newOnHost: hostOrIp port: aPort vhost: vhost.
 	^result
 		caCertPath: caCertPath;
 		certPath: certPath;
@@ -6705,7 +6792,7 @@ newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyPat
 %
 category: 'Instance Creation'
 classmethod: GsAmqpTlsConnection
-newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyPath: keyPath keyPassphrase: passPhrase
+newOnHost: hostOrIp port: aPort vhost: vhost caCertPath: caCertPath certPath: certPath keyPath: keyPath keyPassphrase: passPhrase
 
 "Use this method if the private key file requires a passphrase."
 
@@ -6718,13 +6805,14 @@ As a workaround, we decrypt and load the private key using GsTlsPrivateKey, then
 	^self
 		newOnHost: hostOrIp
 		port: aPort
+		vhost: vhost
 		caCertPath: caCertPath
 		certPath: certPath
 		keyObj: aGsTlsPrivateKey
 %
 category: 'Instance Creation'
 classmethod: GsAmqpTlsConnection
-newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyString: keyString keyPassphrase: passPhrase
+newOnHost: hostOrIp port: aPort vhost: vhost caCertPath: caCertPath certPath: certPath keyString: keyString keyPassphrase: passPhrase
 
 "Use this method when you have a private key in the form of a PEM string. pass phrase must be the pass phrase for the private key or nil
 if the key requires no pass phrase."
@@ -6734,7 +6822,7 @@ As a workaround, we decrypt and load the private key using GsTlsPrivateKey, then
 
 	|  aGsTlsPrivateKey |
 	aGsTlsPrivateKey := GsTlsPrivateKey newFromPemString: keyString withPassphrase: passPhrase .
-	^ self newOnHost: hostOrIp port: aPort caCertPath: caCertPath certPath: certPath keyObj: aGsTlsPrivateKey
+	^ self newOnHost: hostOrIp port: aPort vhost: vhost caCertPath: caCertPath certPath: certPath keyObj: aGsTlsPrivateKey
 %
 ! ------------------- Instance methods for GsAmqpTlsConnection
 category: 'Accessing'

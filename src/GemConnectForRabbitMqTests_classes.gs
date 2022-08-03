@@ -44,7 +44,7 @@ expectvalue /Class
 doit
 GsAmqpAbstractTestCase subclass: 'GsAmqpConnectionTestCase'
   instVarNames: #()
-  classVars: #( amqpUserId hostname loginTimeMs password port)
+  classVars: #( amqpUserId hostname loginTimeMs password port vhost)
   classInstVars: #()
   poolDictionaries: #()
   inDictionary: GemConnectForRabbitMqTests

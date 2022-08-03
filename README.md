@@ -108,12 +108,13 @@ you also need these files, in addition to the items above:
 ### Configuring the Test Suite
 1. Ensure the test suite is installed (step 6 above).
 2. Setup the RabbitMq non-TLS credentials by running this code as SystemUser, replacing the
-userId, password and hostname arguments with those for your RabbitMq server:
+userId, password, vhost and hostname arguments with those for your RabbitMq server:
 ```
 GsAmqpConnectionTestCase
   amqpUserId: 'userId' ;
   password: 'password' ;
-  hostname: 'hostname'
+  hostname: 'hostname' ;
+  vhost: '/'
 ```
 3a. If you also want to run the TLS tests, provide the TLS certificate, private key
 and CA certificate by running this code as SystemUser:

@@ -189,6 +189,7 @@ credentialsAreSetup
 self amqpUserId ifNil:[ ^ false ].
 self password ifNil:[ ^ false ].
 self hostname ifNil:[ ^ false ].
+self vhost ifNil:[ ^ false ].
 ^ true
 %
 category: 'Accessing'
@@ -227,7 +228,7 @@ category: 'Connections'
 classmethod: GsAmqpConnectionTestCase
 newConnection
 
-	^(GsAmqpConnection newOnHost: self hostname port: self port)
+	^(GsAmqpConnection newOnHost: self hostname port: self port vhost: self vhost)
 		loginWithUserId: self amqpUserId
 		password: self password
 		timeoutMs: self loginTimeoutMs
@@ -238,7 +239,7 @@ newPreConnectConnection
 
 "Create a connection and connect to the broker but do not connect or login."
 
-	^(GsAmqpConnection newOnHost: self hostname port: self port)
+	^(GsAmqpConnection newOnHost: self hostname port: self port vhost: self vhost)
 		setSocketOptions
 %
 category: 'Connections'
@@ -278,6 +279,18 @@ classmethod: GsAmqpConnectionTestCase
 targetClass
 
 ^ GsAmqpConnection
+%
+category: 'Accessing'
+classmethod: GsAmqpConnectionTestCase
+vhost
+
+^ vhost ifNil:[ GsAmqpConnection defaultVhost ] ifNotNil:[ vhost ]
+%
+category: 'Updating'
+classmethod: GsAmqpConnectionTestCase
+vhost: newValue
+
+vhost := newValue
 %
 ! ------------------- Instance methods for GsAmqpConnectionTestCase
 category: 'Accessing'
@@ -324,6 +337,19 @@ targetClass
 %
 category: 'Tests'
 method: GsAmqpConnectionTestCase
+testBadVhost
+
+| con  |
+
+con := self class newPreLoginConnection.
+con vhost: 'bogusvhost'.
+[
+	self should:[ con _loginWithUserId: self amqpUserId password: self password]  raise: GsRabbitMqError  "invalid uid and password"
+] ensure:[ con _destroyConnection ] .
+^ self
+%
+category: 'Tests'
+method: GsAmqpConnectionTestCase
 testCloseConnection
 
 | cons |
@@ -346,10 +372,10 @@ cons := Array new.
 
 [
 self should:[(cons add: (self targetClass newOnHost: 'bogus')) _connectWithTimeoutMs: 1000] raise: GsRabbitMqError ; "invalid hostname"
-	should:[(cons add: (self targetClass newOnHost: self class hostname port: 1000000)) _connectWithTimeoutMs: 1000] raise: GsRabbitMqError ; "invalid port"
-	should:[(cons add: (self targetClass newOnHost: self class hostname)) _connectWithTimeoutMs: true] raise: 2094 ; "Invalid timeout arg"
-	should:[(cons add: (self targetClass newOnHost: self class hostname port: 65530)) _connectWithTimeoutMs: 1000] raise: GsRabbitMqError ;  "invalid port"
-	should:[(cons add: (self targetClass newOnHost: self class hostname port: true)) _connectWithTimeoutMs: 1000] raise: ArgumentError  "invalid port"
+	should:[(cons add: (self targetClass newOnHost: self hostname port: 1000000)) _connectWithTimeoutMs: 1000] raise: GsRabbitMqError ; "invalid port"
+	should:[(cons add: (self targetClass newOnHost: self hostname)) _connectWithTimeoutMs: true] raise: 2094 ; "Invalid timeout arg"
+	should:[(cons add: (self targetClass newOnHost: self hostname port: 65530)) _connectWithTimeoutMs: 1000] raise: GsRabbitMqError ;  "invalid port"
+	should:[(cons add: (self targetClass newOnHost: self hostname port: true)) _connectWithTimeoutMs: 1000] raise: ArgumentError  "invalid port"
 ] ensure:[ cons do:[:e| e _destroyConnection ] ].
 ^ self
 %
@@ -360,9 +386,7 @@ testCreateNewConnection
 | conn cls |
 cls := self targetClass.
 [
-conn := cls newOnHost: self hostname port: self port .
-self _testNewConnection: conn.
-conn := cls newOnHost: self hostname.
+conn := cls newOnHost: self hostname port: self port vhost: self vhost.
 self _testNewConnection: conn.
 conn := nil.
 ] ensure:[ conn ifNotNil:[ conn _destroyConnection] ].
@@ -384,6 +408,12 @@ self assert: (cons add: (tmp := self class newConnection)) class identical: self
 	should:[(cons add: (self class newPreLoginConnection)) _loginWithUserId: self  amqpUserId password: 'bogus2'] raise: GsRabbitMqError  "invalid password"
 ] ensure:[ cons do:[:e| e _destroyConnection ] ].
 ^ self
+%
+category: 'Accessing'
+method: GsAmqpConnectionTestCase
+vhost
+
+^ self class vhost
 %
 category: 'Tests'
 method: GsAmqpConnectionTestCase
@@ -418,7 +448,8 @@ GsAmqpExample initialize ;
 				hostname: cls hostname ;
 				port: cls port ;
 				amqpUserId: cls amqpUserId ;
-				password: cls password .
+				password: cls password ;
+				vhost: cls vhost .
 self assert: System commitTransaction description: 'commit failure'.
 ^ self
 %
@@ -486,7 +517,7 @@ category: 'Connections'
 classmethod: GsAmqpTlsConnectionTestCase
 newBasicConnection
 
-	^GsAmqpTlsConnection newOnHost: self hostname port: self port
+	^GsAmqpTlsConnection newOnHost: self hostname port: self port vhost: self vhost
 %
 category: 'Connections'
 classmethod: GsAmqpTlsConnectionTestCase
@@ -495,6 +526,7 @@ newConnection
 	^(GsAmqpTlsConnection
 		newOnHost: self hostname
 		port: self port
+		vhost: self vhost
 		caCertPath: self caCertPath
 		certPath: self certPath
 		keyPath: self privateKey
@@ -508,7 +540,7 @@ category: 'Connections'
 classmethod: GsAmqpTlsConnectionTestCase
 newPreConnectConnection
 
-	^(GsAmqpTlsConnection newOnHost: self hostname port: self port)
+	^(GsAmqpTlsConnection newOnHost: self hostname port: self port vhost: self vhost)
 		caCertPath: self caCertPath;
 		certPath: self certPath;
 		privateKey: self privateKey;
@@ -610,14 +642,14 @@ testCreateNewTlsConnection
 self tlsTestsEnabled ifFalse:[ ^ self ] .
 cls := self targetClass.
 [
-conn := cls newOnHost: self hostname port: self port caCertPath: self caCertPath certPath: self certPath keyPath: self privateKey keyPassphrase: nil .
+conn := cls newOnHost: self hostname port: self port vhost: self vhost caCertPath: self caCertPath certPath: self certPath keyPath: self privateKey keyPassphrase: nil .
 self _testNewConnection: conn.
-conn := cls newOnHost: self hostname port: self port caCertPath: self caCertPath certPath: self certPath keyPath: self privateKey .
+conn := cls newOnHost: self hostname port: self port vhost: self vhost  caCertPath: self caCertPath certPath: self certPath keyPath: self privateKey .
 self _testNewConnection: conn.
-conn := cls newOnHost: self hostname port: self port caCertPath: self caCertPath certPath: self certPath
+conn := cls newOnHost: self hostname port: self port vhost: self vhost  caCertPath: self caCertPath certPath: self certPath
 			keyString: (GsTlsPrivateKey newFromPemFile: self privateKey withPassphrase: nil) asPemString keyPassphrase: nil .
 self _testNewConnection: conn.
-conn := cls newOnHost: self hostname port: self port caCertPath: self caCertPath certPath: self certPath
+conn := cls newOnHost: self hostname port: self port vhost: self vhost  caCertPath: self caCertPath certPath: self certPath
 			keyObj: (GsTlsPrivateKey newFromPemFile: self privateKey withPassphrase: nil) .
 self _testNewConnection: conn.
 conn := nil.
