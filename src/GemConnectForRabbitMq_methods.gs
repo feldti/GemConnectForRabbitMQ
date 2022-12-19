@@ -5605,7 +5605,7 @@ decodeMethodObject
 		].
 	self isChannelClose
 		ifTrue: "broker closed the connection, raise an exception"
-			[ GsAmqpChannelClose fromMemoryReferenceIn: self atOffset: 8.
+			[ ^ GsAmqpChannelClose fromMemoryReferenceIn: self atOffset: 8.
 			"| close |
 			close := GsAmqpChannelClose fromMemoryReferenceIn: self atOffset: 8.
 			^(GsRabbitMqError newFromChannelClose: close) signal"
