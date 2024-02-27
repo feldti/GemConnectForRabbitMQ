@@ -1,7 +1,8 @@
 fileformat utf8
+set compile_env: 0
 ! ------------------- Remove existing behavior from GsAmqpAbstractTestCase
-removeAllMethods GsAmqpAbstractTestCase
-removeAllClassMethods GsAmqpAbstractTestCase
+removeallmethods GsAmqpAbstractTestCase
+removeallclassmethods GsAmqpAbstractTestCase
 ! ------------------- Class methods for GsAmqpAbstractTestCase
 category: 'Testing'
 classmethod: GsAmqpAbstractTestCase
@@ -28,9 +29,23 @@ tlsTestsEnabled
 
 ^ self class tlsTestsEnabled
 %
+category: 'Testing'
+method: GsAmqpAbstractTestCase
+_testInitializeFromCWith: inst
+
+|copy|
+
+self assert: inst autoRelease.
+copy := inst shallowCopy.
+self assert: copy autoRelease ;
+	assert: inst equals: copy .
+copy initializeFromC.
+self assert: copy equals: inst.
+^ self
+%
 ! ------------------- Remove existing behavior from GsAmqpBasicPropertiesTestCase
-removeAllMethods GsAmqpBasicPropertiesTestCase
-removeAllClassMethods GsAmqpBasicPropertiesTestCase
+removeallmethods GsAmqpBasicPropertiesTestCase
+removeallclassmethods GsAmqpBasicPropertiesTestCase
 ! ------------------- Class methods for GsAmqpBasicPropertiesTestCase
 category: 'Flags'
 classmethod: GsAmqpBasicPropertiesTestCase
@@ -55,6 +70,8 @@ testBits
 	flagMethods := self class allFlagMethodNames.
 	inst := GsAmqpBasicProperties new.
 	"Initialize method should set this by default."
+	self assert: inst flags identical: 0.
+	inst flushToC.
 	self
 		assert: inst flags
 			identical: (inst class perform: #AMQP_BASIC_DELIVERY_MODE_FLAG);
@@ -78,6 +95,54 @@ testBits
 %
 category: 'Tests'
 method: GsAmqpBasicPropertiesTestCase
+testInitializeFromC
+
+	| flagMethods inst inst2 headers x |
+	headers := GsAmqpTable newFromArrayOfPairs: { 'A' . 'a' . 'B' . 'b' . 'C' . 'c' . 'D' . 'd' } .
+	inst := GsAmqpBasicProperties new.
+	inst 
+		flags: 0 ;
+		amqpUserId: 'amqpUserId' ;
+		appId: 'appId' ;
+		clusterId: 'clusterId' ;
+		contentEncoding: 'contentEncoding' ;
+		contentType: 'contentType' ;
+		correlationId: 'correlationId' ;
+		deliveryMode: 2 ;
+		expiration: 'expiration' ;
+		messageId: 'messageId' ;
+		priority: 9 ;
+		replyTo: 'replyTo' ;
+		timestamp: 3886124846 ;
+		type: 'type' ;
+		headers: headers ;
+		flushToC .
+	inst2 := GsAmqpBasicProperties fromCPointer: inst.
+	self 
+		assert: (x := inst2 flags) identical: inst flags ;
+		assert: (x := inst2 amqpUserId asString) equals: 'amqpUserId' ;
+		assert: (x := inst2 appId asString) equals: 'appId' ;
+		assert: (x := inst2 clusterId asString) equals: 'clusterId' ;
+		assert: (x := inst2 contentEncoding asString) equals:  'contentEncoding' ;
+		assert: (x := inst2 contentType asString) equals: 'contentType' ;
+		assert: (x := inst2 correlationId asString) equals: 'correlationId' ;
+		assert: (x := inst2 deliveryMode) identical: 2 ;
+		assert: (x := inst2 expiration asString) equals: 'expiration' ;
+		assert: (x := inst2 messageId asString) equals: 'messageId' ;
+		assert: (x := inst2 priority) identical: 9 ;
+		assert: (x := inst2 replyTo asString) equals: 'replyTo' ;
+		assert: (x := inst2 timestamp) identical: 3886124846 ;
+		assert: (x := inst2 type asString) equals: 'type' ;
+		assert: (x :=  inst2 headers)  equals: headers ;
+		assert: inst equals: inst2 .
+
+^ self
+
+		
+		
+%
+category: 'Tests'
+method: GsAmqpBasicPropertiesTestCase
 testNoDuplicateBits
 
 	| flagMethods flagValues |
@@ -88,8 +153,8 @@ testNoDuplicateBits
 		yourself
 %
 ! ------------------- Remove existing behavior from GsAmqpBytesTestCase
-removeAllMethods GsAmqpBytesTestCase
-removeAllClassMethods GsAmqpBytesTestCase
+removeallmethods GsAmqpBytesTestCase
+removeallclassmethods GsAmqpBytesTestCase
 ! ------------------- Class methods for GsAmqpBytesTestCase
 ! ------------------- Instance methods for GsAmqpBytesTestCase
 category: 'Tests'
@@ -122,7 +187,7 @@ obj := GsAmqpBytes fromBytes: ba.
 
 ^ self assert: obj class identical: GsAmqpBytes ;
 	assert: obj len identical: ba size ;
-	assert: (obj2 := obj bytes) class identical: CByteArray ;
+	assert: (obj2 := obj asCByteArray) class identical: CByteArray ;
 	assert: (obj2 := obj convertToByteArray) class equals: ByteArray ;
 	assert: obj2 equals: ba ;
 	yourself
@@ -139,7 +204,7 @@ obj := GsAmqpBytes fromString: string.
 
 ^ self assert: obj class identical: GsAmqpBytes ;
 	assert: obj len identical: string size ;
-	assert: (obj2 := obj bytes) class identical: CByteArray ;
+	assert: (obj2 := obj asCByteArray) class identical: CByteArray ;
 	assert: (obj2 := obj convertToString) class equals: String ;
 	assert: obj2 equals: string ;
 	assert: (obj2 := obj convertToByteArray) class equals: ByteArray ;
@@ -159,7 +224,7 @@ _testEmptyObj: obj
 ^ self assert: obj class identical: GsAmqpBytes ;
 	assert: obj len identical: 0 ;
 	assert: obj bytesAddress identical: 0 ;
-	assert: obj bytes identical: nil ;
+	assert: obj asCByteArray identical: nil ;
 	assert: (obj utf8FromAmqpBytesAtOffset: 0) identical: nil ;
 	assert: (obj utf16FromAmqpBytesAtOffset: 0) identical: nil ;
 	assert: (obj stringFromAmqpBytesAtOffset: 0) identical: nil ;
@@ -167,8 +232,8 @@ _testEmptyObj: obj
 	yourself
 %
 ! ------------------- Remove existing behavior from GsAmqpConnectionTestCase
-removeAllMethods GsAmqpConnectionTestCase
-removeAllClassMethods GsAmqpConnectionTestCase
+removeallmethods GsAmqpConnectionTestCase
+removeallclassmethods GsAmqpConnectionTestCase
 ! ------------------- Class methods for GsAmqpConnectionTestCase
 category: 'Accessing'
 classmethod: GsAmqpConnectionTestCase
@@ -432,8 +497,8 @@ _testNewConnection: conn
 	yourself
 %
 ! ------------------- Remove existing behavior from GsAmqpExampleTestCase
-removeAllMethods GsAmqpExampleTestCase
-removeAllClassMethods GsAmqpExampleTestCase
+removeallmethods GsAmqpExampleTestCase
+removeallclassmethods GsAmqpExampleTestCase
 ! ------------------- Class methods for GsAmqpExampleTestCase
 ! ------------------- Instance methods for GsAmqpExampleTestCase
 category: 'Setup and Tear Down'
@@ -475,9 +540,308 @@ self assert: (producer := GsTsExternalSession newDefault login) class identical:
 ] ensure:[ consumer ifNotNil:[ consumer logout ]. producer ifNotNil:[ producer logout] ].
 ^ self
 %
+! ------------------- Remove existing behavior from GsAmqpFieldValueTestCase
+removeallmethods GsAmqpFieldValueTestCase
+removeallclassmethods GsAmqpFieldValueTestCase
+! ------------------- Class methods for GsAmqpFieldValueTestCase
+! ------------------- Instance methods for GsAmqpFieldValueTestCase
+category: 'Tests'
+method: GsAmqpFieldValueTestCase
+testBooleans
+
+|t f tc fc bool |
+
+bool := GsAmqpFieldValue AMQP_FIELD_KIND_BOOLEAN .
+^ self
+	assert: (t := GsAmqpFieldValue newForObject: true) class identical: GsAmqpFieldValue ;
+	assert: (f := GsAmqpFieldValue newForObject: false) class identical: GsAmqpFieldValue ;
+	assert: (tc := GsAmqpFieldValue newForObject: true) class identical: GsAmqpFieldValue ;
+	assert: (fc := GsAmqpFieldValue newForObject: false) class identical: GsAmqpFieldValue ;
+	assert: t equals: t ;
+	assert: f equals: f ;
+	deny: t equals: f ;
+	assert: t equals: tc ;
+	assert: f equals: fc ;
+	assert: t getKindFromC identical: bool ;
+	assert: f getKindFromC identical: bool ;
+	assert: tc getKindFromC identical: bool ;
+	assert: fc getKindFromC identical: bool ;
+	assert: t valueIsBoolean ;
+	deny: t valueIsString ;
+	deny: t valueIsInteger ;
+	assert: t getValueFromC ;
+	assert: tc getValueFromC ;
+	deny: f getValueFromC ;
+	deny: fc getValueFromC ;
+	yourself 
+	
+%
+category: 'Tests'
+method: GsAmqpFieldValueTestCase
+testInitializeFromC
+
+^ self 
+_testInitializeFromCForObj: 'abc' ;
+_testInitializeFromCForObj: 123 ;
+_testInitializeFromCForObj: true ;
+yourself
+%
+category: 'Tests'
+method: GsAmqpFieldValueTestCase
+testIntegers
+
+| int t2 t22 m2 m22 |
+
+int := GsAmqpFieldValue AMQP_FIELD_KIND_I64 .
+^ self
+	assert: (t2 := GsAmqpFieldValue newForObject: 2) class identical: GsAmqpFieldValue ;
+	assert: (m2 := GsAmqpFieldValue newForObject: -2) class identical: GsAmqpFieldValue ;
+	assert: (t22 := GsAmqpFieldValue newForObject: 2) class identical: GsAmqpFieldValue ;
+	assert: (m22 := GsAmqpFieldValue newForObject: -2) class identical: GsAmqpFieldValue ;
+	assert: t2 equals: t2 ;
+	assert: m2 equals: m2 ;
+	deny: t2 equals: m2 ;
+	assert: t2 equals: t22 ;
+	assert: m2 equals: m22 ;
+	assert: t2 getKindFromC identical: int ;
+	assert: m2 getKindFromC identical: int ;
+	assert: t22 getKindFromC identical: int ;
+	assert: m22 getKindFromC identical: int ;
+	assert: t2 valueIsInteger ;
+	deny: t2 valueIsString ;
+	deny: t2 valueIsBoolean ;
+	assert: t2 getValueFromC identical: 2;
+	assert: t22 getValueFromC identical: 2;
+	assert: m2 getValueFromC  identical: -2;
+	assert: m22 getValueFromC  identical: -2;
+	yourself 
+	
+%
+category: 'Tests'
+method: GsAmqpFieldValueTestCase
+testStrings
+
+| strKind str1  str1Field str1Field2 str2  str2Field str2Field2 |
+
+strKind := GsAmqpFieldValue AMQP_FIELD_KIND_UTF8 .
+str1 := 'abc'.
+str2 := 'ABC'.
+
+^ self
+	assert: (str1Field := GsAmqpFieldValue newForObject: str1) class identical: GsAmqpFieldValue ;
+	assert: (str2Field := GsAmqpFieldValue newForObject: str2) class identical: GsAmqpFieldValue ;
+	assert: (str1Field2 := GsAmqpFieldValue newForObject: str1) class identical: GsAmqpFieldValue ;
+	assert: (str2Field2 := GsAmqpFieldValue newForObject: str2) class identical: GsAmqpFieldValue ;
+	assert: str1Field equals: str1Field ;
+	assert: str2Field equals: str2Field ;
+	deny: str1Field equals: str2Field ;
+	assert: str1Field equals: str1Field2 ;
+	assert: str2Field equals: str2Field2 ;
+	assert: str1Field getKindFromC identical: strKind ;
+	assert: str2Field getKindFromC identical: strKind ;
+	assert: str1Field2 getKindFromC identical: strKind ;
+	assert: str2Field2 getKindFromC identical: strKind ;
+	deny: str1Field valueIsInteger ;
+	assert: str1Field valueIsString ;
+	deny: str1Field valueIsBoolean ;
+	assert: str1Field getValueFromC equals: str1;
+	assert: str1Field2 getValueFromC equals: str1;
+	assert: str2Field getValueFromC  equals: str2;
+	assert: str2Field2 getValueFromC  equals: str2;
+	yourself 
+	
+%
+category: 'Tests'
+method: GsAmqpFieldValueTestCase
+_testInitializeFromCForObj: anObj
+
+^ self _testInitializeFromCWith: (GsAmqpFieldValue newForObject: anObj)
+%
+! ------------------- Remove existing behavior from GsAmqpTableEntryArrayTestCase
+removeallmethods GsAmqpTableEntryArrayTestCase
+removeallclassmethods GsAmqpTableEntryArrayTestCase
+! ------------------- Class methods for GsAmqpTableEntryArrayTestCase
+category: 'Data'
+classmethod: GsAmqpTableEntryArrayTestCase
+dictionary
+
+| keys values resultIdx result |
+keys := self keys.
+values := self values.
+result := KeyValueDictionary new: (2 * keys size).
+1 to: keys size do:[:n| |k v|
+	k := keys at: n.
+	v := values at: n.
+	result at: k put: v.	
+].
+	
+^ result
+%
+category: 'Data'
+classmethod: GsAmqpTableEntryArrayTestCase
+keys
+
+^ Array with: 'a' with: 'b' with: 'c' with: 'd'
+%
+category: 'Data'
+classmethod: GsAmqpTableEntryArrayTestCase
+pairs
+
+| keys values resultIdx result |
+keys := self keys.
+values := self values.
+result := Array new: (2 * keys size).
+resultIdx := 1.
+1 to: keys size do:[:n| |k v|
+	k := keys at: n.
+	v := values at: n.
+	result at: resultIdx put: k ; at: (resultIdx + 1) put: v.
+	resultIdx := resultIdx + 2.
+].
+	
+^ result
+%
+category: 'Data'
+classmethod: GsAmqpTableEntryArrayTestCase
+values
+
+^ Array with: 'A' with: 'B' with: 2 with: true
+%
+! ------------------- Instance methods for GsAmqpTableEntryArrayTestCase
+category: 'Tests'
+method: GsAmqpTableEntryArrayTestCase
+dictionary
+
+^ self class dictionary
+%
+category: 'Tests'
+method: GsAmqpTableEntryArrayTestCase
+keys
+
+^ self class keys
+%
+category: 'Tests'
+method: GsAmqpTableEntryArrayTestCase
+pairs
+
+^ self class pairs
+%
+category: 'Tests'
+method: GsAmqpTableEntryArrayTestCase
+testCompare
+
+|a b c|
+
+a := GsAmqpTableEntryArray newFromArrayOfPairs: self pairs.
+b := GsAmqpTableEntryArray newFromDictionary: self dictionary.
+c := GsAmqpTableEntryArray newFromKeys: self keys values: self values.
+^ self 
+	assert: a equals: b ;
+	assert: a equals: c ;
+	assert: b equals: c ;
+	yourself
+%
+category: 'Tests'
+method: GsAmqpTableEntryArrayTestCase
+testIntializeFromC
+
+
+^ self 
+	_testInitializeFromCWith: (GsAmqpTableEntryArray newFromArrayOfPairs: self pairs) ;
+	_testInitializeFromCWith: (GsAmqpTableEntryArray newFromDictionary: self dictionary) ;
+	_testInitializeFromCWith: (GsAmqpTableEntryArray newFromKeys: self keys values: self values) ;
+	yourself
+%
+category: 'Tests'
+method: GsAmqpTableEntryArrayTestCase
+values
+
+^ self class values
+%
+! ------------------- Remove existing behavior from GsAmqpTableEntryTestCase
+removeallmethods GsAmqpTableEntryTestCase
+removeallclassmethods GsAmqpTableEntryTestCase
+! ------------------- Class methods for GsAmqpTableEntryTestCase
+! ------------------- Instance methods for GsAmqpTableEntryTestCase
+category: 'Tests'
+method: GsAmqpTableEntryTestCase
+testCompare
+
+
+|key1 value1 key2 value2 inst1 inst2|
+key1 := 'key1'.
+value1 := 'value1'.
+key2 := 'key2'.
+value2 := 'value2'.
+
+inst1 := GsAmqpTableEntry newForKey: key1 value: value1 .
+inst2  := GsAmqpTableEntry newForKey: key1 value: value1 .
+self
+	assert: inst1 equals: inst1 ;
+	assert: inst1 equals: inst2 ;
+	assert: inst1 key equals: inst2 key ;
+	assert: inst1 value equals: inst2 value ;
+	assert: inst1 getKeyFromC equals: inst2 getKeyFromC ;
+	assert: inst1 getValueFromC equals: inst2 getValueFromC .
+
+inst2 := GsAmqpTableEntry newForKey: key2 value: value2 .
+self 
+	assert: inst2 equals: inst2 ;
+	deny: inst1 equals: inst2 
+%
+category: 'Tests'
+method: GsAmqpTableEntryTestCase
+testInitializeFromC
+
+"Test all 3 fields kinds: Boolean, Integer and String"
+
+^ self 
+	_testInitializeFromCWith: (GsAmqpTableEntry newForKey: 'abc' value: true) ;
+	_testInitializeFromCWith: (GsAmqpTableEntry newForKey: 'abc' value: 123 ) ;
+	_testInitializeFromCWith: (GsAmqpTableEntry newForKey: 'abc' value: 'ABC' ) ;
+	yourself
+
+%
+! ------------------- Remove existing behavior from GsAmqpTableTestCase
+removeallmethods GsAmqpTableTestCase
+removeallclassmethods GsAmqpTableTestCase
+! ------------------- Class methods for GsAmqpTableTestCase
+! ------------------- Instance methods for GsAmqpTableTestCase
+category: 'Tests'
+method: GsAmqpTableTestCase
+testCompare
+
+| inst1 inst2 inst3 |
+inst1 := GsAmqpTable newFromArrayOfPairs: GsAmqpTableEntryArrayTestCase pairs.
+inst2 := GsAmqpTable newFromDictionary: GsAmqpTableEntryArrayTestCase dictionary.
+inst3 := GsAmqpTable newFromKeys: GsAmqpTableEntryArrayTestCase keys values: GsAmqpTableEntryArrayTestCase values.
+
+^ self 
+	assert: inst1 equals: inst2 ;
+	assert: inst1 equals: inst3 ;
+	assert: inst2 equals: inst2 ;
+	yourself
+
+%
+category: 'Tests'
+method: GsAmqpTableTestCase
+testIntializeFromC
+
+| inst1 inst2 inst3 |
+inst1 := GsAmqpTable newFromArrayOfPairs: GsAmqpTableEntryArrayTestCase pairs.
+inst2 := GsAmqpTable newFromDictionary: GsAmqpTableEntryArrayTestCase dictionary.
+inst3 := GsAmqpTable newFromKeys: GsAmqpTableEntryArrayTestCase keys values: GsAmqpTableEntryArrayTestCase values.
+
+^ self 
+ 
+	_testInitializeFromCWith: inst1 ;
+	_testInitializeFromCWith: inst2 ;
+	_testInitializeFromCWith: inst3 ;
+	yourself
+%
 ! ------------------- Remove existing behavior from GsAmqpTlsConnectionTestCase
-removeAllMethods GsAmqpTlsConnectionTestCase
-removeAllClassMethods GsAmqpTlsConnectionTestCase
+removeallmethods GsAmqpTlsConnectionTestCase
+removeallclassmethods GsAmqpTlsConnectionTestCase
 ! ------------------- Class methods for GsAmqpTlsConnectionTestCase
 category: 'Accessing'
 classmethod: GsAmqpTlsConnectionTestCase
@@ -687,8 +1051,8 @@ self should:[ conn setSocketOptions] raise: 2318 ;
 ^ self
 %
 ! ------------------- Remove existing behavior from GsAmqpTlsExampleTestCase
-removeAllMethods GsAmqpTlsExampleTestCase
-removeAllClassMethods GsAmqpTlsExampleTestCase
+removeallmethods GsAmqpTlsExampleTestCase
+removeallclassmethods GsAmqpTlsExampleTestCase
 ! ------------------- Class methods for GsAmqpTlsExampleTestCase
 ! ------------------- Instance methods for GsAmqpTlsExampleTestCase
 category: 'Setup'
