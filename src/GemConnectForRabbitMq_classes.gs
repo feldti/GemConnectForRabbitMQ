@@ -12,7 +12,6 @@ CByteArray subclass: 'GsAmqpCStruct'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpConnectionClose
 expectvalue /Class
 doit
@@ -26,7 +25,6 @@ GsAmqpCStruct subclass: 'GsAmqpConnectionClose'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpEntity
 expectvalue /Class
 doit
@@ -40,7 +38,6 @@ Object subclass: 'GsAmqpEntity'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpExchange
 expectvalue /Class
 doit
@@ -53,7 +50,6 @@ GsAmqpEntity subclass: 'GsAmqpExchange'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpBasicAck
 expectvalue /Class
 doit
@@ -66,7 +62,6 @@ GsAmqpCStruct subclass: 'GsAmqpBasicAck'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpBasicDeliveryPayload
 expectvalue /Class
 doit
@@ -80,7 +75,6 @@ GsAmqpCStruct subclass: 'GsAmqpBasicDeliveryPayload'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpBasicNack
 expectvalue /Class
 doit
@@ -93,7 +87,6 @@ GsAmqpBasicAck subclass: 'GsAmqpBasicNack'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpBasicProperties
 expectvalue /Class
 doit
@@ -109,7 +102,6 @@ GsAmqpCStruct subclass: 'GsAmqpBasicProperties'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpBasicReject
 expectvalue /Class
 doit
@@ -122,7 +114,6 @@ GsAmqpCStruct subclass: 'GsAmqpBasicReject'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpBasicReturn
 expectvalue /Class
 doit
@@ -136,12 +127,11 @@ GsAmqpCStruct subclass: 'GsAmqpBasicReturn'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpBytes
 expectvalue /Class
 doit
 GsAmqpCStruct subclass: 'GsAmqpBytes'
-  instVarNames: #()
+  instVarNames: #( bytes)
   classVars: #()
   classInstVars: #()
   poolDictionaries: #()
@@ -149,7 +139,6 @@ GsAmqpCStruct subclass: 'GsAmqpBytes'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpChannelClose
 expectvalue /Class
 doit
@@ -162,7 +151,6 @@ GsAmqpConnectionClose subclass: 'GsAmqpChannelClose'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpConfirmedMessage
 expectvalue /Class
 doit
@@ -176,7 +164,6 @@ Object subclass: 'GsAmqpConfirmedMessage'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpConfirmedMessagePublisher
 expectvalue /Class
 doit
@@ -192,7 +179,6 @@ Object subclass: 'GsAmqpConfirmedMessagePublisher'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpConnection
 expectvalue /Class
 doit
@@ -207,7 +193,6 @@ Object subclass: 'GsAmqpConnection'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpDirectExchange
 expectvalue /Class
 doit
@@ -220,7 +205,6 @@ GsAmqpExchange subclass: 'GsAmqpDirectExchange'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpEnvelope
 expectvalue /Class
 doit
@@ -235,7 +219,6 @@ GsAmqpCStruct subclass: 'GsAmqpEnvelope'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpExample
 expectvalue /Class
 doit
@@ -248,7 +231,6 @@ Object subclass: 'GsAmqpExample'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpFanoutExchange
 expectvalue /Class
 doit
@@ -261,7 +243,6 @@ GsAmqpExchange subclass: 'GsAmqpFanoutExchange'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpFieldValue
 expectvalue /Class
 doit
@@ -274,7 +255,6 @@ GsAmqpCStruct subclass: 'GsAmqpFieldValue'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpFrame
 expectvalue /Class
 doit
@@ -288,7 +268,6 @@ GsAmqpCStruct subclass: 'GsAmqpFrame'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpHeadersExchange
 expectvalue /Class
 doit
@@ -301,7 +280,6 @@ GsAmqpExchange subclass: 'GsAmqpHeadersExchange'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpMessage
 expectvalue /Class
 doit
@@ -315,7 +293,6 @@ GsAmqpCStruct subclass: 'GsAmqpMessage'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpMethod
 expectvalue /Class
 doit
@@ -329,7 +306,6 @@ GsAmqpCStruct subclass: 'GsAmqpMethod'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpQueue
 expectvalue /Class
 doit
@@ -343,7 +319,6 @@ GsAmqpEntity subclass: 'GsAmqpQueue'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpQueueDeclareResult
 expectvalue /Class
 doit
@@ -356,7 +331,6 @@ GsAmqpCStruct subclass: 'GsAmqpQueueDeclareResult'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpRpcReply
 expectvalue /Class
 doit
@@ -370,7 +344,6 @@ GsAmqpCStruct subclass: 'GsAmqpRpcReply'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpTable
 expectvalue /Class
 doit
@@ -383,7 +356,6 @@ GsAmqpCStruct subclass: 'GsAmqpTable'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpTableEntry
 expectvalue /Class
 doit
@@ -396,7 +368,6 @@ GsAmqpCStruct subclass: 'GsAmqpTableEntry'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpTableEntryArray
 expectvalue /Class
 doit
@@ -409,7 +380,6 @@ GsAmqpCStruct subclass: 'GsAmqpTableEntryArray'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpTlsConnection
 expectvalue /Class
 doit
@@ -423,7 +393,6 @@ GsAmqpConnection subclass: 'GsAmqpTlsConnection'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsAmqpTopicExchange
 expectvalue /Class
 doit
@@ -436,7 +405,6 @@ GsAmqpExchange subclass: 'GsAmqpTopicExchange'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsLibRabbitMq
 expectvalue /Class
 doit
@@ -449,7 +417,6 @@ Object subclass: 'GsLibRabbitMq'
   options: #()
 
 %
-set compile_env: 0
 ! ------------------- Class definition for GsRabbitMqError
 expectvalue /Class
 doit
