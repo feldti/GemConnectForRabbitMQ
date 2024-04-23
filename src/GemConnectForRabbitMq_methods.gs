@@ -1310,7 +1310,7 @@ fromStringEncodeAsUtf8: byteObj
 		ifFalse:
 			[| cba res |
 			byteObj _validateClasses: { String . MultiByteString } . "Prevent assertion failure in slow builds where byteObj class == Utf8 "
-			cba := CByteArray gcMalloc: byteObj size.
+			cba := CByteArray gcMalloc: byteObj sizeForEncodeAsUTF8.
 			cba encodeUTF8From: byteObj into: 0 allowCodePointZero: false.
 			(res := self new) setBytes: cba .
 			res]
