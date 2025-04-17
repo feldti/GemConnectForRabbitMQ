@@ -43,12 +43,40 @@ source $stone_dir/customenv
 if [ -s $GEMSTONE/seaside/etc/gemstone.secret ]; then
     . $GEMSTONE/seaside/etc/gemstone.secret
 else
-    echo 'Missing password file $GEMSTONE/seaside/etc/gemstone.secret'
+    echo 'Error: Missing password file $GEMSTONE/seaside/etc/gemstone.secret'
     exit 1
 fi
 
 nowTS=`date +%Y-%m-%d-%H-%M`
-export RABBITMQ_LIB=/usr/lib/x86_64-linux-gnu/librabbitmq.so.4
+
+# Depending of the architecture different paths have to be used
+
+PLATFORM="`uname -sm | tr ' ' '-'`"
+case "$PLATFORM" in
+   Linux-aarch64)
+      export RABBITMQ_LIB=/usr/lib/aarch64-linux-gnu/librabbitmq.so.4
+      ;;
+   Darwin-arm64)		
+      echo "Error: Platform handling not defined: "${PLATFORM}
+      exit 1
+      ;;
+   Darwin-x86_64)
+      echo "Error: Platform handling not defined: "${PLATFORM}
+      exit 1
+      ;;
+   Linux-x86_64)
+      export RABBITMQ_LIB=/usr/lib/x86_64-linux-gnu/librabbitmq.so.4
+      ;;
+   *)
+      echo "Error: This script should only be run on Mac (Darwin-i386 or Darwin-arm64), or Linux (Linux-x86_64 or Linux-aarch64) ). The result from \"uname -sm\" is \"`uname -sm`\""
+      exit 1
+     ;;
+esac
+
+if [ ! -f "${RABBITMQ_LIB}" ]; then
+  echo "Error: Shared Libraries for RabbitMQ NOT found: "${RABBITMQ_LIB}
+  exit 1
+fi
 
 cd $CURRENTDIR
 cd src

@@ -48,7 +48,7 @@ export RABBITMQ_LIB=/usr/lib/x86_64-linux-gnu/librabbitmq.so.4
 cd $CURRENTDIR
 cd src
 
-cat << EOF | $GEMSTONE/bin/topaz -T 4000000 -l -u loadpostgresql  2>&1 >> $CURRENTDIR/loadPostgreSQL_${nowTS}.log
+cat << EOF | $GEMSTONE/bin/topaz -T 4000000 -l -u loadrmq  2>&1 >> $CURRENTDIR/loadrmq_${nowTS}.log
 set user SystemUser pass $GEMSTONE_CONFIG_PASS gems $GEMSTONE_NAME
 display oops
 iferror where
